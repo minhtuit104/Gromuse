@@ -1,0 +1,124 @@
+:root{
+    /* LIME */
+    --lime50: #f6fde8;
+    --lime100: #eaf9ce;
+    --lime200: #d5f3a3;
+    --lime300: #bbea70;
+    --lime400: #9ddb40;
+    --lime500: #7fc121;
+    --lime600: #609a16;
+    --lime700: #4a7516;
+    --lime800: #3d5d17;
+    --lime900: #354f18;
+    --lime950: #192c07;
+
+    /* GREEN */
+    --green50: #ecfdf6;
+    --green100: #d2f9e7;
+    --green200: #a9f1d4;
+    --green300: #71e4bc;
+    --green400: #38cfa1;
+    --green500: #14b589;
+    --green600: #089370;
+    --green700: #07795f;
+    --green800: #085d4a;
+    --green900: #084c3e;
+    --green950: #032b23;
+
+    /* RED */
+    --red50: #fef2f2;
+    --red100: #ffe1e2;
+    --red200: #ffc7c8;
+    --red300: #fea3a5;
+    --red400: #fb6e71;
+    --red500: #f24144;
+    --red600: #e02225;
+    --red700: #bc191c;
+    --red800: #9b191b;
+    --red900: #811b1d;
+    --red950: #46090a;
+
+    /* ORANGE    */
+    --orange50: #fff7ed;
+    --orange100: #ffeed4;
+    --orange200: #ffd8a8;
+    --orange300: #ffbc70;
+    --orange400: #ff9437;
+    --orange500: #ff7006;
+    --orange600: #f05a06;
+    --orange700: #c74207;
+    --orange800: #9e340e;
+    --orange900: #7f2e0f;
+    --orange950: #451405;
+
+    /* WHITE */
+    --white50: #ffffff;
+    --white100: #efefef;
+    --white200: #dcdcdc;
+    --white300: #bdbdbd;
+    --white400: #989898;
+    --white500: #7c7c7c;
+    --white600: #656565;
+    --white700: #525252;
+    --white800: #464646;
+    --white900: #3d3d3d;
+    --white950: #292929;
+
+    /* MINT */
+    --mint50: #edfffd;
+    --mint100: #c2fffe;
+    --mint200: #86fffd;
+    --mint300: #41fffd;
+    --mint400: #0bf6f3;
+    --mint500: #00dad8;
+    --mint600: #00aeb0;
+    --mint700: #00878b;
+    --mint800: #01696e;
+    --mint900: #064c4f;
+    --mint950: #003438;
+
+    /* PURPLE */
+    --purple50: #fdf2fa;
+    --purple100: #fde6f7;
+    --purple200: #fcceef;
+    --purple300: #fba6e1;
+    --purple400: #f86ecc;
+    --purple500: #f044b4;
+    --purple600: #e02294;
+    --purple700: #c31378;
+    --purple800: #a11363;
+    --purple900: #6c1144;
+    --purple950: #520530;
+
+}
+
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Regular.ttf') format('ttf');
+    font-weight: 400; /* Regular */
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Medium.ttf') format('ttf');
+    font-weight: 500; /* Regular */
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-SemiBold.ttf') format('ttf');
+    font-weight: 600; /* Regular */
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Bold.ttf') format('ttf');
+    font-weight: 700; /* Regular */
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Bold.ttf') format('ttf');
+    font-weight: 800; /* Regular */
+    font-style: normal;
+}
