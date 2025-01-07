@@ -93,32 +93,61 @@
 }
 
 @font-face {
-    font-family: 'Montserrat';
-    src: url('../fonts/Montserrat-Regular.ttf') format('ttf');
+    font-family: 'Exo2';
+    src: url('../fonts/Exo2-Regular.ttf') format('ttf');
     font-weight: 400; /* Regular */
     font-style: normal;
 }
 @font-face {
-    font-family: 'Montserrat';
-    src: url('../fonts/Montserrat-Medium.ttf') format('ttf');
+    font-family: 'Exo2';
+    src: url('../fonts/Exo2-Medium.ttf') format('ttf');
     font-weight: 500; /* Regular */
     font-style: normal;
 }
 @font-face {
-    font-family: 'Montserrat';
-    src: url('../fonts/Montserrat-SemiBold.ttf') format('ttf');
+    font-family: 'Exo2';
+    src: url('../fonts/Exo2-SemiBold.ttf') format('ttf');
     font-weight: 600; /* Regular */
     font-style: normal;
 }
 @font-face {
-    font-family: 'Montserrat';
-    src: url('../fonts/Montserrat-Bold.ttf') format('ttf');
+    font-family: 'Exo2';
+    src: url('../fonts/Exo2-Bold.ttf') format('ttf');
     font-weight: 700; /* Regular */
     font-style: normal;
 }
 @font-face {
-    font-family: 'Montserrat';
-    src: url('../fonts/Montserrat-Bold.ttf') format('ttf');
+    font-family: 'Exo2';
+    src: url('../fonts/Exo2-ExtraBold.ttf') format('ttf');
     font-weight: 800; /* Regular */
     font-style: normal;
 }
+
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: 'Exo2', Arial, sans-serif;
+    font-weight: 400;
+}
+
+.ic_40{
+    width: 40px;
+    height: 40px;
+}
+
+.ic_32{
+    width: 32px;
+    height: 32px;
+}
+
+.ic_28{
+    width: 28px;
+    height: 28px;
+}
+
+.ic_24{
+    width: 24px;
+    height: 24px;
+}
+

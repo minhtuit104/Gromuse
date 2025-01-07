@@ -1,9 +1,1 @@
-*{
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 400;
-}
-
-@import './assets/css/styles.css';
+@import url(./assets/css/styles.css);

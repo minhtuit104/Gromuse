@@ -1,0 +1,113 @@
+@import url(../../assets/css/styles.css);
+
+.select-option{
+    width: calc(100% - 90px);
+    height: 650px;
+    margin-top: 33px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 20px;
+}
+
+.select-option-item{
+    position: relative;
+    height: 600px;
+}
+
+.select-option-item .imgBackground{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.select-option-item-header{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: absolute;
+    top: 10px;
+    left: 0;
+    padding: 0 10px;
+}
+
+.select-option-item-header p{
+    font-size: 32px;
+    font-weight: 700;
+    color: black;
+}
+
+.select-option-item-body{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    gap: 10px;
+    padding: 0 10px;
+}
+
+.select-option-item-body p{
+    font-size: 50px;
+    font-weight: 800;
+    color: var(--purple800);
+}
+
+.select-option-item-body span{
+    font-size: 18px;
+    font-weight: 500;
+    color: black;
+}
+
+.select-option-item-footer{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 331px;
+    height: 345px;
+}
+
+.select-option-item-footer .imgFooter1{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+}
+
+.select-option-item-footer .imgFooter2{
+    width: 62%;
+    height: 73%;
+    object-fit: cover;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+}
+
+.select-option-item-footer .imgFooter4{
+    width: 220px;
+    height: 220px;
+    object-fit: cover;
+    position: absolute;
+    bottom: 40px;
+    left: 95px;
+}
+
+.select-option-item-footer .imgFooter3{
+    width: 220px;
+    height: 220px;
+    object-fit: cover;
+    position: absolute;
+    bottom: 20px;
+    left: 40px;
+}
+
+
+
+
+
+
+
+

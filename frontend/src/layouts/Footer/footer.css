@@ -1,0 +1,19 @@
+@import url(../../assets/css/styles.css);
+
+.footer {
+    margin-top: 30px;
+    background-color: var(--red50);
+    height: 600px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    position: relative;
+}
+
+.imgFooter {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+

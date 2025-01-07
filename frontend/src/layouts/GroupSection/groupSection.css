@@ -1,0 +1,59 @@
+@import url(../../assets/css/styles.css);
+
+.group-section{
+    width: calc(100% - 90px);
+    height: 155px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-gap: 10px;
+    margin-top: 33px;
+}
+
+.group-section-item{
+    background-color: var(--white50);
+    height: 150px;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    border: none;
+    cursor: pointer;
+}
+
+.group-section-item-text{
+    width: 169px;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    padding: 16px 0 16px 16px;
+}
+
+.group-section-item-text h3{
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--green800);
+}
+
+.group-section-item-text span{
+    font-size: 21px;
+    font-weight: 400;
+    color: var(--white500);
+}
+
+.group-section-item-img{
+    width: 100px;
+    height: 100px;
+    margin-top: 40px;
+    padding-right: 10px;
+}
+
+.group-section-item-img img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+
+
+
+
