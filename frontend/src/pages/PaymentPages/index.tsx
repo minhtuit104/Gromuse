@@ -16,11 +16,33 @@ import ImgBeef1 from '../../assets/images/imagePNG/beef 1.png';
 import ImgAvocado1 from '../../assets/images/imagePNG/avocado 1.png';
 // import IconDiscount from '../../assets/images/icons/ic_discount.svg';
 import IconVoucher from '../../assets/images/icons/ic_ voucher.svg';
+import usePayment from "./usePayment";
+import PaymentItem from "./paymentItem";
 
+interface Product {
+  img: string;
+  title: string;
+  weight: number;
+  price: number;
+  amount: number;
+  created_at: string;
+} 
+
+interface Shop {
+  avatar: string;
+  name: string;
+  products: Product[];
+}
 
 export const PaymentPage = () => {
   const [isItemsVisible, setIsItemsVisible] = useState(false);
   const [isItemsVisible1, setIsItemsVisible1] = useState(false);
+
+
+
+  const paymentState = usePayment();
+
+
 
   const toggleItems = () => {
     setIsItemsVisible(!isItemsVisible);
@@ -29,10 +51,26 @@ export const PaymentPage = () => {
   const toggleItems1 = () => {
     setIsItemsVisible1(!isItemsVisible1);
   };
-
+  const data : Shop[] = [
+    {
+      avatar: 'jajaja.png',
+      name: 'Lay’s Việt Nam',
+      products: [
+        {
+          img: 'string',
+          title: 'string',
+          weight: 500,
+          price: 15.25,
+          amount: 2,
+          created_at: '28282'
+        }
+      ]
+    }
+  ]
   return (
     <div className='payment-page'>
       <Header/>
+      {paymentState?.data?.map((item: any) => PaymentItem(data: data, onUpdateAmount: paymentState?.handleUpdatePrice))}
       <div className='payment_container'>
         <div className='payment_left'>
           <div className='payment_left_location'>
