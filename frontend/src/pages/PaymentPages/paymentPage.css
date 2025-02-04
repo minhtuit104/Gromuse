@@ -31,7 +31,10 @@
     flex-direction: column;
     align-items: center;
 }
-
+.payment_item {
+    width: 100%;
+    padding: 15px;
+}
 .payment_left_location_top {
     width: 100%;
     display: flex;

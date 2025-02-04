@@ -1,14 +1,13 @@
 // import HomePage from "./pages/HomePage/HomePage";
-import PaymentPage from "./pages/PaymentPages/paymentPage";
+import PaymentPage from "./pages/PaymentPages";
 
 function App() {
-
   return (
     <>
       {/* <HomePage /> */}
-      <PaymentPage/>
+      <PaymentPage />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
