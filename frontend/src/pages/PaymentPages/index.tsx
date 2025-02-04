@@ -1,74 +1,17 @@
 import React, { useState } from "react";
 import "./paymentPage.css";
-import ImgMTC from "../../assets/images/imagePNG/Avatar.png";
-import IconUp from "../../assets/images/icons/ic_ up.svg";
-import ImgDetailLays from "../../assets/images/imagePNG/lays_1 1.png";
-import IconMinus from "../../assets/images/icons/ic_frame_minus.svg";
-import IconAdd from "../../assets/images/icons/ic_frame_add.svg";
-import ImgDetailMax from "../../assets/images/imagePNG/lays_2.png";
-import ImgWheat2 from "../../assets/images/imagePNG/wheat2.png";
-import ImgBeef1 from "../../assets/images/imagePNG/beef 1.png";
-import ImgAvocado1 from "../../assets/images/imagePNG/avocado 1.png";
 import IconVoucher from "../../assets/images/icons/ic_ voucher.svg";
 import usePayment from "./usePayment";
 import PaymentItem from "./paymentItem";
 import AddressPayment from "./addressPayment";
 import Header from "../../layouts/Header/Header";
 
-interface Product {
-  id: string;
-  name: string;
-  img: string;
-  title: string;
-  weight: number;
-  price: number;
-  amount: number;
-  created_at: string;
-}
-
-interface Shop {
-  id: string;
-  avatar: string;
-  name: string;
-  products: Product[];
-}
-
-interface PaymentState {
-  handleGetAdressData: () => void;
-  handleGetItemData: () => void;
-  data: Shop[];
-  setData: React.Dispatch<React.SetStateAction<Shop[]>>;
-  handleUpdatePrice: (price: number, type: string) => void;
-}
-
-const data: Shop[] = [
-  {
-    id: "1",
-    avatar: "avatar.png",
-    name: "Lay's Việt Nam",
-    products: [
-      {
-        id: "1",
-        name: "Snack Lay's",
-        img: "lays.png",
-        title: "Snack Khoai Tây",
-        weight: 500,
-        price: 15.25,
-        amount: 2,
-        created_at: "2023-02-01",
-      },
-    ],
-  },
-];
-
-const handleUpdatePrice = (id: string, newAmount: number) => {
-  console.log(`Updated product ${id} with new amount ${newAmount}`);
-};
-
 export const PaymentPage = () => {
   const [isItemsVisible1, setIsItemsVisible1] = useState(false);
-  const paymentState = usePayment() as unknown as PaymentState;
-
+  const paymentState = usePayment();
+  const handleUpdatePrice = (id: string, newAmount: number) => {
+    console.log(`Updated product ${id} with new amount ${newAmount}`);
+  };
   const toggleItems1 = () => {
     setIsItemsVisible1(!isItemsVisible1);
   };
@@ -91,104 +34,14 @@ export const PaymentPage = () => {
             <div className="payment_left_detail_name">Review item by store</div>
             <div className="payment_left_detail_line"></div>
 
-            <PaymentItem data={data} onUpdateAmount={handleUpdatePrice} />
-
-            <div className="store-container">
-              <div className="store-header">
-                <div className="store-info">
-                  <img src={ImgMTC} alt="ImgMTC" className="store-logo" />
-                  <div className="store-details">
-                    <h3 className="store-name">Gromuse shop</h3>
-                    <p className="delivery-time">Delivery in 21/11/2024</p>
-                  </div>
-                </div>
-                <div className="icon_up">
-                  <img src={IconUp} alt="icon_up" className="ic_24" />
-                </div>
-              </div>
-              <div className="products">
-                <img src={ImgWheat2} alt="ImgWheat2" />
-                <img src={ImgBeef1} alt="ImgBeef1" />
-                <img src={ImgAvocado1} alt="ImgAvocado1" />
-                <span className="quantity1">+9</span>
-              </div>
-            </div>
-
-            <div className="payment_left_detail_information_top">
-              <div className="payment_left_detail_information_top_header">
-                <img src={ImgMTC} alt="avt_shop" className="img_shop" />
-                <div className="payment_left_detail_information_shoppers">
-                  <div className="payment_left_detail_information_shoppers_text">
-                    <span className="text_1">Lay's Việt Nam</span>
-                    <span className="text_2">Delivery in 15 minutes ago</span>
-                  </div>
-                </div>
-              </div>
-              <div className="icon_up1" onClick={toggleItems1}>
-                <img
-                  src={IconUp}
-                  alt="icon_up"
-                  className={`ic_24 ${isItemsVisible1 ? "rotate" : ""}`}
-                />
-              </div>
-            </div>
-            <div
-              className={`product-card ${
-                isItemsVisible1 ? "product-card-show" : "product-card-hide"
-              }`}
-            >
-              <div className="product-card-information">
-                <img
-                  src={ImgDetailLays}
-                  alt="ImgDetailLays"
-                  className="product-image"
-                />
-                <div className="product-info">
-                  <h2 className="product-name">
-                    Snack Lays khoai tây tươi giòn rụm số 1 thế giới
-                  </h2>
-                  <p className="product-weight">500g</p>
-                  <p className="product-price">1.29$</p>
-                </div>
-                <div className="quantity-control">
-                  <button className="quantity-btn">
-                    <img src={IconMinus} alt="IconMinus" className="ic_24" />
-                  </button>
-                  <span className="quantity">1</span>
-                  <button className="quantity-btn">
-                    <img src={IconAdd} alt="IconAdd" className="ic_24" />
-                  </button>
-                </div>
-              </div>
-              <div className="product-card-line"></div>
-              <div className="product-card-information">
-                <img
-                  src={ImgDetailMax}
-                  alt="ImgDetailMax"
-                  className="product-image1"
-                />
-                <div className="product-info1">
-                  <h2 className="product-name1">
-                    Snack Lays khoai tây tươi giòn rụm số 1 thế giới
-                  </h2>
-                  <p className="product-weight1">500g</p>
-                  <p className="product-price1">1.29$</p>
-                </div>
-                <div className="quantity-control1">
-                  <button className="quantity-btn1">
-                    <img src={IconMinus} alt="IconMinus" className="ic_24" />
-                  </button>
-                  <span className="quantity1">99+</span>
-                  <button className="quantity-btn1">
-                    <img src={IconAdd} alt="IconAdd" className="ic_24" />
-                  </button>
-                </div>
-              </div>
-              <div className="product-card-line"></div>
-              <div className="product-card-seemore">
-                <span>See more...</span>
-              </div>
-            </div>
+            {paymentState?.data?.map((item: any) => (
+              <PaymentItem
+                item={item}
+                onUpdateAmount={(id: string, newAmount: number) =>
+                  handleUpdatePrice(id, newAmount)
+                }
+              />
+            ))}
           </div>
         </div>
 
