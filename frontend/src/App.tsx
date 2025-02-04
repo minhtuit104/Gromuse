@@ -1,11 +1,57 @@
 // import HomePage from "./pages/HomePage/HomePage";
-import PaymentPage from "./pages/PaymentPages";
+import "react-toastify/dist/ReactToastify.css";
+import { Routes } from "react-router-dom";
+import { Route } from "react-router-dom";
+import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
+import { AuthRoute, PrivateRoute } from "./router/protectRouter";
+import HomePage from "./pages/HomePage/HomePage";
+import { ToastContainer } from "react-toastify";
 
 function App() {
   return (
     <>
-      {/* <HomePage /> */}
-      <PaymentPage />
+      <div className="App">
+        <Routes>
+          {/* khi đã đăng nhập thì không đueọc vào trang Login */}
+          <Route
+            path="/login"
+            element={
+              <AuthRoute>
+                <SignUpLogInForm />
+              </AuthRoute>
+            }
+          />
+          {/* Chỉ có thể vào trang feed nếu đã đăng nhập */}
+          <Route
+            path="/home"
+            element={
+              <PrivateRoute>
+                <HomePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <HomePage />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </>
   );
 }
