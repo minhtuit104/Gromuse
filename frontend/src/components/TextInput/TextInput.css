@@ -1,0 +1,48 @@
+@import url(../../assets/css/styles.css);
+.text-input {
+  gap: 8px;
+  width: 100%;
+}
+.input {
+  border-color: var(--mint600) !important;
+  border-width: 3px;
+  border-radius: 16px;
+}
+.input_error {
+  border-color: var(--red500) !important;
+  background-color: var(--red100) !important;
+}
+.input_disabled {
+  border-color: var(--white400) !important;
+  background-color: var(--white100) !important;
+}
+.input .ant-input {
+  font-weight: 500;
+  color: var(--white800);
+  font-size: 24;
+}
+
+/* Style cho placeholder */
+.input .ant-input::placeholder {
+  font-weight: 500;
+  color: var(--white300);
+  font-size: 24;
+}
+.label {
+  font-weight: 700;
+  color: var(--white800);
+  font-size: 24;
+}
+.label_require {
+  color: var(--red500);
+}
+.message {
+  font-weight: 500;
+  color: var(--white500);
+  font-size: 24;
+}
+.error {
+  font-weight: 500;
+  color: var(--red500);
+  font-size: 24;
+}

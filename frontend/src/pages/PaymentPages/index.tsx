@@ -5,6 +5,13 @@ import usePayment from "./usePayment";
 import PaymentItem from "./paymentItem";
 import AddressPayment from "./addressPayment";
 import Header from "../../layouts/Header/Header";
+import TextInput from "../../components/TextInput/TextInput";
+import * as yup from "yup";
+import { Formik, FormikHelpers, FormikProps, FormikValues } from "formik";
+
+interface PaymentProps {
+  vourcher: string;
+}
 
 export const PaymentPage = () => {
   const [isItemsVisible1, setIsItemsVisible1] = useState(false);
@@ -15,6 +22,11 @@ export const PaymentPage = () => {
   const toggleItems1 = () => {
     setIsItemsVisible1(!isItemsVisible1);
   };
+
+  const schema = yup.object().shape({
+    vourcher: yup.string().required("Bắt buộc"),
+  });
+
   return (
     <div className="payment-page">
       <Header />
@@ -66,6 +78,30 @@ export const PaymentPage = () => {
               <input type="text" placeholder="Enter voucher code ..." />
               <button className="view-button">View</button>
             </div>
+            <Formik
+              initialValues={{ vourcher: "" }}
+              validationSchema={schema}
+              onSubmit={(values) => console.log("submit")}
+            >
+              {(formikProps: FormikProps<{ vourcher: string }>) => (
+                <TextInput
+                  label="Điền đi"
+                  required
+                  placeholder={"Enter voucher code ..."}
+                  prefix={<img src={IconVoucher} alt="" className="ic_40" />}
+                  suffix={<button className="view-button" onClick={() => formikProps.handleSubmit()}>View</button>}
+                  onChange={formikProps.handleChange("vourcher")}
+                  onBlur={formikProps.handleBlur("vourcher")}
+                  value={formikProps.values.vourcher}
+                  error={
+                    formikProps.touched.vourcher
+                      ? formikProps.errors.vourcher ?? ""
+                      : ""
+                  }
+                />
+              )}
+            </Formik>
+
             <div className="voucher">
               <span>Vourcher code is invalid!</span>
             </div>
