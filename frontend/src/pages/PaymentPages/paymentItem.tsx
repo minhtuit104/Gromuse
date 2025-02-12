@@ -26,14 +26,24 @@ export interface Shop {
 
 interface PaymentItemProps {
   item: Shop;
+  isExpandable: boolean;
   onUpdateAmount: (id: string, amount: number) => void;
 }
 
-export const PaymentItem = ({ item, onUpdateAmount }: PaymentItemProps) => {
-  const [isItemsVisible, setIsItemsVisible] = useState(false);
-  const [showSeeMore, setShowSeeMore] = useState(false);
+export const PaymentItem = ({
+  item,
+  isExpandable,
+  onUpdateAmount,
+}: PaymentItemProps) => {
+  const [isItemsVisible, setIsItemsVisible] = useState(false); // Điều khiển mở/đóng danh sách sản phẩm
+  const [visibleItems, setVisibleItems] = useState(2); // Số lượng sản phẩm hiển thị
+
   const toggleItems = () => {
     setIsItemsVisible(!isItemsVisible);
+  };
+
+  const handleSeeMore = () => {
+    setVisibleItems((prev) => Math.min(prev + 3, item.products.length)); // Tăng thêm 3 sản phẩm (tối đa là tổng sản phẩm)
   };
 
   return (
@@ -61,35 +71,56 @@ export const PaymentItem = ({ item, onUpdateAmount }: PaymentItemProps) => {
           isItemsVisible ? "product-card-show" : "product-card-hide"
         }`}
       >
-        {item?.products?.map((product: Product, index: number) => (
-          <>
-            <div key={product.id} className="product-card-information">
-              <img
-                src={ImgDetailLays}
-                alt="ImgDetailLays"
-                className="product-image"
-              />
-              <div className="product-info">
-                <h2 className="product-name">{product?.name}</h2>
-                <p className="product-weight">{product?.weight + "g"}</p>
-                <p className="product-price">{product?.price + "$"}</p>
+        {item?.products
+          ?.slice(0, visibleItems)
+          ?.map((product: Product, index: number) => (
+            <React.Fragment key={`product.id ${index}`}>
+              <div
+                key={`product.id ${index}`}
+                className="product-card-information"
+              >
+                <img
+                  src={product.img !== "string" ? product.img : ImgDetailLays}
+                  alt={product.name}
+                  className="product-image"
+                />
+                <div className="product-info">
+                  <h2 className="product-name">{product?.title}</h2>
+                  <p className="product-weight">{product?.weight + "g"}</p>
+                  <p className="product-price">{product?.price + "$"}</p>
+                </div>
+                <div className="quantity-control">
+                  <button
+                    className="quantity-btn"
+                    onClick={() =>
+                      onUpdateAmount(product.id, product.amount - 1)
+                    }
+                  >
+                    <img src={IconMinus} alt="IconMinus" className="ic_24" />
+                  </button>
+                  <span className="quantity">{product.amount}</span>
+                  <button
+                    className="quantity-btn"
+                    onClick={() =>
+                      onUpdateAmount(product.id, product.amount + 1)
+                    }
+                  >
+                    <img src={IconAdd} alt="IconAdd" className="ic_24" />
+                  </button>
+                </div>
               </div>
-              <div className="quantity-control">
-                <button className="quantity-btn">
-                  <img src={IconMinus} alt="IconMinus" className="ic_24" />
-                </button>
-                <span className="quantity">1</span>
-                <button className="quantity-btn">
-                  <img src={IconAdd} alt="IconAdd" className="ic_24" />
-                </button>
-              </div>
-            </div>
-            {index !== item?.products?.length - 1 ? <div className="product-card-line"></div> : null}
-          </>
-        ))}
-        {showSeeMore ? <div className="product-card-seemore">
-          <span>See more...</span>
-        </div> : null}
+              {index !== item?.products?.length - 1 ? (
+                <div className="product-card-line"></div>
+              ) : null}
+            </React.Fragment>
+          ))}
+        {isExpandable &&
+          visibleItems < item.products.length &&
+          isItemsVisible && (
+            <button className="see-more-btn" onClick={handleSeeMore}>
+              See more ...
+            </button>
+          )}
       </div>
     </div>
   );
