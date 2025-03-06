@@ -1,0 +1,926 @@
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import "./addProduct.css";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import Header from "../../layouts/Header/Header";
+import ImgAddImg from "../../assets/images/icons/ic_add_image.svg";
+import ImgColor from "../../assets/images/icons/ic_color.svg";
+import IcEye from "../../assets/images/icons/ic_eye.svg";
+import SwitchButton from "../../components/SwitchBtn/SwitchButton";
+import ProductCard from "./ProductCard/productCard";
+import TextInput from "../../components/TextInput/TextInput";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { DatePicker, Modal } from "antd";
+import { CalendarOutlined } from "@ant-design/icons";
+import moment from "moment";
+
+const loadSupabaseClient = async () => {
+  const module = await import("../../lib/supabaseClient");
+  return module.createSupabaseClient();
+};
+
+interface Product {
+  id: number;
+  name: string;
+  img: string;
+  tag: string;
+  weight: number;
+  price: number;
+  backgroundColor?: string;
+  active?: boolean;
+  category?: { id: string; name: string };
+  amount?: number;
+  discount?: number;
+  startDate?: string;
+  endDate?: string;
+  description?: string;
+}
+
+interface FormValues {
+  name: string;
+  price: string;
+  amount: string;
+  discount: string;
+  weight: string;
+  startDate: string;
+  endDate: string;
+  category: string;
+  tag: string;
+  backgroundColor: string;
+  description: string;
+  active: boolean;
+  img: string;
+}
+
+const AddProduct = () => {
+  const { id } = useParams<{ id: string }>(); // Lấy id từ URL params
+  const navigate = useNavigate(); // Để redirect sau khi edit/add thành công
+  const location = useLocation();
+  const isEditMode = !!id; // Kiểm tra xem có phải chế độ edit không
+
+  const formik = useFormik({
+    initialValues: {
+      name: "",
+      price: "",
+      amount: "",
+      discount: "",
+      weight: "",
+      startDate: "",
+      endDate: "",
+      category: "",
+      tag: "",
+      backgroundColor: "#FFFFFF",
+      description: "",
+      active: true,
+      img: "",
+    },
+    validationSchema: Yup.object({
+      name: Yup.string().required("Name is required"),
+      price: Yup.number().required("Price is required"),
+      amount: Yup.number().required("Amount is required"),
+      weight: Yup.number().required("Weight is required"),
+      category: Yup.string().required("Category is required"),
+    }),
+    onSubmit: (values: FormValues) => {
+      const productData = {
+        ...values,
+        weight: parseInt(values.weight, 10),
+        price: parseFloat(values.price),
+        amount: parseInt(values.amount, 10),
+        discount: parseInt(values.discount || "0", 10),
+        startDate: values.startDate
+          ? moment(values.startDate).toISOString()
+          : null,
+        endDate: values.endDate ? moment(values.endDate).toISOString() : null,
+      };
+      if (isEditMode) {
+        updateProduct(productData); // Gọi hàm cập nhật nếu là edit
+      } else {
+        addProductToAPI(productData); // Gọi hàm thêm mới nếu là add
+      }
+    },
+  });
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  useEffect(() => {
+    // Fetch tất cả sản phẩm cho danh sách hiển thị
+    fetch("http://localhost:3000/api/products")
+      .then((response) => response.json())
+      .then((data) => setProducts(data))
+      .catch((error) => console.error("Error fetching products:", error));
+
+    // Nếu là chế độ edit, fetch sản phẩm theo id
+    if (isEditMode && id) {
+      fetchProductById(parseInt(id, 10));
+    }
+  }, [id, isEditMode]);
+
+  const fetchProductById = async (productId: number) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/products/${productId}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch product");
+      const product = await response.json();
+
+      formik.setValues({
+        name: product.name,
+        price: product.price.toString(),
+        amount: product.amount.toString(),
+        discount: product.discount?.toString() || "",
+        weight: product.weight.toString(),
+        startDate: product.startDate
+          ? moment(product.startDate).format("YYYY-MM-DD")
+          : "",
+        endDate: product.endDate
+          ? moment(product.endDate).format("YYYY-MM-DD")
+          : "",
+        category: product.category?.name || "",
+        tag: product.tag || "",
+        backgroundColor: product.backgroundColor || "#FFFFFF",
+        description: product.description || "",
+        active: product.active || true,
+        img: product.img || "",
+      });
+      if (product.img) {
+        if (product.img.startsWith("http")) {
+          setImages([product.img]);
+        } else {
+          // Nếu `product.img` là đường dẫn trong Supabase (ví dụ: "public/some-image.jpg")
+          const supabase = await loadSupabaseClient();
+          const { data: publicUrlData } = supabase.storage
+            .from("ImgGromuse")
+            .getPublicUrl(product.img);
+          setImages([publicUrlData.publicUrl]); // Lấy URL công khai từ Supabase
+        }
+      } else {
+        setImages([]); // Reset nếu không có hình ảnh
+        const ImgPlaceholder =
+          "../../../assets/images/imagePNG/green-broccoli-levitating-white-background 1.png";
+        setImages([ImgPlaceholder]);
+      }
+    } catch (error: unknown) {
+      console.error("Error fetching product:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch product";
+      alert(`Error: ${errorMessage}`);
+    }
+  };
+
+  const addProductToAPI = async (productData: any) => {
+    setLoading(true);
+    console.log("Starting addProductToAPI with data:", productData);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.log("Request timed out after 10 seconds");
+        setLoading(false); // Reset loading khi timeout
+      }, 10000); // Timeout 10 giây
+
+      const response = await fetch("http://localhost:3000/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productData),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log("Response received:", response.status, response.statusText);
+
+      const responseData = await response.json().catch((err) => {
+        console.error("Failed to parse response JSON:", err);
+        return { message: "Invalid response from server" };
+      });
+
+      if (response.ok) {
+        console.log("Product added successfully:", responseData);
+        alert("Product added successfully!");
+        setProducts((prev) => [...prev, responseData]);
+        formik.resetForm();
+        setImages([]);
+      } else {
+        console.error("API error response:", responseData);
+        throw new Error(responseData.message || "Failed to add product");
+      }
+    } catch (error: unknown) {
+      console.error("Error in addProductToAPI:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch";
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      console.log("Resetting loading state...");
+      setLoading(false); // Luôn reset loading state
+    }
+  };
+
+  const updateProduct = async (productData: any) => {
+    setLoading(true);
+    console.log("Starting updateProduct with data:", productData);
+
+    try {
+      if (!id) throw new Error("No product ID provided for update");
+      const numericId = parseInt(id, 10);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.log("Request timed out after 10 seconds");
+        setLoading(false); // Reset loading khi timeout
+      }, 10000); // Timeout 10 giây
+
+      const response = await fetch(
+        `http://localhost:3000/api/products/${numericId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(productData),
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      console.log("Response received:", response.status, response.statusText);
+
+      const responseData = await response.json().catch((err) => {
+        console.error("Failed to parse response JSON:", err);
+        return { message: "Invalid response from server" };
+      });
+
+      if (response.ok) {
+        console.log("Product updated successfully:", responseData);
+        alert("Product updated successfully!");
+        setProducts((prev) =>
+          prev.map((p) => (p.id === numericId ? responseData : p))
+        );
+      } else {
+        console.error("API error response:", responseData);
+        throw new Error(responseData.message || "Failed to update product");
+      }
+    } catch (error: unknown) {
+      console.error("Error in updateProduct:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch";
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      console.log("Resetting loading state...");
+      setLoading(false); // Luôn reset loading state
+    }
+  };
+
+  const handleAddToCart = (productId: string) => {
+    fetch("http://localhost:3000/api/cart/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId, quantity: 1 }),
+    })
+      .then(async (response) => {
+        if (response.ok) {
+          alert("Product added to cart!");
+        } else {
+          const errorText = await response.text();
+          console.error("Error response:", errorText);
+          alert(
+            `Failed to add product to cart: ${errorText || "Failed to fetch"}`
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Fetch error:", error);
+        alert("Failed to add product to cart due to network error.");
+      });
+  };
+
+  const handleImageChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (event.target.files) {
+      // Convert FileList to Array and limit to 5 images
+      const newFiles = Array.from(event.target.files).slice(0, 5);
+
+      try {
+        const uploadPromises = newFiles.map(async (file) => {
+          // Kiểm tra loại file
+          if (!file.type.startsWith("image/")) {
+            alert("Vui lòng chọn các tệp hình ảnh");
+            return null;
+          }
+
+          // Khởi tạo Supabase client
+          const supabase = await import("../../lib/supabaseClient").then(
+            (module) => module.createSupabaseClient()
+          );
+
+          // Tạo tên file duy nhất
+          const fileExt = file.name.split(".").pop();
+          const fileName = `${Date.now()}_${Math.random()
+            .toString(36)
+            .substring(7)}.${fileExt}`;
+          const filePath = `public/${fileName}`;
+
+          // Upload file to Supabase Storage
+          const { data, error } = await supabase.storage
+            .from("ImgGromuse")
+            .upload(filePath, file, {
+              cacheControl: "3600",
+              upsert: true,
+            });
+
+          if (error) {
+            console.error("Upload error:", error);
+            return null;
+          }
+
+          // Lấy URL công khai của file từ Supabase
+          const { data: publicUrlData } = supabase.storage
+            .from("ImgGromuse")
+            .getPublicUrl(filePath);
+
+          return publicUrlData.publicUrl;
+        });
+
+        // Đợi tất cả các upload hoàn tất
+        const uploadedUrls = await Promise.all(uploadPromises);
+
+        // Lọc bỏ các URL null (upload thất bại)
+        const validUrls = uploadedUrls.filter((url) => url !== null);
+
+        // Cập nhật state images
+        setImages((prevImages) => {
+          // Giới hạn tổng số ảnh không quá 10
+          const combinedImages = [...prevImages, ...validUrls].slice(0, 10);
+          return combinedImages;
+        });
+
+        // Cập nhật formik
+        formik.setFieldValue("img", validUrls[0] || "");
+      } catch (error: any) {
+        console.error("Error uploading images:", error);
+        alert(`Lỗi tải ảnh: ${error.message || "Đã có lỗi xảy ra"}`);
+      }
+    }
+  };
+
+  const removeImage = (imageToRemove: string) => {
+    setImages((prevImages) =>
+      prevImages.filter((image) => image !== imageToRemove)
+    );
+
+    // Nếu ảnh bị xóa là ảnh chính (img trong formik)
+    if (formik.values.img === imageToRemove) {
+      formik.setFieldValue(
+        "img",
+        images.find((img) => img !== imageToRemove) || ""
+      );
+    }
+  };
+
+  const handlePreview = (image: string) => {
+    setPreviewImage(image);
+    setIsModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setPreviewImage(null);
+  };
+
+  const [formData, setFormData] = useState({
+    active: true,
+  });
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prevData) => ({ ...prevData, [field]: value }));
+  };
+
+  const sampleProduct: Product = {
+    id: isEditMode && id ? parseInt(id, 10) : 1,
+    name: formik.values.name || "Sample Product",
+    img: formik.values.img || "",
+    tag: formik.values.tag || "Eco-Friendly",
+    weight: parseInt(formik.values.weight || "0", 10),
+    price: parseFloat(formik.values.price || "0"),
+    amount: parseInt(formik.values.amount || "0", 10),
+    discount: parseInt(formik.values.discount || "0", 10),
+    backgroundColor: formik.values.backgroundColor || "#FFFFFF",
+    active: formik.values.active || true,
+    category: formik.values.category
+      ? { id: formik.values.category, name: formik.values.category }
+      : undefined,
+  };
+
+  const categoryMapping: Record<string, string> = {
+    "Vegetables (Rau củ)": "Vegetables",
+    "Fruits (Trái cây)": "Fruits",
+    "Meats & Seafood (Thịt & Hải sản)": "MeatsAndSeafood",
+    "Dairy & Eggs (Sữa & Trứng)": "DairyAndEggs",
+    "Milks & Drinks (Sữa & Đồ uống)": "MilksAndDrinks",
+    "Bakery & Snacks (Bánh & Đồ ăn vặt)": "BakeryAndSnacks",
+    "Grains & Cereals (Ngũ cốc & Gạo)": "GrainsAndCereals",
+    "Spices & Condiments (Gia vị & Nước sốt)": "SpicesAndCondiments",
+    "Frozen Foods (Thực phẩm đông lạnh)": "FrozenFoods",
+    "Organic & Healthy Foods (Thực phẩm hữu cơ & Tốt cho sức khỏe)":
+      "OrganicAndHealthyFoods",
+    "Canned & Preserved Foods (Thực phẩm đóng hộp & Bảo quản)":
+      "CannedAndPreservedFoods",
+    "Nuts & Seeds (Hạt & Đậu)": "NutsAndSeeds",
+    "Oils & Vinegars (Dầu ăn & Giấm)": "OilsAndVinegars",
+    "Ready-to-Eat Meals (Thực phẩm chế biến sẵn)": "ReadyToEatMeals",
+    "Beverages & Juices (Nước giải khát & Nước ép)": "BeveragesAndJuices",
+    "Herbs & Mushrooms (Thảo mộc & Nấm)": "HerbsAndMushrooms",
+  };
+
+  const categoryToTagMap: Record<string, string> = {
+    Vegetables: "🏷️ Local Market",
+    Fruits: "🏷️ Chemical Free",
+    MeatsAndSeafood: "🏷️ Premium Quality",
+    DairyAndEggs: "🏷️ Farm Fresh",
+    MilksAndDrinks: "🏷️ Energy Boost",
+    BakeryAndSnacks: "🏷️ In Store Delivery",
+    GrainsAndCereals: "🏷️ Whole Nutrition",
+    SpicesAndCondiments: "🏷️ Authentic Taste",
+    FrozenFoods: "🏷️ Quick & Easy",
+    OrganicAndHealthyFoods: "🏷️ Eco-Friendly",
+    CannedAndPreservedFoods: "🏷️ Long Shelf Life",
+    NutsAndSeeds: "🏷️ Superfood",
+    OilsAndVinegars: "🏷️ Cold Pressed",
+    ReadyToEatMeals: "🏷️ Convenience",
+    BeveragesAndJuices: "🏷️ Refreshing",
+    HerbsAndMushrooms: "🏷️ Medicinal Benefits",
+  };
+
+  const handleCategoryChange = (value: string) => {
+    const englishCategory = categoryMapping[value] || "";
+    console.log("Selected category:", englishCategory); // Debug
+    formik.setFieldValue("category", englishCategory);
+    formik.setFieldValue("tag", categoryToTagMap[englishCategory] || "");
+  };
+
+  const handleTextInputChange = (value: string, field: string) => {
+    if (field === "name") {
+      const lettersOnly = value.replace(/[^a-zA-Z\u00C0-\u1EF9\s]/g, "");
+      formik.setFieldValue(field, lettersOnly);
+    } else if (["price", "amount", "discount"].includes(field)) {
+      const numbersOnly = value.replace(/[^0-9]/g, "");
+      formik.setFieldValue(field, numbersOnly);
+    } else {
+      formik.setFieldValue(field, value);
+    }
+  };
+
+  const quillRef = useRef<ReactQuill>(null);
+
+  // Hàm upload hình ảnh (giữ nguyên như trước)
+  // const handleImageUpload = async (file: File): Promise<string> => {
+  //   try {
+  //     const supabase = await loadSupabaseClient();
+
+  //     const fileExt = file.name.split(".").pop();
+  //     const fileName = `${Date.now()}_${Math.random()
+  //       .toString(36)
+  //       .substring(7)}.${fileExt}`;
+  //     const filePath = `public/${fileName}`;
+
+  //     const { data, error } = await supabase.storage
+  //       .from("ImgGromuse")
+  //       .upload(filePath, file, {
+  //         cacheControl: "3600",
+  //         upsert: true,
+  //       });
+
+  //     if (error) {
+  //       throw new Error(`Upload failed: ${error.message || "Unknown error"}`);
+  //     }
+
+  //     const { data: publicUrlData } = supabase.storage
+  //       .from("ImgGromuse")
+  //       .getPublicUrl(filePath);
+
+  //     return publicUrlData.publicUrl;
+  //   } catch (error: any) {
+  //     console.error("Error uploading image:", error);
+  //     throw new Error(
+  //       `Failed to upload image: ${
+  //         error instanceof Error ? error.message : "Unknown error"
+  //       }`
+  //     );
+  //   }
+  // };
+
+  // Tùy chỉnh toolbar của ReactQuill để thêm nút upload hình ảnh
+  const modules = {
+    toolbar: {
+      container: [
+        [{ header: [1, 2, false] }],
+        ["bold", "italic", "underline", "strike", "blockquote"],
+        [{ script: "sub" }, { script: "super" }],
+        [{ color: [] }, { background: [] }],
+        [{ list: "ordered" }, { list: "bullet" }],
+        [{ indent: "-1" }, { indent: "+1" }],
+        [{ align: [] }],
+        ["link", "image", "video"],
+        ["clean"],
+      ],
+      // handlers: {
+      //   image: async () => {
+      //     const input = document.createElement("input");
+      //     input.setAttribute("type", "file");
+      //     input.setAttribute("accept", "image/*");
+      //     input.click();
+
+      //     input.onchange = async () => {
+      //       const file = input.files?.[0];
+      //       if (file) {
+      //         try {
+      //           const imageUrl = await handleImageUpload(file);
+      //           const quill = quillRef.current?.getEditor();
+      //           if (quill) {
+      //             const range = quill.getSelection(true) as RangeStatic; // Type assertion nếu cần
+      //             if (range) {
+      //               quill.insertEmbed(range.index, "image", imageUrl);
+      //               quill.setSelection({ index: range.index + 1, length: 0 }); // Truyền number trực tiếp
+      //             }
+      //           }
+      //         } catch (error: any) {
+      //           alert(
+      //             `Error uploading image: ${
+      //               error instanceof Error ? error.message : "Unknown error"
+      //             }`
+      //           );
+      //         }
+      //       }
+      //     };
+      //   },
+      // },
+    },
+  };
+
+  const formats = [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "blockquote",
+    "list",
+    "bullet",
+    "indent",
+    "align",
+    "link",
+    "image",
+    "video",
+    "color",
+    "background",
+  ];
+
+  return (
+    <div className="add-product">
+      <Header />
+      <div className="add-product-container">
+        <h1 className="add-product-header">
+          {isEditMode ? "Edit Product" : "Add New Product"}
+        </h1>
+        <div className="add-product-line"></div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            formik.handleSubmit(e); // Sử dụng formik.handleSubmit để xử lý validation
+          }}
+        >
+          <div className="form-grid">
+            {/* Name and Price */}
+            <div className="form-group-row">
+              <TextInput
+                label="Name"
+                required
+                placeholder="Enter name"
+                value={formik.values.name}
+                onChange={(value) => handleTextInputChange(value, "name")}
+                onBlur={formik.handleBlur}
+                error={
+                  formik.touched.name && formik.errors.name
+                    ? formik.errors.name
+                    : undefined
+                }
+              />
+              <TextInput
+                label="Price ($)"
+                required
+                placeholder="Enter price"
+                value={formik.values.price}
+                onChange={(value) => handleTextInputChange(value, "price")}
+                onBlur={formik.handleBlur}
+                error={
+                  formik.touched.price && formik.errors.price
+                    ? formik.errors.price
+                    : undefined
+                }
+              />
+            </div>
+
+            {/* Amount and Weight */}
+            <div className="form-group-row">
+              <TextInput
+                label="Amount"
+                required
+                placeholder="Enter amount"
+                value={formik.values.amount}
+                onChange={(value) => formik.setFieldValue("amount", value)}
+                onBlur={formik.handleBlur}
+                error={
+                  formik.touched.amount && formik.errors.amount
+                    ? formik.errors.amount
+                    : undefined
+                }
+              />
+              <TextInput
+                label="Weight (g)"
+                required
+                placeholder="Enter weight"
+                value={formik.values.weight}
+                onChange={(value) => formik.setFieldValue("weight", value)}
+                onBlur={formik.handleBlur}
+                error={
+                  formik.touched.weight && formik.errors.weight
+                    ? formik.errors.weight
+                    : undefined
+                }
+              />
+            </div>
+
+            {/* Discount and Dates */}
+            <div className="form-group-row">
+              <TextInput
+                label="Discount (%)"
+                placeholder="Enter discount"
+                value={formik.values.discount}
+                onChange={(value) => formik.setFieldValue("discount", value)}
+              />
+              <div className="form-group add-product-date">
+                <div className="date-picker-wrapper">
+                  <label className="form-label">Start Date</label>
+                  <DatePicker
+                    placeholder="Select start date"
+                    value={
+                      formik.values.startDate
+                        ? moment(formik.values.startDate)
+                        : null
+                    }
+                    onChange={(date, dateString) =>
+                      formik.setFieldValue("startDate", dateString)
+                    }
+                    suffixIcon={<CalendarOutlined />}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+
+                <div className="date-picker-wrapper">
+                  <label className="form-label">End Date</label>
+                  <DatePicker
+                    placeholder="Select end date"
+                    value={
+                      formik.values.endDate
+                        ? moment(formik.values.endDate)
+                        : null
+                    }
+                    onChange={(date, dateString) =>
+                      formik.setFieldValue("endDate", dateString)
+                    }
+                    suffixIcon={<CalendarOutlined />}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Category, Tag, and Background Color */}
+            <div className="form-group-row four-div">
+              <div className="form-group-row three-div">
+                <div className="image-upload-container">
+                  <label className="form-label">
+                    Image <span className="required-asterisk">*</span>
+                  </label>
+                  <div className="image-list">
+                    {images.map((image, index) => (
+                      <div key={index} className="image-preview">
+                        <img
+                          src={image}
+                          alt={`Preview ${index}`}
+                          className="preview-image"
+                        />
+                        <div
+                          className="remove-image"
+                          onClick={() => removeImage(image)}
+                        >
+                          ×
+                        </div>
+                        <div
+                          className="image-hover"
+                          onClick={() => handlePreview(image)}
+                        >
+                          <img src={IcEye} alt="View" className="ic_20" />
+                        </div>
+                      </div>
+                    ))}
+                    {images.length < 10 && (
+                      <div
+                        className="image-icon"
+                        onClick={() =>
+                          document.getElementById("file-input")?.click()
+                        }
+                      >
+                        <img src={ImgAddImg} alt="Add Icon" className="ic_28" />
+                      </div>
+                    )}
+                  </div>
+
+                  <input
+                    id="file-input"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={handleImageChange}
+                  />
+
+                  <Modal
+                    open={isModalVisible}
+                    onCancel={closeModal}
+                    footer={null}
+                    centered
+                    styles={{
+                      body: {
+                        padding: 0,
+                        textAlign: "center",
+                      },
+                    }}
+                  >
+                    {previewImage && (
+                      <img
+                        src={previewImage}
+                        alt="Preview"
+                        className="modal-preview-image"
+                      />
+                    )}
+                  </Modal>
+                </div>
+
+                <div className="form-category">
+                  <label className="form-label">
+                    Category <span className="required-asterisk">*</span>
+                  </label>
+                  <select
+                    name="category"
+                    value={
+                      formik.values.category
+                        ? Object.keys(categoryMapping).find(
+                            (key) =>
+                              categoryMapping[key] === formik.values.category
+                          ) || ""
+                        : ""
+                    }
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="select-field"
+                    required
+                  >
+                    <option value="">Select category</option>
+                    {Object.keys(categoryMapping).map((key) => (
+                      <option key={key} value={key}>
+                        {key}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <TextInput
+                  label="Tag"
+                  placeholder=""
+                  value={formik.values.tag}
+                  disabled
+                />
+
+                <div className="color-picker-wrapper">
+                  <label className="form-label">Background color</label>
+                  <div className="color-input-wrapper">
+                    <input
+                      type="text"
+                      name="backgroundColor"
+                      value={formik.values.backgroundColor}
+                      onChange={(e) =>
+                        formik.setFieldValue("backgroundColor", e.target.value)
+                      }
+                      placeholder="#FFFFFF"
+                      className="text-input color-text-input"
+                    />
+                    <img
+                      src={ImgColor}
+                      alt="Color Picker"
+                      className="color-picker-icon"
+                      onClick={() =>
+                        document.getElementById("colorPicker")?.click()
+                      }
+                    />
+                    <input
+                      type="color"
+                      name="colorPicker"
+                      value={formik.values.backgroundColor}
+                      onChange={(e) =>
+                        formik.setFieldValue("backgroundColor", e.target.value)
+                      }
+                      className="color-picker-hidden"
+                      id="colorPicker"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="product-preview">
+                <div className="product-label-preview">
+                  <label className="form-label">Preview</label>
+                </div>
+                <div className="product-preview-text">
+                  <p className="text-p">
+                    The item will be displayed outside the homepage.
+                  </p>
+                </div>
+                <div className="product-preview-image">
+                  <ProductCard
+                    product={sampleProduct}
+                    onAddToCart={(id) => handleAddToCart(id)}
+                    style={{
+                      backgroundColor: formik.values.backgroundColor,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="form-group mt-4">
+              <label className="form-label">
+                Description <span className="required-asterisk">*</span>
+              </label>
+              <ReactQuill
+                ref={quillRef}
+                value={formik.values.description || ""} // Đảm bảo giá trị không undefined
+                onChange={(value: string) =>
+                  formik.setFieldValue("description", value)
+                }
+                theme="snow"
+                placeholder="Enter description"
+                modules={modules}
+                formats={formats}
+              />
+            </div>
+
+            {/* Active Toggle */}
+            <div className="checkbox-container">
+              <SwitchButton
+                label="Active"
+                checked={formData.active}
+                onChange={(checked) => handleInputChange("active", checked)}
+                onColor="#4CAF50"
+                offColor="#D9534F"
+                height={20}
+                width={48}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="action-buttons">
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() =>
+                  navigate(isEditMode ? `/add_product/${id}` : "/add_product")
+                }
+              >
+                Cancel
+              </button>
+              <button type="submit" className="add-button" disabled={loading}>
+                {loading
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Adding..."
+                  : isEditMode
+                  ? "Update"
+                  : "Add"}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AddProduct;

@@ -14,9 +14,10 @@ interface TextInputProps {
   messageStyle?: string;
   error?: string;
   disabled?: boolean;
-  value?: string; // ✅ Nhận giá trị từ Formik
-  onChange?: (value: string) => void; // ✅ Để Formik có thể kiểm soát input
-  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void; // ✅ Để Formik cập nhật trạng thái touched
+  value?: string; // Nhận giá trị từ Formik
+  onChange?: (value: string) => void; // Để Formik có thể kiểm soát input
+  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void; // Để Formik cập nhật trạng thái touched
+  type?: string;
 }
 
 const TextInput = ({
@@ -35,6 +36,7 @@ const TextInput = ({
   value = "",
   onBlur,
   disabled,
+  type,
 }: TextInputProps) => {
   const renderMessage = useMemo(() => {
     if (!!error) {
@@ -61,9 +63,9 @@ const TextInput = ({
         placeholder={placeholder}
         prefix={prefix}
         suffix={suffix}
-        value={value} // ✅ Truyền giá trị từ Formik vào Input
-        onChange={(e) => onChange?.(e.target.value)} // ✅ Truyền event từ Formik
-        onBlur={onBlur} // ✅ Cập nhật trạng thái touched của Formik
+        value={value} // Truyền giá trị từ Formik vào Input
+        onChange={(e) => onChange?.(e.target.value)} // Truyền event từ Formik
+        onBlur={onBlur} // Cập nhật trạng thái touched của Formik
       />
       {renderMessage}
     </div>

@@ -3,7 +3,7 @@ import { IsEmail, IsNotEmpty } from "class-validator";
 
 export class CreateAccountDto {
 
-    @ApiProperty()
+    @ApiProperty() //Được sử dụng để tạo tài liệu API tự động với Swagger.
     @IsNotEmpty({message: 'idUser không được để trống'})
     idUser: number;
 

@@ -7,7 +7,7 @@
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
     position: relative;
-    border-bottom-left-radius: 37% 11%; /* Độ bo góc ở góc dưới trái */
+    border-bottom-left-radius: 37% 11%; 
     border-bottom-right-radius: 37% 11%;
     overflow: hidden;
 }

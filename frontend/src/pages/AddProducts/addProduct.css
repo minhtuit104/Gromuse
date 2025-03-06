@@ -1,0 +1,401 @@
+@import url(../../assets/css/styles.css);
+
+.add-product {
+    background-color: var(--white100);
+    height: 100vh;
+    overflow-y: auto;
+    width: 100%;
+    display: flex;
+    justify-content: center; 
+    flex-wrap: wrap;
+}
+
+.add-product-container {
+    width: 94%;
+    height: auto;
+    padding: 24px;
+    background-color: var(--white50);
+    border-radius: 10px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+  
+.add-product-header {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--green800);
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.add-product-line {
+    width: 100%;
+    height: 1.5px;
+    background-color: var(--white300);
+    margin-bottom: 15px;
+}
+
+input.ant-input.ant-input-lg.css-dev-only-do-not-override-1v613y0.ant-input-outlined.input.undefined {
+    border: 2px solid var(--white200) !important; 
+    transition: border-color 0.3s ease !important; 
+    border-radius: 10px !important; 
+}
+  
+input.ant-input.ant-input-lg.css-dev-only-do-not-override-1v613y0.ant-input-outlined.input.undefined:focus {
+    border-color: var(--green600) !important; 
+    outline: none !important; 
+}
+  
+.text-input.undefined {
+    gap: 5px !important;
+}
+  
+.form-grid {
+    display: flex;
+    flex-direction: column; 
+}
+
+.form-group-row {
+    display: flex;
+    gap: 40px;
+}
+
+.date-picker-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    gap: 5px;
+}
+  
+.ant-picker {
+    width: 100% !important; 
+    height: 42px !important;
+    border-radius: 10px; 
+    border: 2px solid var(--white200); 
+}
+  
+.ant-picker:hover,
+.ant-picker-focused {
+    border-color: var(--green600) !important; 
+}
+  
+.form-grid .form-group {
+    width: 100%;
+}
+  
+.form-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--white800);
+}
+
+.form-label-tag {
+    gap: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.tag-will {
+    color: var(--white500);
+}
+
+.form-label-tag .input-field {
+    width: 100%;
+    background-color: var(--white100);
+}
+
+.add-product-date {
+    gap: 25px !important;
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+.add-product-start {
+    gap: 4px;
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+}
+
+.add-product-end {
+    gap: 4px;
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group-row.four-div {
+    gap: 40px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.form-category {
+    display: flex;
+    gap: 4px;
+    flex-direction: column;
+}
+
+.form-group-row.three-div {
+    gap: 10px;
+    width: 50%;
+    display: flex !important;
+    flex-direction: column !important;
+}
+  
+.input-field,
+.textarea-field,
+.select-field {
+    padding: 0.75rem;
+    border: 1px solid var(--white200);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--white900); 
+    outline: none;
+}
+
+.input-field::placeholder,
+.textarea-field::placeholder,
+.select-field::placeholder {
+    color: var(--white400); 
+    font-size: 1rem;
+    transition: color 0.2s ease; 
+}
+
+.input-field:focus,
+.textarea-field:focus,
+.select-field:focus {
+    border-color: var(--green600);
+}
+  
+.textarea-field {
+    resize: none;
+}
+
+.color-picker-hidden {
+    display: none;
+}
+
+input.text-input.color-text-input {
+    border: 1px solid var(--white200);
+    border-radius: 8px;
+    width: 100%;
+    height: 42px;
+}
+
+.color-input-wrapper .color-text-input {
+    padding-left: 15px;
+}
+
+.color-picker-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.color-picker-icon {
+    position: absolute;
+    right: 10px;
+    top: 55%;
+    transform: translateY(-50%);
+    width: 28px; 
+    height: 28px;
+    cursor: pointer;
+}
+
+.product-preview {
+    width: 50%;
+    gap: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.mt-4 {
+    width: 100%;
+}
+
+.image-list {
+    margin-top: 8px;
+    gap: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.image-preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+  
+.image-preview {
+    position: relative;
+    cursor: pointer;
+    width: 80px;
+    height: 80px;
+    border: 1px solid var(--white200);
+    transition: transform 0.3s ease;
+    border-radius: 25px;
+    overflow: hidden;
+}
+
+.image-preview:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+  
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-hover {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+  
+.image-preview:hover .image-hover {
+    opacity: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-hover img.ic_20 {
+    width: 20px; 
+    height: 20px; 
+    filter: invert(1); 
+}
+
+.modal-preview-image {
+    width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 10px;
+  }
+
+.image-icon {
+    width: 80px;
+    height: 80px;
+    border: 2px dashed var(--white400);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+#file-input {
+    display: none; 
+}
+  
+.image-icon:hover {
+    border-color: var(--green800);
+    background-color: var(--white50);
+}
+  
+.input-field[type="file"] {
+    margin-top: 10px;
+}
+  
+.add-product-date {
+    display: flex;
+    gap: 20px;
+}
+  
+.add-product-start,
+.add-product-end {
+    flex: 1;
+}
+
+select.select-field {
+    width: 100%;
+}
+
+.quill {
+    margin-top: 10px;
+}
+
+.ql-editor.ql-blank {
+    height: auto;
+}
+
+.checkbox-container {
+    margin-top: 15px;
+    width: 10%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+  
+.checkbox-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--white700);
+}
+  
+.checkbox-input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+  
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+  
+.cancel-button {
+    width: 100px;
+    height: 40px;
+    background-color: var(--white50);
+    border: 1px solid var(--green800);
+    border-radius: 32px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--green800);
+}
+  
+.cancel-button:hover {
+    background-color: var(--white50) !important;
+    color: var(--green800) !important;
+    border-color: var(--green800) !important;
+}
+  
+.add-button {
+    width: 100px;
+    height: 40px;
+    background-color: var(--lime300);
+    border: 1px solid var(--white50);
+    border-radius: 32px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--green800);
+}
+  
+.add-button:hover {
+    background-color: var(--lime300) !important;
+    color: var(--green800) !important;
+    border-color: var(--lime300) !important;
+}
+.required-asterisk {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--red600);
+}
+
+  

@@ -13,66 +13,67 @@ import { JwtService } from '@nestjs/jwt';
 export class AuthService{
 
     constructor(
-        @InjectRepository(User) private userRepository: Repository<User>,
-        @InjectRepository(Account) private accountReponsetory: Repository<Account>,
-        private jwtService: JwtService,
-    ){}
+        @InjectRepository(User) private userRepository: Repository<User>, 
+        @InjectRepository(Account) private accountReponsetory: Repository<Account>, 
+        private jwtService: JwtService, 
+    ){}  
 
-    async register(createUserDto: CreateUserDto){
-        //kiểm tra xem idUser đã tồn tại hay chưa
-        
-        const findUserByEmail = await this.userRepository.findOne({
-            where:
-                {email: createUserDto.email},
-            });
-        //kiểm tra
+    async register(createUserDto: CreateUserDto){  
+ 
+        //kiểm tra xem idUser đã tồn tại hay chưa  
+        const findUserByEmail = await this.userRepository.findOne({ 
+            where:  
+                {email: createUserDto.email},   
+            }); 
+ 
+        //kiểm tra 
         if(findUserByEmail){
-            throw new HttpException('Email đã tồn tại', 400);
-        }else{
+            throw new HttpException('Email đã tồn tại', 400);   
+        }else{  
+
             //tạo ra một đối tượng user
             const newUser: CreateUserDto = {
                 
-                name: createUserDto.name,
-                email: createUserDto.email,
-                birthday: createUserDto.birthday,
-                avarta: createUserDto.avarta,
-                password: createUserDto.password,
-                phoneNumber: createUserDto.phoneNumber,
+                name: createUserDto.name, 
+                email: createUserDto.email, 
+                birthday: createUserDto.birthday, 
+                avarta: createUserDto.avarta, 
+                password: createUserDto.password, 
+                phoneNumber: createUserDto.phoneNumber, 
                 address: createUserDto.address,
-                sex: createUserDto.sex
+                sex: createUserDto.sex 
             }
+
             //khởi tạo newInstance
-            const newUserInstance = await this.userRepository.save(newUser);
+            const newUserInstance = await this.userRepository.save(newUser); 
 
-            const newAccount =this.accountReponsetory.create({
-                idUser: newUserInstance.idUser,
-                email: createUserDto.email,
-                phoneNumber: createUserDto.phoneNumber,
-                password: createUserDto.password,
-                refreshToken: ""
-                
-            });
-
-            return await this.accountReponsetory.save(newAccount);
+            const newAccount =this.accountReponsetory.create({ 
+                idUser: newUserInstance.idUser, 
+                email: createUserDto.email, 
+                phoneNumber: createUserDto.phoneNumber,  
+                password: createUserDto.password, 
+                refreshToken: "" 
+            }); 
+            return await this.accountReponsetory.save(newAccount); 
         }
-
+ 
     }
 
-    async login(loginDto: LoginDto) {
+    async login(loginDto: LoginDto) { 
 
-        const findUserByEmail = await this.accountReponsetory.findOne({ 
+        const findUserByEmail = await this.accountReponsetory.findOne({  
             where: [
-                { email: loginDto.identifier }, // tìm kiếm teo cột email
-                { phoneNumber: loginDto.identifier}, // tìm kiếm thao cột số đt
+                { email: loginDto.identifier }, // tìm kiếm teo cột email 
+                { phoneNumber: loginDto.identifier}, // tìm kiếm thao cột số đt  
             ] });
         if (!findUserByEmail) {
-            throw new HttpException("Tài khoản chưa được đăng ký", HttpStatus.BAD_REQUEST);
-        }
-
-        const isPasswordValid = await bcrypt.compare(loginDto.password, findUserByEmail.password);
-        if (!isPasswordValid) {
-            throw new HttpException('Mật khẩu không chính xác!', HttpStatus.BAD_REQUEST);
-        }
+            throw new HttpException("Tài khoản chưa được đăng ký", HttpStatus.BAD_REQUEST); 
+        } 
+  
+        const isPasswordValid = await bcrypt.compare(loginDto.password, findUserByEmail.password); 
+        if (!isPasswordValid) {  
+            throw new HttpException('Mật khẩu không chính xác!', HttpStatus.BAD_REQUEST); 
+        } 
 
         const payload = {
             idAccount: findUserByEmail.idAccount,

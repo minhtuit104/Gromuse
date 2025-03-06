@@ -1,4 +1,3 @@
-// import HomePage from "./pages/HomePage/HomePage";
 import "react-toastify/dist/ReactToastify.css";
 import { Routes, Route } from "react-router-dom";
 import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
@@ -6,6 +5,7 @@ import { AuthRoute, PrivateRoute } from "./router/protectRouter";
 import HomePage from "./pages/HomePage/HomePage";
 import { ToastContainer } from "react-toastify";
 import { PaymentPage } from "./pages/PaymentPages/index";
+import AddProduct from "./pages/AddProducts/addProduct";
 
 function App() {
   return (
@@ -44,6 +44,23 @@ function App() {
             element={
               <PrivateRoute>
                 <PaymentPage />
+              </PrivateRoute>
+            }
+          />
+          {/* Thêm tuyến đường cho trang AddProduct và EditProduct */}
+          <Route
+            path="/add_product"
+            element={
+              <PrivateRoute>
+                <AddProduct />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/add_product/:id"
+            element={
+              <PrivateRoute>
+                <AddProduct />
               </PrivateRoute>
             }
           />

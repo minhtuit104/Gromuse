@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail, IsNotEmpty } from "class-validator";
 
-export class UpdateAccountDto {
+export class UpdateAccountDto { 
     @ApiProperty()
     @IsNotEmpty({message: 'email không được để trống'})
     @IsEmail({}, {message: 'email không đúng định dạng'})

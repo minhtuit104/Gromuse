@@ -49,7 +49,7 @@ export const PaymentPage = () => {
   };
 
   const schema = yup.object().shape({
-    vourcher: yup.string().required("Bắt buộc"),
+    vourcher: yup.string().required("Vourcher code is invalid!"),
   });
 
   return (
@@ -99,7 +99,6 @@ export const PaymentPage = () => {
             >
               {(formikProps: FormikProps<{ vourcher: string }>) => (
                 <TextInput
-                  label="Voucher"
                   required
                   placeholder={"Enter voucher code ..."}
                   prefix={

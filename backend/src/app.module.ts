@@ -2,11 +2,16 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './typeorm/entities/User';
+import { User } from './typeorm/entities/User'; 
+import { Account } from './typeorm/entities/Account'; 
+import { Product } from './typeorm/entities/Product'; 
+import { Category } from './typeorm/entities/Category';
+import { CartItem } from './typeorm/entities/Cart'; 
 import { UserModule } from './modules/users/user.module';
-import { Account } from './typeorm/entities/Account';
 import { AccountModule } from './modules/account/account.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProductsModule } from './products/products.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -18,12 +23,14 @@ import { AuthModule } from './modules/auth/auth.module';
       host: "localhost",
       type: "mysql",
       autoLoadEntities: true,
-      entities: [User, Account],
+      entities: [User, Account, Product, CartItem, Category],
       synchronize: true,
     }),
     AuthModule,
     UserModule,
-    AccountModule   
+    AccountModule,
+    ProductsModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

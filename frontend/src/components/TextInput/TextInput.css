@@ -9,7 +9,7 @@
 .input {
   border-color: var(--mint600) !important;
   border-width: 3px;
-  border-radius: 16px;
+  border-radius: 32px;
 }
 .input_error {
   border-color: var(--red500) !important;

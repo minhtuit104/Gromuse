@@ -64,6 +64,7 @@ const ModalVoucher: React.FC<ModalVoucherProps> = ({ open, setOpen }) => {
         <h3>Discount code</h3>
         <div className="voucher-list">{renderVoucherList("Discount")}</div>
       </div>
+      <div className="voucher-line"></div>
     </Modal>
   );
 };

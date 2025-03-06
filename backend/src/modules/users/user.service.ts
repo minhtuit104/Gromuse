@@ -12,19 +12,19 @@ export class UserService{
 
     async findAll(){
         return await this.userRepository.find();
-    }
+    } 
 
     async findOne(id: number){
         return await this.userRepository.findOne({where: {idUser: id } });
     }
 
-    async remove(id: number){
+    async remove(id: number){ 
         //tìm kiếm theo id
-        const findUser = await this.findOne(id);
+        const findUser = await this.findOne(id); 
         if(findUser){
             return this.userRepository.remove(findUser);
         }
-    }
+    } 
 
     async create(createUserDto: CreateUserDto){
         const newUser = {
@@ -53,7 +53,7 @@ export class UserService{
             return this.userRepository.save(findUser);
         }
     }
-
+    
     //hàm cập nhật avatar
     async updateAvatar(id: number, updateAvatarDto: UpdateAvatarDto){
         const findUser = await this.findOne(id);

@@ -8,12 +8,12 @@ export class Account{
     @PrimaryGeneratedColumn({type: 'int'})
     idAccount: number;
     
-    @OneToOne(() => User, user => user.accounts)
+    @OneToOne(() => User, user => user.accounts) 
     @JoinColumn({ name: 'idUser' })
     user: User;
-
+ 
     @Column({type: 'int'})
-    idUser: number;
+    idUser: number; 
 
     @Column({type: 'varchar', length: 200, unique: true})
     email: string;
@@ -24,7 +24,7 @@ export class Account{
     @Column({type: 'varchar', length: 200})
     password: string;
 
-    @Column({type: 'varchar', length: 300})
+    @Column({type: 'varchar', length: 300}) 
     refreshToken: string;
 
     @Column({type: 'int', default: '1' })
@@ -33,7 +33,6 @@ export class Account{
     @BeforeInsert()
     hashPassword(){
         const salt = bcrypt.genSaltSync(10);
-        //gán lại giá trị mật khẩu mã hóa cho trường password trc khi lưu vào db
         this.password = bcrypt.hashSync(this.password, salt);
     }
 }

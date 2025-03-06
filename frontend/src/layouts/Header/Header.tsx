@@ -25,7 +25,6 @@ function Header() {
         <img src={IconSearch} alt="icon-search" className="ic_32" />
       </div>
       <div className="header-right">
-        {/* Thêm sự kiện click để chuyển đến trang PaymentPage */}
         <div className="header-right-cart" onClick={goToPaymentPage}>
           <img src={IconCart} alt="icon-cart" className="ic_24" />
           <span className="quantity">9+</span>

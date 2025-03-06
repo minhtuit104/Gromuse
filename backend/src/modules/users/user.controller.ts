@@ -7,16 +7,16 @@ import { ApiTags } from "@nestjs/swagger";
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/jwtAuthGuard/jwtAuthGuard";
 
-@ApiBearerAuth()
+@ApiBearerAuth() 
 @ApiTags('Users')
 @Controller('api/v1/users')
 export class UserController{
-
+ 
     //khởi tạo controctor cho userService
     constructor(private userService: UserService) {}
 
     @Get()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard) 
     async findAll(@Response() res){
         const users = await this.userService.findAll();
         return res.status(200).json({

@@ -5,17 +5,17 @@ import { Account } from "./Account";
 export class User{
     @PrimaryGeneratedColumn({type: 'int'})
     idUser: number;
-
+ 
     @Column({type: 'varchar', length: 200})
     name: string;
-
+ 
     @Column({type: 'varchar', length: 200, unique: true})
     email: string;
 
-    @Column({nullable: true, type: 'varchar'})
+    @Column({nullable: true, type: 'varchar'}) 
     birthday: string;
 
-    @Column({type: 'varchar', length: 200, default: null})
+    @Column({type: 'varchar', length: 200, default: null}) 
     avarta: string;
 
     @Column({type: 'varchar', length: 15, unique: true})
