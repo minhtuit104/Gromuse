@@ -4,6 +4,7 @@ import "./TextInput.css";
 interface TextInputProps {
   label?: string;
   labelStyle?: string;
+  type?: string
   required?: boolean;
   placeholder?: string;
   wrapperStyle?: string;
@@ -21,6 +22,7 @@ interface TextInputProps {
 
 const TextInput = ({
   label,
+  type = "text",
   labelStyle,
   required = false,
   placeholder,
@@ -56,6 +58,7 @@ const TextInput = ({
         className={`input ${style} ${error ? "input_error" : ""} ${
           disabled ? "input_disabled" : ""
         }`}
+        type={type}
         disabled={disabled}
         size="large"
         placeholder={placeholder}

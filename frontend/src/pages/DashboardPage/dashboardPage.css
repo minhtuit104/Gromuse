@@ -1,0 +1,63 @@
+@import url(../../assets/css/styles.css);
+
+.dashboard_container{
+    width: 100%;
+    height: 100vh;
+    background-color: var(--white100);
+    overflow-y: auto;
+}
+
+.top_dash{
+    width: 100%;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px;
+    padding: 0 20px;
+}
+
+.top_dash h1{
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--green800);
+}
+
+.top_dash p{
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--white500);
+}
+
+.catagory_dash{
+    width: 100%;
+    display: flex;
+    gap: 15px;
+    padding: 0 20px;
+    justify-content: center;
+}
+
+.dash_content{
+    width: 100%;
+    margin-top: 20px;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.dash_content_left{
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dash_content_left_bottom{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.dash_content_right{
+    width: 58%;
+}

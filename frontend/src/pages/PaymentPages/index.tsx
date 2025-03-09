@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "./paymentPage.css";
 import IconVoucher from "../../assets/images/icons/ic_ voucher.svg";
 import usePayment from "./usePayment";

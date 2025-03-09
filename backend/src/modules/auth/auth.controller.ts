@@ -12,8 +12,11 @@ export class AuthController{
     @Post('/register')
     async create(@Body() createUserDto: CreateUserDto,@Response() res){
         try {
+            const role = createUserDto.role && [1, 2].includes(createUserDto.role) 
+            ? createUserDto.role 
+            : 1;
             //lấy kết quả trả về từ service
-            await this.authService.register(createUserDto);
+            await this.authService.register(createUserDto, role);
             return res.status(201).json({
                 status: 201,
                 message: 'Register success!',

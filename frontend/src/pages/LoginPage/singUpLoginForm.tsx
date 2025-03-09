@@ -225,7 +225,7 @@ const SignUpLogInForm: React.FC = () => {
 
             {/* Register Form ---------------------------------------------*/}
             <div className="form-box register">
-                <form action="##" onSubmit={handleRegister}>
+                <form action="##" onSubmit={handleRegister} className='formLoginUser'>
                 <h1>Registration</h1>
                 <div className="input-box">
                     <input type="text" name='name' placeholder="Username" value={formData.name} onChange={handleRegisterChange} />
