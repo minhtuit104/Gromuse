@@ -60,6 +60,11 @@ const AddProduct = () => {
   const location = useLocation();
   const isEditMode = !!id; // Kiểm tra xem có phải chế độ edit không
 
+  // Thêm state để lưu trữ file hình ảnh
+  const [imagesToUpload, setImagesToUpload] = useState<File[]>([]);
+  const [localPreviewImages, setLocalPreviewImages] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -83,7 +88,30 @@ const AddProduct = () => {
       weight: Yup.number().required("Weight is required"),
       category: Yup.string().required("Category is required"),
     }),
-    onSubmit: (values: FormValues) => {
+    onSubmit: async (values: FormValues) => {
+      // Upload images first, then add/update product
+      let uploadedImageUrls: string[] = [...existingImages]; // Start with existing images
+
+      if (imagesToUpload.length > 0) {
+        try {
+          setLoading(true);
+          uploadedImageUrls = [
+            ...existingImages,
+            ...(await uploadImagesToSupabase(imagesToUpload)),
+          ];
+          setLoading(false);
+        } catch (error) {
+          console.error("Error uploading images:", error);
+          alert("Failed to upload images. Please try again.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Use the first image as the main image if available
+      const mainImageUrl =
+        uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : "";
+
       const productData = {
         ...values,
         weight: parseInt(values.weight, 10),
@@ -94,7 +122,9 @@ const AddProduct = () => {
           ? moment(values.startDate).toISOString()
           : null,
         endDate: values.endDate ? moment(values.endDate).toISOString() : null,
+        img: mainImageUrl, // Use the uploaded image URL
       };
+
       if (isEditMode) {
         updateProduct(productData); // Gọi hàm cập nhật nếu là edit
       } else {
@@ -105,9 +135,56 @@ const AddProduct = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  // Function to upload images to Supabase
+  const uploadImagesToSupabase = async (files: File[]): Promise<string[]> => {
+    try {
+      const supabase = await loadSupabaseClient();
+
+      const uploadPromises = files.map(async (file) => {
+        // Kiểm tra loại file
+        if (!file.type.startsWith("image/")) {
+          throw new Error("Vui lòng chỉ chọn các tệp hình ảnh");
+        }
+
+        // Tạo tên file duy nhất
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}_${Math.random()
+          .toString(36)
+          .substring(7)}.${fileExt}`;
+        const filePath = `public/${fileName}`;
+
+        // Upload file to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from("ImgGromuse")
+          .upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (error) {
+          console.error("Upload error:", error);
+          throw error;
+        }
+
+        // Lấy URL công khai của file từ Supabase
+        const { data: publicUrlData } = supabase.storage
+          .from("ImgGromuse")
+          .getPublicUrl(filePath);
+
+        return publicUrlData.publicUrl;
+      });
+
+      // Đợi tất cả các upload hoàn tất
+      const uploadedUrls = await Promise.all(uploadPromises);
+      return uploadedUrls;
+    } catch (error) {
+      console.error("Error in uploadImagesToSupabase:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     // Fetch tất cả sản phẩm cho danh sách hiển thị
@@ -149,22 +226,26 @@ const AddProduct = () => {
         active: product.active || true,
         img: product.img || "",
       });
+
       if (product.img) {
         if (product.img.startsWith("http")) {
-          setImages([product.img]);
+          // Nếu là URL đầy đủ
+          setExistingImages([product.img]);
+          setLocalPreviewImages([product.img]);
         } else {
           // Nếu `product.img` là đường dẫn trong Supabase (ví dụ: "public/some-image.jpg")
           const supabase = await loadSupabaseClient();
           const { data: publicUrlData } = supabase.storage
             .from("ImgGromuse")
             .getPublicUrl(product.img);
-          setImages([publicUrlData.publicUrl]); // Lấy URL công khai từ Supabase
+
+          setExistingImages([publicUrlData.publicUrl]);
+          setLocalPreviewImages([publicUrlData.publicUrl]);
         }
       } else {
-        setImages([]); // Reset nếu không có hình ảnh
         const ImgPlaceholder =
           "../../../assets/images/imagePNG/green-broccoli-levitating-white-background 1.png";
-        setImages([ImgPlaceholder]);
+        setLocalPreviewImages([ImgPlaceholder]);
       }
     } catch (error: unknown) {
       console.error("Error fetching product:", error);
@@ -179,21 +260,11 @@ const AddProduct = () => {
     console.log("Starting addProductToAPI with data:", productData);
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        console.log("Request timed out after 10 seconds");
-        setLoading(false); // Reset loading khi timeout
-      }, 10000); // Timeout 10 giây
-
       const response = await fetch("http://localhost:3000/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productData),
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       console.log("Response received:", response.status, response.statusText);
 
@@ -207,7 +278,9 @@ const AddProduct = () => {
         alert("Product added successfully!");
         setProducts((prev) => [...prev, responseData]);
         formik.resetForm();
-        setImages([]);
+        setLocalPreviewImages([]);
+        setImagesToUpload([]);
+        setExistingImages([]);
       } else {
         console.error("API error response:", responseData);
         throw new Error(responseData.message || "Failed to add product");
@@ -215,7 +288,7 @@ const AddProduct = () => {
     } catch (error: unknown) {
       console.error("Error in addProductToAPI:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to fetch";
+        error instanceof Error ? error.message : "Failed to add product";
       alert(`Error: ${errorMessage}`);
     } finally {
       console.log("Resetting loading state...");
@@ -231,25 +304,14 @@ const AddProduct = () => {
       if (!id) throw new Error("No product ID provided for update");
       const numericId = parseInt(id, 10);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        console.log("Request timed out after 10 seconds");
-        setLoading(false); // Reset loading khi timeout
-      }, 10000); // Timeout 10 giây
-
       const response = await fetch(
         `http://localhost:3000/api/products/${numericId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(productData),
-          signal: controller.signal,
         }
       );
-
-      clearTimeout(timeoutId);
-
       console.log("Response received:", response.status, response.statusText);
 
       const responseData = await response.json().catch((err) => {
@@ -270,7 +332,7 @@ const AddProduct = () => {
     } catch (error: unknown) {
       console.error("Error in updateProduct:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to fetch";
+        error instanceof Error ? error.message : "Failed to update product";
       alert(`Error: ${errorMessage}`);
     } finally {
       console.log("Resetting loading state...");
@@ -301,88 +363,61 @@ const AddProduct = () => {
       });
   };
 
-  const handleImageChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       // Convert FileList to Array and limit to 5 images
       const newFiles = Array.from(event.target.files).slice(0, 5);
 
-      try {
-        const uploadPromises = newFiles.map(async (file) => {
-          // Kiểm tra loại file
-          if (!file.type.startsWith("image/")) {
-            alert("Vui lòng chọn các tệp hình ảnh");
-            return null;
-          }
-
-          // Khởi tạo Supabase client
-          const supabase = await import("../../lib/supabaseClient").then(
-            (module) => module.createSupabaseClient()
-          );
-
-          // Tạo tên file duy nhất
-          const fileExt = file.name.split(".").pop();
-          const fileName = `${Date.now()}_${Math.random()
-            .toString(36)
-            .substring(7)}.${fileExt}`;
-          const filePath = `public/${fileName}`;
-
-          // Upload file to Supabase Storage
-          const { data, error } = await supabase.storage
-            .from("ImgGromuse")
-            .upload(filePath, file, {
-              cacheControl: "3600",
-              upsert: true,
-            });
-
-          if (error) {
-            console.error("Upload error:", error);
-            return null;
-          }
-
-          // Lấy URL công khai của file từ Supabase
-          const { data: publicUrlData } = supabase.storage
-            .from("ImgGromuse")
-            .getPublicUrl(filePath);
-
-          return publicUrlData.publicUrl;
-        });
-
-        // Đợi tất cả các upload hoàn tất
-        const uploadedUrls = await Promise.all(uploadPromises);
-
-        // Lọc bỏ các URL null (upload thất bại)
-        const validUrls = uploadedUrls.filter((url) => url !== null);
-
-        // Cập nhật state images
-        setImages((prevImages) => {
-          // Giới hạn tổng số ảnh không quá 10
-          const combinedImages = [...prevImages, ...validUrls].slice(0, 10);
-          return combinedImages;
-        });
-
-        // Cập nhật formik
-        formik.setFieldValue("img", validUrls[0] || "");
-      } catch (error: any) {
-        console.error("Error uploading images:", error);
-        alert(`Lỗi tải ảnh: ${error.message || "Đã có lỗi xảy ra"}`);
+      // Validate file types
+      const invalidFiles = newFiles.filter(
+        (file) => !file.type.startsWith("image/")
+      );
+      if (invalidFiles.length > 0) {
+        alert("Vui lòng chỉ chọn các tệp hình ảnh");
+        return;
       }
+
+      // Update the list of files to upload
+      setImagesToUpload((prevFiles) => {
+        // Limit total files to 10
+        const updatedFiles = [...prevFiles, ...newFiles].slice(
+          0,
+          10 - existingImages.length
+        );
+        return updatedFiles;
+      });
+
+      // Create local preview URLs
+      const newPreviewUrls = newFiles.map((file) => URL.createObjectURL(file));
+
+      setLocalPreviewImages((prevUrls) => {
+        // Limit total previews to 10
+        const combinedUrls = [...prevUrls, ...newPreviewUrls].slice(0, 10);
+        return combinedUrls;
+      });
     }
   };
 
-  const removeImage = (imageToRemove: string) => {
-    setImages((prevImages) =>
-      prevImages.filter((image) => image !== imageToRemove)
-    );
-
-    // Nếu ảnh bị xóa là ảnh chính (img trong formik)
-    if (formik.values.img === imageToRemove) {
-      formik.setFieldValue(
-        "img",
-        images.find((img) => img !== imageToRemove) || ""
+  const removeImage = (index: number) => {
+    // Check if it's an existing image or a local preview
+    if (index < existingImages.length) {
+      // It's an existing image
+      setExistingImages((prevImages) =>
+        prevImages.filter((_, i) => i !== index)
       );
+    } else {
+      // It's a local preview - adjust index for the imagesToUpload array
+      const adjustedIndex = index - existingImages.length;
+      setImagesToUpload((prevFiles) =>
+        prevFiles.filter((_, i) => i !== adjustedIndex)
+      );
+
+      // Also remove the preview URL
+      URL.revokeObjectURL(localPreviewImages[index]); // Clean up object URL
     }
+
+    // Update the preview images list
+    setLocalPreviewImages((prevUrls) => prevUrls.filter((_, i) => i !== index));
   };
 
   const handlePreview = (image: string) => {
@@ -406,7 +441,11 @@ const AddProduct = () => {
   const sampleProduct: Product = {
     id: isEditMode && id ? parseInt(id, 10) : 1,
     name: formik.values.name || "Sample Product",
-    img: formik.values.img || "",
+    // Sử dụng hình ảnh đầu tiên từ localPreviewImages nếu có, nếu không sử dụng img từ formik
+    img:
+      localPreviewImages.length > 0
+        ? localPreviewImages[0]
+        : formik.values.img || "",
     tag: formik.values.tag || "Eco-Friendly",
     weight: parseInt(formik.values.weight || "0", 10),
     price: parseFloat(formik.values.price || "0"),
@@ -583,6 +622,18 @@ const AddProduct = () => {
     "background",
   ];
 
+  // Cleanup function for object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      // Revoke all created object URLs to prevent memory leaks
+      localPreviewImages.forEach((url) => {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, []);
+
   return (
     <div className="add-product">
       <Header />
@@ -711,7 +762,7 @@ const AddProduct = () => {
                     Image <span className="required-asterisk">*</span>
                   </label>
                   <div className="image-list">
-                    {images.map((image, index) => (
+                    {localPreviewImages.map((image, index) => (
                       <div key={index} className="image-preview">
                         <img
                           src={image}
@@ -720,7 +771,7 @@ const AddProduct = () => {
                         />
                         <div
                           className="remove-image"
-                          onClick={() => removeImage(image)}
+                          onClick={() => removeImage(index)}
                         >
                           ×
                         </div>
@@ -732,7 +783,7 @@ const AddProduct = () => {
                         </div>
                       </div>
                     ))}
-                    {images.length < 10 && (
+                    {localPreviewImages.length < 10 && (
                       <div
                         className="image-icon"
                         onClick={() =>

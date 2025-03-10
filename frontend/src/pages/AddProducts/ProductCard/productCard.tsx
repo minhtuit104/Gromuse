@@ -83,6 +83,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onAddToCart,
   style,
 }) => {
+  // Thêm xử lý cho URL hình ảnh
+  const imageUrl =
+    product.img && product.img.length > 0
+      ? product.img // Sử dụng URL hình ảnh nếu có
+      : ImgPlaceholder; // Sử dụng ảnh mặc định nếu không
+
   // Xác định màu nền từ style hoặc mặc định là #FFFFFF
   const backgroundColor = style?.backgroundColor || "#FFFFFF";
 
@@ -116,11 +122,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       }}
     >
       <div className="add-product-image-container">
-        <img
-          src={product.img || ImgPlaceholder}
-          alt={product.name}
-          className="add-product-image"
-        />
+        <img src={imageUrl} alt={product.name} className="add-product-image" />
       </div>
       <div className="add-product-info">
         <h2 className="add-product-name">

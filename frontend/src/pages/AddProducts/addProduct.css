@@ -215,6 +215,13 @@ input.text-input.color-text-input {
     width: 100%;
 }
 
+.remove-image {
+    position: absolute;
+    top: 0;
+    right: 10px;
+    z-index: 99;
+}
+
 .image-list {
     margin-top: 8px;
     gap: 10px;
@@ -236,7 +243,6 @@ input.text-input.color-text-input {
     border: 1px solid var(--white200);
     transition: transform 0.3s ease;
     border-radius: 25px;
-    overflow: hidden;
 }
 
 .image-preview:hover {
@@ -261,6 +267,7 @@ input.text-input.color-text-input {
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 25px;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -354,6 +361,7 @@ select.select-field {
 .action-buttons {
     display: flex;
     justify-content: flex-end;
+    align-self: flex-end;
     gap: 10px;
 }
   
@@ -392,6 +400,7 @@ select.select-field {
     color: var(--green800) !important;
     border-color: var(--lime300) !important;
 }
+
 .required-asterisk {
     font-size: 20px;
     font-weight: 700;
