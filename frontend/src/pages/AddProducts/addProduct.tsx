@@ -88,6 +88,7 @@ const AddProduct = () => {
       weight: Yup.number().required("Weight is required"),
       category: Yup.string().required("Category is required"),
     }),
+    // Trong phần onSubmit của formik, cập nhật lại cách lưu ảnh:
     onSubmit: async (values: FormValues) => {
       // Upload images first, then add/update product
       let uploadedImageUrls: string[] = [...existingImages]; // Start with existing images
@@ -95,10 +96,8 @@ const AddProduct = () => {
       if (imagesToUpload.length > 0) {
         try {
           setLoading(true);
-          uploadedImageUrls = [
-            ...existingImages,
-            ...(await uploadImagesToSupabase(imagesToUpload)),
-          ];
+          const newUploadedUrls = await uploadImagesToSupabase(imagesToUpload);
+          uploadedImageUrls = [...existingImages, ...newUploadedUrls];
           setLoading(false);
         } catch (error) {
           console.error("Error uploading images:", error);
@@ -108,7 +107,7 @@ const AddProduct = () => {
         }
       }
 
-      // Use the first image as the main image if available
+      // Use the first image as the main image, but save all images
       const mainImageUrl =
         uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : "";
 
@@ -122,13 +121,14 @@ const AddProduct = () => {
           ? moment(values.startDate).toISOString()
           : null,
         endDate: values.endDate ? moment(values.endDate).toISOString() : null,
-        img: mainImageUrl, // Use the uploaded image URL
+        img: mainImageUrl, // Giữ lại cho tương thích ngược
+        images: uploadedImageUrls, // Lưu tất cả các URL hình ảnh
       };
 
       if (isEditMode) {
-        updateProduct(productData); // Gọi hàm cập nhật nếu là edit
+        updateProduct(productData);
       } else {
-        addProductToAPI(productData); // Gọi hàm thêm mới nếu là add
+        addProductToAPI(productData);
       }
     },
   });
@@ -227,21 +227,14 @@ const AddProduct = () => {
         img: product.img || "",
       });
 
-      if (product.img) {
-        if (product.img.startsWith("http")) {
-          // Nếu là URL đầy đủ
-          setExistingImages([product.img]);
-          setLocalPreviewImages([product.img]);
-        } else {
-          // Nếu `product.img` là đường dẫn trong Supabase (ví dụ: "public/some-image.jpg")
-          const supabase = await loadSupabaseClient();
-          const { data: publicUrlData } = supabase.storage
-            .from("ImgGromuse")
-            .getPublicUrl(product.img);
-
-          setExistingImages([publicUrlData.publicUrl]);
-          setLocalPreviewImages([publicUrlData.publicUrl]);
-        }
+      // Xử lý các hình ảnh đã tồn tại
+      if (product.images && product.images.length > 0) {
+        setExistingImages(product.images);
+        setLocalPreviewImages(product.images);
+      } else if (product.img) {
+        // Xử lý trường hợp có img nhưng không có images (cho tương thích ngược)
+        setExistingImages([product.img]);
+        setLocalPreviewImages([product.img]);
       } else {
         const ImgPlaceholder =
           "../../../assets/images/imagePNG/green-broccoli-levitating-white-background 1.png";
@@ -441,7 +434,7 @@ const AddProduct = () => {
   const sampleProduct: Product = {
     id: isEditMode && id ? parseInt(id, 10) : 1,
     name: formik.values.name || "Sample Product",
-    // Sử dụng hình ảnh đầu tiên từ localPreviewImages nếu có, nếu không sử dụng img từ formik
+    // Sử dụng hình ảnh đầu tiên từ localPreviewImages nếu có
     img:
       localPreviewImages.length > 0
         ? localPreviewImages[0]
@@ -519,43 +512,6 @@ const AddProduct = () => {
 
   const quillRef = useRef<ReactQuill>(null);
 
-  // Hàm upload hình ảnh (giữ nguyên như trước)
-  // const handleImageUpload = async (file: File): Promise<string> => {
-  //   try {
-  //     const supabase = await loadSupabaseClient();
-
-  //     const fileExt = file.name.split(".").pop();
-  //     const fileName = `${Date.now()}_${Math.random()
-  //       .toString(36)
-  //       .substring(7)}.${fileExt}`;
-  //     const filePath = `public/${fileName}`;
-
-  //     const { data, error } = await supabase.storage
-  //       .from("ImgGromuse")
-  //       .upload(filePath, file, {
-  //         cacheControl: "3600",
-  //         upsert: true,
-  //       });
-
-  //     if (error) {
-  //       throw new Error(`Upload failed: ${error.message || "Unknown error"}`);
-  //     }
-
-  //     const { data: publicUrlData } = supabase.storage
-  //       .from("ImgGromuse")
-  //       .getPublicUrl(filePath);
-
-  //     return publicUrlData.publicUrl;
-  //   } catch (error: any) {
-  //     console.error("Error uploading image:", error);
-  //     throw new Error(
-  //       `Failed to upload image: ${
-  //         error instanceof Error ? error.message : "Unknown error"
-  //       }`
-  //     );
-  //   }
-  // };
-
   // Tùy chỉnh toolbar của ReactQuill để thêm nút upload hình ảnh
   const modules = {
     toolbar: {
@@ -570,37 +526,6 @@ const AddProduct = () => {
         ["link", "image", "video"],
         ["clean"],
       ],
-      // handlers: {
-      //   image: async () => {
-      //     const input = document.createElement("input");
-      //     input.setAttribute("type", "file");
-      //     input.setAttribute("accept", "image/*");
-      //     input.click();
-
-      //     input.onchange = async () => {
-      //       const file = input.files?.[0];
-      //       if (file) {
-      //         try {
-      //           const imageUrl = await handleImageUpload(file);
-      //           const quill = quillRef.current?.getEditor();
-      //           if (quill) {
-      //             const range = quill.getSelection(true) as RangeStatic; // Type assertion nếu cần
-      //             if (range) {
-      //               quill.insertEmbed(range.index, "image", imageUrl);
-      //               quill.setSelection({ index: range.index + 1, length: 0 }); // Truyền number trực tiếp
-      //             }
-      //           }
-      //         } catch (error: any) {
-      //           alert(
-      //             `Error uploading image: ${
-      //               error instanceof Error ? error.message : "Unknown error"
-      //             }`
-      //           );
-      //         }
-      //       }
-      //     };
-      //   },
-      // },
     },
   };
 
@@ -781,6 +706,9 @@ const AddProduct = () => {
                         >
                           <img src={IcEye} alt="View" className="ic_20" />
                         </div>
+                        {index === 0 && (
+                          <div className="main-image-badge"></div>
+                        )}
                       </div>
                     ))}
                     {localPreviewImages.length < 10 && (

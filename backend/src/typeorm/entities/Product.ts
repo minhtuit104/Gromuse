@@ -1,10 +1,19 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
-import { CartItem } from './Cart';
+// src/typeorm/entities/Product.ts
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { CartItem } from './CartItem';
 import { Category } from './Category';
+import { Shop } from './Shop';
 
 @Entity()
 export class Product {
-  @PrimaryGeneratedColumn({type: 'int'})
+  @PrimaryGeneratedColumn({ type: 'int' })
   id: number;
 
   @Column()
@@ -15,6 +24,9 @@ export class Product {
 
   @Column()
   amount: number;
+
+  @Column({ default: 0 })
+  sold: number;
 
   @Column({ nullable: true })
   discount: number;
@@ -47,6 +59,21 @@ export class Product {
   @Column({ nullable: true })
   img: string;
 
-  @OneToMany(() => CartItem, cartItem => cartItem.product)
+  @Column('simple-array', { nullable: true })
+  images: string[];
+
+  @OneToMany(() => CartItem, (cartItem) => cartItem.product)
   cartItems: CartItem[];
+
+  @ManyToOne(() => Shop, (shop) => shop.products)
+  shop: Shop;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  deletedAt: Date;
 }

@@ -1,21 +1,8 @@
-import { useState } from "react";
-interface Product {
-  img: string;
-  title: string;
-  weight: number;
-  price: number;
-  amount: number;
-  created_at: string;
-}
+import { useState, useEffect } from "react";
+import { Shop } from "./paymentItem";
 
-interface Shop {
-  avatar: string;
-  name: string;
-  products: Product[];
-}
-
-interface Voucher {
-  id: string;
+export interface Voucher {
+  id: string | number;
   type: string;
   code: string;
   description: string;
@@ -23,128 +10,175 @@ interface Voucher {
 }
 
 const usePayment = () => {
-  const initialValues = {
-    totalPrice: 0,
-  };
-  const datas: Shop[] = [
-    {
-      avatar:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7zEEISvcs1XuhHOPNI0aUElsa46Fmv5NLDg&s",
-      name: "Lay's Việt Nam",
-      products: [
-        {
-          img: "string",
-          title: "Snack Lays khoai tây tươi giòn rụm số 1 thế giới",
-          weight: 500,
-          price: 15.25,
-          amount: 2,
-          created_at: "28282",
-        },
-        {
-          img: "string",
-          title: "Snack vị BBQ đậm đà",
-          weight: 400,
-          price: 10.5,
-          amount: 5,
-          created_at: "28282",
-        },
-      ],
-    },
-    {
-      avatar:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7zEEISvcs1XuhHOPNI0aUElsa46Fmv5NLDg&s",
-      name: "Lay's Việt Nam",
-      products: [
-        {
-          img: "string",
-          title: "Snack Lays khoai tây tươi giòn rụm số 1 thế giới",
-          weight: 500,
-          price: 15.25,
-          amount: 2,
-          created_at: "28282",
-        },
-        {
-          img: "string",
-          title: "Snack vị BBQ đậm đà",
-          weight: 400,
-          price: 10.5,
-          amount: 5,
-          created_at: "28282",
-        },
-        {
-          img: "string",
-          title: "Snack vị BBQ đậm đà giòn rụm số 1 thế giới",
-          weight: 300,
-          price: 10.5,
-          amount: 5,
-          created_at: "28282",
-        },
-      ],
-    },
-  ];
+  const [data, setData] = useState<Shop[]>([]);
+  const [vouchers, setVouchers] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const vouchers: Voucher[] = [
-    {
-      id: "1",
-      type: "Free Ship",
-      code: "#FREE20",
-      description: "Free ship up to 20$",
-      remaining: 10,
-    },
-    {
-      id: "2",
-      type: "Discount",
-      code: "#DISCOUNT10",
-      description: "Discount 10% for orders above 100$",
-      remaining: 5,
-    },
-    {
-      id: "3",
-      type: "Free Ship",
-      code: "#FREESHIP5",
-      description: "Free ship up to 5$",
-      remaining: 20,
-    },
-    {
-      id: "4",
-      type: "Discount",
-      code: "#DISCOUNT20",
-      description: "Discount 20% for first-time buyers",
-      remaining: 2,
-    },
-    {
-      id: "5",
-      type: "Discount",
-      code: "#DISCOUNT20",
-      description: "Discount 20% for first-time buyers",
-      remaining: 9,
-    },
-    {
-      id: "6",
-      type: "Discount",
-      code: "#DISCOUNT20",
-      description: "Discount 20% for first-time buyers",
-      remaining: 2,
-    },
-  ];
+  const fetchCartData = async () => {
+    try {
+      setLoading(true);
+      const cartId = localStorage.getItem("cartId");
+      if (!cartId) {
+        setError("Cart ID không tồn tại. Vui lòng thêm sản phẩm vào giỏ hàng.");
+        setData([]);
+        return;
+      }
 
-  const [data, setData] = useState(datas);
-  const handleGetAdressData = () => {};
-  const handleGetItemData = () => {};
-  const handleUpdatePrice = (price: number, type: string) => {
-    if (type === "plus") {
-      initialValues.totalPrice += price;
-    } else {
-      initialValues.totalPrice -= price;
+      const response = await fetch(`http://localhost:3000/cart/${cartId}`);
+      if (!response.ok) {
+        throw new Error(`API thất bại: ${response.status}`);
+      }
+
+      const cartItems = await response.json();
+      if (!cartItems || cartItems.length === 0) {
+        setData([]);
+        setError("Giỏ hàng trống.");
+        return;
+      }
+
+      const shopsMap: Record<string, Shop> = {};
+      cartItems.forEach((item: any, index: number) => {
+        if (!item.product) {
+          console.warn(`Item ${index} thiếu product:`, item);
+          return; // Bỏ qua item không hợp lệ
+        }
+        const shop = item.product.shop || {
+          id: "default-" + index,
+          name: "Lay's Việt Nam",
+          avatar: "",
+        };
+
+        const shopId = shop.id?.toString() || `default-${index}`;
+
+        if (!shopsMap[shopId]) {
+          shopsMap[shopId] = {
+            id: shopId,
+            avatar: shop.avatar || "",
+            name: shop.name || "Lay's Việt Nam",
+            deliveryInfo: shop.deliveryInfo || "Delivery in 15 minutes ago",
+            productIcons: shop.productIcons || false,
+            products: [],
+          };
+        }
+
+        shopsMap[shopId].products.push({
+          id: item.product.id.toString(),
+          name: item.product.name,
+          img: item.product.img || "",
+          title: item.product.name,
+          weight: item.product.weight || 0,
+          price: item.product.price || 0,
+          amount: item.quantity || 1,
+          isPaid: item.isPaid || false,
+          created_at: item.product.createdAt || new Date().toISOString(),
+        });
+      });
+
+      const shopsArray = Object.values(shopsMap);
+      setData(shopsArray);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching cart data:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Không thể lấy dữ liệu giỏ hàng."
+      );
+      setData([]);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCartData();
+
+    const fetchVouchers = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:3000/payment/vouchers/available"
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Thêm log chi tiết để kiểm tra
+        console.log("Raw voucher data:", data);
+        console.log("Voucher data type:", typeof data);
+        console.log("Is array?", Array.isArray(data));
+
+        const formattedVouchers: Voucher[] = data.map((voucher: any) => ({
+          id: voucher.id,
+          type: voucher.type,
+          code: voucher.code,
+          description: voucher.description,
+          remaining: voucher.remaining,
+        }));
+
+        console.log("Formatted vouchers:", formattedVouchers);
+
+        setVouchers(formattedVouchers);
+        setLoading(false);
+      } catch (error) {
+        console.error("Detailed error fetching vouchers:", error);
+        setError(error instanceof Error ? error.message : "Unknown error");
+        setLoading(false);
+      }
+    };
+
+    fetchVouchers();
+  }, []);
+
+  const updateProductAmount = async (productId: string, newAmount: number) => {
+    try {
+      const cartId = localStorage.getItem("cartId");
+      if (!cartId) {
+        console.error("Không tìm thấy cartId trong localStorage");
+        return false;
+      }
+
+      console.log(
+        `Đang cập nhật sản phẩm ${productId} với số lượng ${newAmount}`
+      );
+
+      const response = await fetch(
+        `http://localhost:3000/cart/${cartId}/items/${productId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ quantity: newAmount }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `Lỗi khi cập nhật số lượng sản phẩm: ${response.status}`,
+          errorText
+        );
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Lỗi cập nhật số lượng sản phẩm:", error);
+      return false;
+    }
+  };
+
   return {
-    handleGetAdressData,
-    handleGetItemData,
     data,
     setData,
     vouchers,
-    handleUpdatePrice,
+    error,
+    loading,
+    handleUpdatePrice: updateProductAmount,
   };
 };
+
 export default usePayment;

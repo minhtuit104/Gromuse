@@ -6,6 +6,8 @@ import HomePage from "./pages/HomePage/HomePage";
 import { ToastContainer } from "react-toastify";
 import { PaymentPage } from "./pages/PaymentPages/index";
 import AddProduct from "./pages/AddProducts/addProduct";
+import DetailPage from "./pages/DetailPage/detailPage";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   return (
@@ -22,14 +24,6 @@ function App() {
             }
           />
           {/* Chỉ có thể vào trang feed nếu đã đăng nhập */}
-          <Route
-            path="/home"
-            element={
-              <PrivateRoute>
-                <HomePage />
-              </PrivateRoute>
-            }
-          />
           <Route
             path="/"
             element={
@@ -61,6 +55,17 @@ function App() {
             element={
               <PrivateRoute>
                 <AddProduct />
+              </PrivateRoute>
+            }
+          />
+          {/* Thêm tuyến đường cho trang DetailPage */}
+          <Route
+            path="/detail_page/:id"
+            element={
+              <PrivateRoute>
+                <ErrorBoundary>
+                  <DetailPage />
+                </ErrorBoundary>
               </PrivateRoute>
             }
           />

@@ -3,12 +3,21 @@ import { Product } from './Product';
 
 @Entity()
 export class Category {
-  @PrimaryGeneratedColumn({type: 'int'})
+  @PrimaryGeneratedColumn({ type: 'int' })
   id: number;
 
   @Column({ unique: true })
-  name: string; 
+  name: string;
 
-  @OneToMany(() => Product, product => product.category)
+  @OneToMany(() => Product, (product) => product.category)
   products: Product[];
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  deletedAt: Date;
 }
