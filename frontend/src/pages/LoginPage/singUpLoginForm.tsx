@@ -70,11 +70,12 @@ const SignUpLogInForm: React.FC = () => {
     setIsLoading(true);
     try {
       let res = await loginApi(email, password);
+      console.log("API:======", res);
       if (res && res.data.access_token) {
         localStorage.setItem("token", res.data.access_token);
         setTimeout(() => {
           setIsLoading(false);
-          window.location.href = "/home";
+          window.location.href = "/";
         }, 500);
         toast.success("Login successful!");
       } else {

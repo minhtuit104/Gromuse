@@ -1,29 +1,10 @@
 import axios from "./axios";
 
-// Fetch danh sách sản phẩm
-const fetchProducts = async () => {
-  try {
-    const products = await axios.get("/api/products");
-    return products;
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    throw error;
-  }
-};
-
-// Thêm sản phẩm vào giỏ hàng
-const addToCart = async (productId: string, quantity: number = 1) => {
-  try {
-    const response = await axios.post("/api/cart/add", { productId, quantity });
-    return response;
-  } catch (error) {
-    console.error("Error adding to cart:", error);
-    throw error;
-  }
-};
-
-const loginApi = (identifier: string, password: string) => {
-  return axios.post("/api/v1/auth/login", { identifier, password });
+const loginApi = async (identifier: string, password: string) => {
+  return await axios.post("/api/v1/auth/login", {
+    identifier,
+    password,
+  });
 };
 
 const registerApi = (
@@ -132,6 +113,6 @@ export {
   fetchAllUser,
   updateAvatar,
   updateUserProfile,
-  fetchProducts,
-  addToCart,
+  // fetchProducts,
+  // addToCart,
 };

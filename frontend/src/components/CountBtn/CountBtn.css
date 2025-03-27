@@ -1,0 +1,31 @@
+@import url(../../assets/css/styles.css);
+
+.counter-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 55px;
+  width: 100%;
+  height: 80px;
+}
+
+.counter-button {
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--green600);
+  border-radius: 50px;
+  font-size: 20px;
+  cursor: pointer;
+  background-color: var(--white50);
+}
+
+.counter-button img {
+  filter: invert(24%) sepia(80%) saturate(800%) hue-rotate(145deg)
+    brightness(125%);
+}
+
+.counter-value {
+  font-size: 45px;
+  font-weight: 700;
+  color: var(--green600);
+}

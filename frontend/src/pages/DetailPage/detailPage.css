@@ -1,25 +1,50 @@
 @import url(../../assets/css/styles.css);
 
-.detail-home-product {
-  width: calc(100% - 90px);
-  height: 800px;
-  border-radius: 20px;
+.detail-page {
+  background-color: var(--white100);
+  width: 100%;
+  height: auto;
   display: flex;
-  gap: 15;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.detail-product-page {
+  padding: 35px;
+  background-color: var(--white50);
+  display: flex;
+  width: calc(100% - 90px);
+  border-radius: 20px;
+  height: auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.detail-product {
+  width: 100%;
+  height: 550px;
+  display: flex;
+  justify-content: space-between;
   background-color: var(--white50);
 }
 
-.detail-home-product-image {
+.detail-product-information {
+  width: 100%;
+  height: auto;
+  display: flex;
+}
+.detail-product-image {
   position: relative;
-  width: 50%;
+  margin: 0 !important;
+  width: 48%;
   height: 750px;
   display: flex;
   align-items: center;
   flex-direction: column;
-  margin: 20px 0 0 20px;
 }
 
-.detail-home-product-image-parrent {
+.detail-product-image-parrent {
   width: 100%;
   height: 550px;
   display: flex;
@@ -29,7 +54,7 @@
   border-radius: 20px;
 }
 
-.sale-home {
+.sale {
   position: absolute;
   top: 20px;
   left: 20px;
@@ -44,23 +69,29 @@
   justify-content: center;
 }
 
-.sale-home p {
+.sale p {
   font-size: 24px;
   font-weight: 800;
 }
 
-.sale-home span {
+.sale span {
   font-size: 15px;
   font-weight: 600;
 }
 
-.detail-home-product-image-parrent img {
+img.main-product-image {
+  width: 100%;
+  height: 300px;
+  object-fit: contain;
+}
+
+.detail-product-image-parrent img {
   width: 400px;
   height: 295px;
   object-fit: cover;
 }
 
-.detail-home-product-image-options {
+.detail-product-image-options {
   width: 100%;
   height: 200px;
   display: flex;
@@ -69,7 +100,7 @@
   gap: 10px;
 }
 
-.product-option-item-home {
+.product-option-item {
   width: 130px;
   height: 150px;
   background-color: rgba(239, 239, 239, 0.3);
@@ -80,41 +111,41 @@
   cursor: pointer;
 }
 
-.product-option-item-home img {
+.product-option-item img {
   width: 130px;
   height: 130px;
   object-fit: cover;
 }
 
-.detail-home-product-info {
-  width: 525px;
+.detail-product-info {
+  width: 48%;
   height: 700px;
-  margin: 20px 0 0 80px;
+  margin: 0 !important;
   color: var(--white50);
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.detail-home-product-info-time {
+.detail-product-info-time {
   width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.detail-home-product-info-time img {
+.detail-product-info-time img {
   filter: brightness(0) saturate(100%) invert(33%) sepia(91%) saturate(2723%)
     hue-rotate(358deg) brightness(98%) contrast(94%);
 }
 
-.detail-home-product-info-time span {
+.detail-product-info-time span {
   color: var(--orange500);
   font-size: 30px;
   font-weight: 600;
 }
 
-.detail-home-product-info-content {
+.detail-product-info-content {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -122,45 +153,44 @@
   margin-top: 20px;
 }
 
-.brand-home {
+.brand {
   font-size: 38px;
   font-weight: 500;
   color: var(--white700);
 }
 
-.name-home {
-  font-size: 42px;
+.name {
+  font-size: 40px;
   font-weight: 700;
   color: var(--mint800);
 }
 
-.price-home {
-  font-size: 44px;
+.price {
+  font-size: 40px;
   font-weight: 800;
   color: var(--orange600);
 }
 
-.description-home {
+.description {
   font-size: 25px;
   font-weight: 500;
   color: var(--white600);
 }
 
-.line-home {
-  margin-top: 10px;
+.line {
   width: 100%;
   height: 2px;
   background-color: var(--white200);
 }
 
-.detail-home-product-info-btn {
+.detail-product-info-btn {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.btn-home-add-cart {
+.btn-add-cart {
   width: 48%;
   height: 60px;
   background-color: var(--lime100);
@@ -176,12 +206,12 @@
   cursor: pointer;
 }
 
-.btn-home-add-cart img {
+.btn-add-cart img {
   filter: brightness(0) saturate(100%) invert(11%) sepia(63%) saturate(627%)
     hue-rotate(132deg) brightness(91%) contrast(86%);
 }
 
-.btn-buy-now-home {
+.btn-buy-now {
   width: 48%;
   height: 60px;
   background-color: var(--lime300);
@@ -193,35 +223,115 @@
   cursor: pointer;
 }
 
-.detail-home-product-info-footer {
+.detail-product-info-footer {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-top: 20px;
+  margin-top: 15px;
   gap: 20px;
 }
 
-.sold-home {
+.sold {
   width: 100%;
   display: flex;
   align-items: flex-end;
   gap: 6px;
 }
 
-.sold-home img {
+.sold img {
   filter: brightness(0) saturate(100%) invert(14%) sepia(96%) saturate(1846%)
     hue-rotate(356deg) brightness(91%) contrast(98%);
 }
 
-.sold-home p {
+.sold p {
   font-size: 24px;
   font-weight: 600;
   color: var(--red700);
 }
 
-.categories-home {
+.categories {
+  display: flex;
+  gap: 6px;
   font-size: 24px;
   font-weight: 600;
   color: var(--white500);
+}
+
+.categories span {
+  text-decoration: underline;
+}
+
+.line1 {
+  width: 100%;
+  height: 2px;
+  background-color: var(--white200);
+}
+
+.detail-product-nameshop {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.detail-avatar {
+  object-fit: contain;
+}
+
+.detail-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-name span {
+  font-weight: 700;
+  color: var(--white950);
+  font-size: 25px;
+}
+
+.detail-name img {
+  filter: invert(52%) sepia(92%) saturate(3351%) hue-rotate(1deg)
+    brightness(101%) contrast(103%);
+}
+
+.detail-product-description {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.detail-product-description h2 {
+  color: var(--white950);
+  font-weight: 700;
+  font-size: 25px;
+}
+
+.description-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--white950);
+  font-size: 20px;
+}
+
+.description-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-left: 40px;
+}
+
+.ad-section img {
+  width: 100%;
+  height: auto;
+}
+
+.product-option-item.active {
+  border: 3px solid var(--green400); /* màu viền cho ảnh đang được chọn */
+  box-shadow: 0 0 5px rgba(95, 196, 99, 0.537);
 }

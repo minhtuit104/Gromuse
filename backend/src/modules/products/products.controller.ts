@@ -9,7 +9,7 @@ import {
   Param,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
-import { Product } from '../typeorm/entities/Product';
+import { Product } from '../../typeorm/entities/Product';
 import { CartService } from '../cart/cart.service';
 import { tagMap } from './products.service';
 
