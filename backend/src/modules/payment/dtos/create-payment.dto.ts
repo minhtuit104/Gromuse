@@ -64,4 +64,9 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsArray()
   voucherCodes?: string[];
+
+  @ApiProperty({ example: 1, description: 'ID của giỏ hàng', required: true })
+  @IsNotEmpty()
+  @IsNumber()
+  cartId: number;
 }

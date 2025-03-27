@@ -125,17 +125,18 @@ export class PaymentController {
     return this.paymentService.getAvailableVouchers();
   }
 
-  @Post('create-from-cart/:cartId')
-  @ApiOperation({ summary: 'Tạo đơn thanh toán từ giỏ hàng' })
-  @ApiResponse({ status: 201, description: 'Tạo đơn thanh toán thành công' })
-  async createFromCart(
-    @Param('cartId') cartId: number,
-    @Body() createPaymentDto: CreatePaymentDto,
-  ) {
-    const payment = await this.paymentService.createFromCart(
-      cartId,
-      createPaymentDto,
+  @Post('create')
+  @ApiOperation({ summary: 'Tạo đơn thanh toán trực tiếp' })
+  async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
+    const payment =
+      await this.paymentService.createDirectPayment(createPaymentDto);
+
+    // Cập nhật paymentId cho các CartItem
+    await this.paymentService.updateCartItemsWithPayment(
+      createPaymentDto.cartId,
+      payment.id,
     );
+
     return {
       statusCode: HttpStatus.CREATED,
       message: 'Payment created successfully',

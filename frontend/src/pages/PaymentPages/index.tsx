@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./paymentPage.css";
 import IconVoucher from "../../assets/images/icons/ic_ voucher.svg";
@@ -17,6 +17,25 @@ import { AddressDto } from "../../dtos/address.dto";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+interface Product {
+  id: string | number;
+  name: string;
+  img: string;
+  title: string;
+  weight: number;
+  price: number;
+  amount: number;
+}
+
+// interface Shop {
+//   id: number;
+//   name: string;
+//   avatar: string;
+//   deliveryInfo: string;
+//   productIcons: boolean;
+//   products: Product[];
+// }
+
 export const PaymentPage = () => {
   const navigate = useNavigate();
   const [selectedPayment, setSelectedPayment] = useState(0);
@@ -33,17 +52,19 @@ export const PaymentPage = () => {
     address: "55 Giai Phong, Hai Ba Trung, Ha Noi, Viet Nam",
   });
   const [selectedVoucher, setSelectedVoucher] = useState<string>("");
-
-  const [subtotal, setSubtotal] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [couponDiscount, setCouponDiscount] = useState(0);
   const deliveryFee = { original: 25.0, discounted: 15.0 };
-
   const paymentState = usePayment();
   const { data, loading, error, handleUpdatePrice, vouchers } = paymentState;
 
-  const processedData = React.useMemo(() => {
-    if (!data || data.length === 0) return [];
+  // Sử dụng state để lưu trữ processedData và cho phép cập nhật
+  const [processedData, setProcessedData] = useState<any[]>([]);
+
+  // Cập nhật processedData khi data thay đổi
+  useEffect(() => {
+    if (!data || data.length === 0) {
+      setProcessedData([]);
+      return;
+    }
 
     const allProducts = data.flatMap((shop) => shop.products);
 
@@ -65,31 +86,54 @@ export const PaymentPage = () => {
       products: allProducts.slice(2),
     };
 
-    return [shop1, ...(shop2.products.length > 0 ? [shop2] : [])];
+    setProcessedData([shop1, ...(shop2.products.length > 0 ? [shop2] : [])]);
   }, [data]);
 
-  const calculatePrices = useCallback(() => {
-    if (!processedData || processedData.length === 0) {
-      setSubtotal(0);
-      setTotal(15);
-      setCouponDiscount(0);
-      return;
-    }
-    // Tính tổng tiền dựa trên số lượng và giá của từng sản phẩm
+  // Hàm cập nhật số lượng sản phẩm
+  const handleUpdateProductPrice = useCallback(
+    async (productId: string, newAmount: number) => {
+      if (isCartRemoved) return;
+
+      try {
+        // Gọi hàm cập nhật số lượng từ usePayment
+        const updateResult = await handleUpdatePrice(productId, newAmount);
+
+        if (updateResult) {
+          // Cập nhật số lượng sản phẩm trong processedData
+          const updatedProcessedData = processedData.map((shop) => ({
+            ...shop,
+            products: shop.products.map((product: Product) =>
+              product.id === productId
+                ? { ...product, amount: newAmount }
+                : product
+            ),
+          }));
+
+          // Cập nhật lại processedData
+          setProcessedData(updatedProcessedData);
+        }
+      } catch (error) {
+        console.error("Không thể cập nhật giá sản phẩm:", error);
+      }
+    },
+    [handleUpdatePrice, isCartRemoved, processedData]
+  );
+
+  // Tính toán giá trị
+  const calculatedValues = useMemo(() => {
+    // Tính subtotal
     const newSubtotal = processedData.reduce(
       (sum, shop) =>
         sum +
         shop.products.reduce(
-          (prodSum, prod) =>
+          (prodSum: number, prod: Product) =>
             prodSum + (Number(prod.price) || 0) * (Number(prod.amount) || 1),
           0
         ),
       0
     );
-    console.log("Tổng tiền tạm tính:", newSubtotal);
-    setSubtotal(newSubtotal);
 
-    // Tính giảm giá từ voucher
+    // Tính couponDiscount
     let discount = 0;
     if (selectedVoucher) {
       const voucher = vouchers.find((v) => v.code === selectedVoucher);
@@ -107,35 +151,16 @@ export const PaymentPage = () => {
         }
       }
     }
-    setCouponDiscount(discount);
 
+    // Tính total
     const newTotal = newSubtotal + deliveryFee.discounted - discount;
-    setTotal(Math.max(newTotal, 0));
+
+    return {
+      subtotal: newSubtotal,
+      couponDiscount: discount,
+      total: Math.max(newTotal, 0),
+    };
   }, [processedData, selectedVoucher, vouchers, deliveryFee]);
-
-  useEffect(() => {
-    calculatePrices();
-  }, [processedData, selectedVoucher, calculatePrices, data]);
-
-  const handleUpdateProductPrice = useCallback(
-    async (productId: string, newAmount: number) => {
-      if (isCartRemoved || !localStorage.getItem("cartId")) {
-        console.log("Giỏ hàng đã bị xóa hoặc không tồn tại, bỏ qua cập nhật");
-        return;
-      }
-
-      try {
-        const updateResult = await handleUpdatePrice(productId, newAmount);
-
-        if (updateResult) {
-          calculatePrices();
-        }
-      } catch (error) {
-        console.error("Không thể cập nhật giá sản phẩm:", error);
-      }
-    },
-    [handleUpdatePrice, calculatePrices, isCartRemoved]
-  );
 
   useEffect(() => {
     const paymentSuccessful = localStorage.getItem("paymentSuccessful");
@@ -195,11 +220,11 @@ export const PaymentPage = () => {
 
       const paymentData = {
         paymentMethod: selectedPayment === 0 ? "online" : "cod",
-        subtotal: subtotal,
+        subtotal: calculatedValues.subtotal,
         deliveryFeeOriginal: deliveryFee.original,
         deliveryFeeDiscounted: deliveryFee.discounted,
-        couponDiscount: couponDiscount,
-        total: total,
+        couponDiscount: calculatedValues.couponDiscount,
+        total: calculatedValues.total,
         address: {
           name: address.name,
           phone: formatPhoneNumber(address.phone).replace(/[^\d]/g, ""),
@@ -212,7 +237,7 @@ export const PaymentPage = () => {
           name: shop.name,
           deliveryInfo: shop.deliveryInfo,
           productIcons: shop.productIcons || true,
-          products: shop.products.map((product) => ({
+          products: shop.products.map((product: Product) => ({
             id: Number(product.id),
             name: product.name,
             img: product.img,
@@ -222,6 +247,7 @@ export const PaymentPage = () => {
             amount: Number(product.amount),
           })),
         })),
+        cartId: Number(localStorage.getItem("cartId")),
       };
 
       // Log để kiểm tra dữ liệu trước khi gửi
@@ -229,7 +255,7 @@ export const PaymentPage = () => {
       console.log(
         "Dữ liệu sản phẩm cần cập nhật:",
         processedData.flatMap((shop) =>
-          shop.products.map((product) => ({
+          shop.products.map((product: Product) => ({
             id: Number(product.id),
             quantity: Number(product.amount),
           }))
@@ -244,7 +270,7 @@ export const PaymentPage = () => {
           body: JSON.stringify({
             isPaid: true,
             products: processedData.flatMap((shop) =>
-              shop.products.map((product) => ({
+              shop.products.map((product: Product) => ({
                 id: Number(product.id),
                 quantity: Number(product.amount),
               }))
@@ -279,14 +305,12 @@ export const PaymentPage = () => {
         );
       }
 
-      const response = await fetch(
-        `http://localhost:3000/payment/create-from-cart/${cartId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(paymentData),
-        }
-      );
+      const response = await fetch(`http://localhost:3000/payment/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paymentData),
+        credentials: "include",
+      });
 
       if (!response.ok) {
         const errorResponse = await response.json();
@@ -315,6 +339,7 @@ export const PaymentPage = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         }
       );
 
@@ -423,7 +448,7 @@ export const PaymentPage = () => {
                 key={shop.id}
                 item={shop}
                 isExpandable={true}
-                onUpdateAmount={handleUpdateProductPrice} // Sử dụng function mới
+                onUpdateAmount={handleUpdateProductPrice}
                 index={index}
                 isSecondShop={index === 1}
               />
@@ -483,10 +508,10 @@ export const PaymentPage = () => {
                   />
 
                   <OrderDetails
-                    subtotal={subtotal}
+                    subtotal={calculatedValues.subtotal}
                     deliveryFee={deliveryFee}
-                    couponDiscount={couponDiscount}
-                    total={total}
+                    couponDiscount={calculatedValues.couponDiscount}
+                    total={calculatedValues.total}
                   />
 
                   {paymentStatus && (

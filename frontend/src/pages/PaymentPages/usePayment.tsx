@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Shop } from "./paymentItem";
+// import { toast } from "react-toastify";
 
 export interface Voucher {
   id: string | number;
@@ -132,44 +133,80 @@ const usePayment = () => {
     fetchVouchers();
   }, []);
 
-  const updateProductAmount = async (productId: string, newAmount: number) => {
-    try {
-      const cartId = localStorage.getItem("cartId");
-      if (!cartId) {
-        console.error("Không tìm thấy cartId trong localStorage");
-        return false;
-      }
+  // Sử dụng ref để quản lý request
+  const fetchControllerRef = useRef<AbortController | null>(null);
 
-      console.log(
-        `Đang cập nhật sản phẩm ${productId} với số lượng ${newAmount}`
-      );
-
-      const response = await fetch(
-        `http://localhost:3000/cart/${cartId}/items/${productId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ quantity: newAmount }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `Lỗi khi cập nhật số lượng sản phẩm: ${response.status}`,
-          errorText
-        );
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Lỗi cập nhật số lượng sản phẩm:", error);
-      return false;
+  // Hàm hủy request đang chạy
+  const cancelOngoingRequest = () => {
+    if (fetchControllerRef.current) {
+      fetchControllerRef.current.abort();
+      fetchControllerRef.current = null;
     }
   };
+
+  const updateProductAmount = useCallback(
+    async (productId: string, newAmount: number) => {
+      // Hủy request cũ trước khi gửi request mới
+      cancelOngoingRequest();
+
+      // Tạo controller mới
+      fetchControllerRef.current = new AbortController();
+      const controller = fetchControllerRef.current;
+
+      if (!navigator.onLine) {
+        console.error("Không có kết nối mạng");
+        return false;
+      }
+
+      try {
+        const cartId = localStorage.getItem("cartId");
+        if (!cartId) {
+          console.error("Không tìm thấy cartId trong localStorage");
+          return false;
+        }
+
+        // Thiết lập timeout ngắn hơn
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 5000); // 5 giây timeout
+
+        const response = await fetch(
+          `http://localhost:3000/cart/${cartId}/items/${productId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ quantity: newAmount }),
+            signal: controller.signal,
+            credentials: "include",
+          }
+        );
+
+        // Xóa timeout
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            `Lỗi khi cập nhật số lượng sản phẩm: ${response.status}`,
+            errorText
+          );
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        return false;
+      } finally {
+        // Đảm bảo controller được reset
+        if (fetchControllerRef.current === controller) {
+          fetchControllerRef.current = null;
+        }
+      }
+    },
+    []
+  );
 
   return {
     data,

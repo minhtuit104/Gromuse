@@ -38,7 +38,6 @@ const ModalVoucher: React.FC<ModalVoucherProps> = ({
         }
 
         const data = await response.json();
-        console.log("Vouchers fetched:", data);
 
         // Đảm bảo dữ liệu được chuyển đổi đúng
         const formattedVouchers: Voucher[] = data.map((voucher: any) => ({
@@ -67,8 +66,6 @@ const ModalVoucher: React.FC<ModalVoucherProps> = ({
     const filteredVouchers = vouchers.filter(
       (voucher) => voucher.type.toLowerCase() === type.toLowerCase()
     );
-
-    console.log(`Vouchers for type ${type}:`, filteredVouchers);
 
     if (filteredVouchers.length === 0) {
       return <div>Không có voucher cho loại này</div>;

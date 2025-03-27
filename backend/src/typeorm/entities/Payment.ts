@@ -6,10 +6,12 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { Address } from './Address';
 import { Voucher } from './Voucher';
 import { Shop } from './Shop';
+import { CartItem } from './CartItem';
 
 export enum PaymentMethod {
   ONLINE = 'online',
@@ -53,6 +55,9 @@ export class Payment {
 
   @OneToMany(() => Shop, (shop) => shop.payment)
   shops: Shop[];
+
+  @OneToMany(() => CartItem, (cartItem) => cartItem.payment)
+  cartItems: CartItem[];
 
   @Column({
     type: 'enum',

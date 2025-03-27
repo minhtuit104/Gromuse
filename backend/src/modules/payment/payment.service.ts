@@ -347,4 +347,112 @@ export class PaymentService {
     }
     return totalDiscount;
   }
+
+  async createDirectPayment(
+    createPaymentDto: CreatePaymentDto,
+  ): Promise<Payment> {
+    // Bắt đầu transaction
+    const queryRunner =
+      this.paymentRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      let address = await this.addressRepository.findOne({
+        where: {
+          phone: createPaymentDto.address.phone.toString(),
+          address: createPaymentDto.address.address,
+        },
+      });
+
+      if (!address) {
+        address = this.addressRepository.create({
+          ...createPaymentDto.address,
+          phone: createPaymentDto.address.phone.toString(),
+        });
+        await queryRunner.manager.save(address);
+      }
+      const vouchers = await this.processVouchers(
+        createPaymentDto.voucherCodes,
+        createPaymentDto.subtotal,
+      );
+
+      const shops = await Promise.all(
+        createPaymentDto.shops.map(async (shopDto) => {
+          let shop = await this.shopRepository.findOne({
+            where: { name: shopDto.name },
+          });
+
+          if (!shop) {
+            shop = this.shopRepository.create({
+              name: shopDto.name,
+              avatar: shopDto.avatar,
+              deliveryInfo: shopDto.deliveryInfo,
+            });
+            await queryRunner.manager.save(shop);
+          }
+
+          for (const productDto of shopDto.products) {
+            await queryRunner.manager.decrement(
+              Product,
+              { id: productDto.id },
+              'amount',
+              productDto.amount,
+            );
+            await queryRunner.manager.update(
+              CartItem,
+              {
+                productId: productDto.id,
+                isPaid: false,
+              },
+              {
+                isPaid: true,
+              },
+            );
+          }
+          return shop;
+        }),
+      );
+      const payment = this.paymentRepository.create({
+        ...createPaymentDto,
+        status: PaymentStatus.PENDING,
+        address,
+        vouchers,
+        shops,
+      });
+
+      await queryRunner.manager.save(payment);
+
+      await queryRunner.commitTransaction();
+
+      return payment;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Lỗi trong createDirectPayment:', error);
+      throw new InternalServerErrorException(
+        'Không thể tạo đơn hàng. Vui lòng thử lại sau.',
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updateCartItemsWithPayment(
+    cartId: number,
+    paymentId: number,
+  ): Promise<void> {
+    // Tìm tất cả CartItem thuộc cart đã thanh toán
+    const cartItems = await this.cartItemRepository.find({
+      where: {
+        cart: { id: cartId },
+        isPaid: true,
+      },
+    });
+
+    // Cập nhật paymentId cho từng CartItem
+    for (const cartItem of cartItems) {
+      cartItem.paymentId = paymentId;
+      await this.cartItemRepository.save(cartItem);
+    }
+  }
 }
