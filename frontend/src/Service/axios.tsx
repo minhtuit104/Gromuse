@@ -26,32 +26,15 @@ instance.interceptors.request.use(
   }
 );
 
+// // Xử lý response - chỉ giữ lại một interceptor
 instance.interceptors.response.use(
   function (response) {
+    // Trả về trực tiếp data từ response
     return response.data;
   },
   function (error) {
-    let res: any = {};
-    if (error.response) {
-      res.data = error.response.data;
-      res.status = error.response.status;
-      res.headers = error.response.headers;
-      console.error("Error Response:", res.data);
-    } else if (error.request) {
-      console.log("No Response", error.request);
-    } else {
-      console.log("Error", error.message);
-    }
-
-    return res;
-  }
-);
-
-instance.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
     console.error("API Error:", error.response?.data || error.message);
-    return Promise.reject(error.response || error);
+    return Promise.reject(error);
   }
 );
 

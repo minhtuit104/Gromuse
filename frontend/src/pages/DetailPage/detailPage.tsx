@@ -7,7 +7,7 @@ import Img1 from "../../assets/images/imagePNG/lays_1 1.png";
 import DefaultAvatar from "../../assets/images/imagePNG/Avatar.png";
 import ImgDescription from "../../assets/images/imagePNG/image 1.png";
 import IconClock from "../../assets/images/icons/ic_ clock.svg";
-import IconCart from "../../assets/images/icons/ic_ cart.svg";
+import IconCart from "../../assets/images/icons/ic_cart.svg";
 import IconSold from "../../assets/images/icons/ic_ flame.svg";
 import shopIcon from "../../assets/images/icons/ic_ shop.svg";
 import { useParams } from "react-router-dom";

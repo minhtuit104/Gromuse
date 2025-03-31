@@ -7,9 +7,15 @@ export interface CounterProps {
   initialCount?: number;
   specialDisplay?: string;
   onChange?: (newCount: number) => void;
+  className?: string;
+  allowZero?: boolean;
 }
 
-const Counter: React.FC<CounterProps> = ({ initialCount = 1, onChange }) => {
+const Counter: React.FC<CounterProps> = ({
+  initialCount = 1,
+  onChange,
+  allowZero = false,
+}) => {
   const [count, setCount] = useState(initialCount);
 
   useEffect(() => {
@@ -19,8 +25,12 @@ const Counter: React.FC<CounterProps> = ({ initialCount = 1, onChange }) => {
   }, [count, onChange]);
 
   const handleDecrement = () => {
-    if (count > 1) {
-      setCount(count - 1);
+    if (allowZero) {
+      setCount((prevCount) => Math.max(0, prevCount - 1));
+    } else {
+      if (count > 1) {
+        setCount(count - 1);
+      }
     }
   };
 
