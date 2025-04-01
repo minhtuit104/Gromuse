@@ -1,105 +1,179 @@
 @import url(../../assets/css/styles.css);
 
 .header {
-    background-color: var(--mint800);
-    width: calc(100% - 90px);
-    height: 90px;
-    border-radius: 16px;
-    margin: 20px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  background-color: var(--mint800);
+  width: calc(100% - 90px);
+  height: 90px;
+  border-radius: 16px;
+  margin: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .header-left {
-    display: flex;
-    align-items: center;
-    margin-left: 40px;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  margin-left: 40px;
+  gap: 10px;
 }
 
 .header-left img {
-    filter: brightness(0) invert(1);
-    cursor: pointer;
+  filter: brightness(0) invert(1);
+  cursor: pointer;
 }
 
 .header-left span {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--white50);
-    cursor: pointer;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--white50);
+  cursor: pointer;
 }
 
 .header-middle {
-    position: relative;
+  position: relative;
 }
 
 .header-middle input {
-    width: 520px;
-    height: 50px;
-    line-height: 50px;
-    border-radius: 32px;
-    background-color: var(--white50);
-    padding: 8px 50px 8px 16px;
-    border: none;
-    outline: none;
-    font-size: 20px;
+  width: 520px;
+  height: 50px;
+  line-height: 50px;
+  border-radius: 32px;
+  background-color: var(--white50);
+  padding: 8px 50px 8px 16px;
+  border: none;
+  outline: none;
+  font-size: 20px;
 }
 
 .header-middle input::placeholder {
-    color: var(--white400);
-    font-size: 20px;
-    font-weight: 700;
+  color: var(--white400);
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .header-middle img {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
 }
 
-.header-right{
-    display: flex;
-    gap: 16px;
-    margin-right: 40px;
+.header-right {
+  display: flex;
+  gap: 16px;
+  margin-right: 40px;
 }
 
 .header-right-cart {
-    position: relative;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: var(--white50);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background-color: var(--white50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .header-right-cart .quantity {
-    position: absolute;
-    top: 9px;
-    right: 6px;
-    background-color: var(--red500);
-    color: var(--white50);
-    border-radius: 50%;
-    width: 15px;
-    height: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: var(--white50);
+  color: var(--orange500);
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 48px;
+  border: 3px solid var(--mint800);
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header-right-cart span {
-    font-size: 10px;
+  font-size: 10px;
+}
+
+.header-right-cart img {
+  filter: invert(52%) sepia(92%) saturate(3351%) hue-rotate(1deg)
+    brightness(101%) contrast(103%);
+}
+
+.header-right-notification {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background-color: var(--white50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.header-right-notification .quantity {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: var(--white50);
+  color: var(--red500);
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 48px;
+  border: 3px solid var(--mint800);
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-right-notification span {
+  font-size: 10px;
+}
+
+.header-right-message {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background-color: var(--white50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.header-right-message .quantity {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: var(--white50);
+  color: var(--green500);
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 48px;
+  border: 3px solid var(--mint800);
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-right-message span {
+  font-size: 10px;
 }
 
 .header-right-avatar img {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 2px solid var(--white50);
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--white50);
 }
-

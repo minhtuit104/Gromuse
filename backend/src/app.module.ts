@@ -30,6 +30,7 @@ import { Voucher } from './typeorm/entities/Voucher';
       host: 'localhost',
       type: 'mysql',
       autoLoadEntities: true,
+      logging: true,
       entities: [
         User,
         Account,

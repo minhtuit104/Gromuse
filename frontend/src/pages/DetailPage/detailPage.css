@@ -23,7 +23,7 @@
 
 .detail-product {
   width: 100%;
-  height: 550px;
+  height: 520px;
   display: flex;
   justify-content: space-between;
   background-color: var(--white50);
@@ -37,7 +37,7 @@
 .detail-product-image {
   position: relative;
   margin: 0 !important;
-  width: 48%;
+  width: 51%;
   height: 750px;
   display: flex;
   align-items: center;
@@ -98,6 +98,8 @@ img.main-product-image {
   justify-content: center;
   align-items: center;
   gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .product-option-item {
@@ -118,7 +120,7 @@ img.main-product-image {
 }
 
 .detail-product-info {
-  width: 48%;
+  width: 45%;
   height: 700px;
   margin: 0 !important;
   color: var(--white50);

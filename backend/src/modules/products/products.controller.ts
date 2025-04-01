@@ -138,4 +138,17 @@ export class ProductsController {
       );
     }
   }
+
+  @Get('most-sold/:limit')
+  async getMostSold(@Param('limit') limit: number = 10): Promise<Product[]> {
+    try {
+      return await this.productsService.findMostSold(limit);
+    } catch (error) {
+      console.error('Error getting most sold products:', error);
+      throw new HttpException(
+        error.message || 'Failed to get most sold products',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
