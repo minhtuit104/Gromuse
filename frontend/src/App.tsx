@@ -1,6 +1,7 @@
 import "react-toastify/dist/ReactToastify.css";
 import { Routes, Route } from "react-router-dom";
 import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
+import LoginShop from "./pages/LoginShop/loginShop";
 import { AuthRoute, PrivateRoute } from "./router/protectRouter";
 import HomePage from "./pages/HomePage/HomePage";
 import { ToastContainer } from "react-toastify";
@@ -10,6 +11,7 @@ import DetailPage from "./pages/DetailPage/detailPage";
 import ErrorBoundary from "./components/ErrorBoundary";
 import OrderShop from "./pages/OrderShop/Order/OrderShop";
 import OrderHistory from "./pages/OrderShop/OrderHistory/OrderHistory";
+import DashboardPage from "./pages/DashboardPage/DashboardPage";
 
 function App() {
   return (
@@ -21,11 +23,11 @@ function App() {
             path="/login"
             element={
               <AuthRoute>
-                <SignUpLogInForm />
+                <DashboardPage />
               </AuthRoute>
             }
           />
-          {/* Chỉ có thể vào trang feed nếu đã đăng nhập */}
+          {/* Chỉ có thể vào trang home nếu đã đăng nhập */}
           <Route
             path="/"
             element={

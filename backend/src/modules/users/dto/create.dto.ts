@@ -31,4 +31,10 @@ export class CreateUserDto {
  
     @ApiProperty()
     sex: string;
+    
+    @ApiProperty({
+        description: 'User role (1: Normal User, 2: Shop/Admin)',
+        default: 1
+    })
+    role?: number;
 }

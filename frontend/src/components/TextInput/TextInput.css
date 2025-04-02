@@ -7,7 +7,7 @@
   width: 100%;
 }
 .input {
-  border-color: var(--mint600) !important;
+  border-color: var(--white200) !important;
   border-width: 3px;
   border-radius: 32px;
 }
