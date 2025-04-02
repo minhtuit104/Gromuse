@@ -1,0 +1,84 @@
+@import url(../../../../assets/css/styles.css);
+
+.card_container {
+  width: calc(25% - 11.25px);
+  height: 155px;
+  display: flex;
+  background-color: var(--white50);
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card_container_left {
+  width: 50%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card_container_left_value {
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--black50);
+}
+
+.card_container_left_title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--white700);
+}
+
+.card_left_paramete_increase {
+  display: flex;
+  align-items: center;
+  color: var(--red700);
+}
+
+.card_left_paramete_reduce {
+  color: var(--green700);
+  display: flex;
+  align-items: center;
+}
+
+.card_container_right {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card_container_right img {
+  width: 85px;
+  height: 85px;
+  object-fit: cover;
+}
+
+.background_percent {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 5px;
+}
+
+.background_percent.increase {
+  background-color: var(--green100);
+}
+
+.background_percent.increase img {
+  filter: brightness(0) saturate(100%) invert(72%) sepia(40%) saturate(481%)
+    hue-rotate(118deg) brightness(89%) contrast(84%);
+}
+
+.background_percent.decrease {
+  background-color: var(--red100);
+}
+
+.background_percent.decrease img {
+  filter: brightness(0) saturate(100%) invert(45%) sepia(52%) saturate(7478%)
+    hue-rotate(340deg) brightness(98%) contrast(97%);
+}

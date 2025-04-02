@@ -1,0 +1,158 @@
+@import url(../../../assets//css/styles.css);
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.order_container {
+  display: flex;
+  width: 100%;
+  height: 800px;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  background-color: var(--white100);
+}
+
+.order_history {
+  width: 100%;
+  display: flex;
+  height: auto;
+  padding: 0 45px;
+  gap: 20px;
+  flex-direction: column;
+}
+
+/* Tab Navigation */
+.tabs {
+  display: flex;
+  justify-content: space-between;
+  box-shadow: 0 0px 5px 1px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  background-color: var(--white50);
+}
+
+.tab {
+  padding: 15px;
+  width: 50%;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.tab.active {
+  font-size: 24px;
+  color: var(--mint800);
+}
+
+.tab.inactive {
+  font-size: 24px;
+  color: var(--white400);
+}
+
+.vertical_line {
+  height: 55px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: var(--white300);
+}
+
+.order-list-history {
+  background-color: var(--white50);
+  border-radius: 16px;
+  height: 90px;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  padding: 15px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+/* Product Section */
+.product-image {
+  width: 60px;
+  height: 60px;
+  background-color: var(--white50);
+  border: 1px solid var(--green900);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.product-info {
+  width: 200px;
+}
+
+img.ic_20.arrow_right {
+  margin-right: 20px;
+}
+
+.product-name {
+  color: var(--green900);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.product-quantity {
+  color: var(--orange400);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+/* Arrow Symbol */
+.arrow {
+  margin: 0 15px;
+}
+
+/* Customer Info */
+.customer-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.customer-name {
+  color: var(--green900);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.customer-address {
+  color: var(--white600);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+/* Price Info */
+.price-info-history {
+  width: 80px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.old-price {
+  color: var(--white400);
+  text-decoration: line-through;
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.new-price {
+  color: var(--red500);
+  font-weight: 600;
+  font-size: 20px;
+}

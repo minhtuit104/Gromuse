@@ -1,0 +1,121 @@
+@import url(../../../../assets/css/styles.css);
+
+.order_history_container {
+    width: 100%;
+    background-color: var(--white50) ;
+    border-radius: 10px;
+    padding: 20px 10px;
+    margin: auto;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    max-height: 542px;
+    overflow-y: auto;
+}
+  
+.order_history_header {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 10px;
+    gap: 10px;
+}
+  
+.order_history_header h3 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--green800);
+}
+
+.order_history_lable{
+    display: flex;
+    gap: 15px;
+    height: 20px;
+    align-items: flex-end;
+}
+
+.order_history_lable .line{
+    width: 2px;
+    height: 20px;
+    background-color: var(--white500);
+}
+  
+.total_amount {
+    font-size: 16px;
+    font-weight: 700;
+}
+  
+.today_text {
+    font-size: 14px;
+    color: var(--white600);
+}
+  
+.order_list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 10px;
+}
+  
+.order_item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    width: calc(50% - 10px);
+    height: 70px;
+}
+  
+.order_info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+  
+.order_info .avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+  
+.order_info .name {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+  
+.order_info .order_number {
+    font-size: 12px;
+    color: var(--white500);
+}
+  
+.order_item .order_amount {
+    font-weight: bold;
+}
+  
+.view_full_history {
+    margin-top: 25px;
+    font-size: 14px;
+    color: var(--green800);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.view_full_history span{
+    font-weight: 600;
+}
+  
+.view_full_history .arrow_down {
+    width: 40px;
+    height: 20px;
+    border: none;
+    border-radius: 20px;
+    background-color: var(--red100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}

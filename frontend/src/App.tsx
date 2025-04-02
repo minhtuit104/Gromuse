@@ -8,6 +8,8 @@ import { PaymentPage } from "./pages/PaymentPages/index";
 import AddProduct from "./pages/AddProducts/addProduct";
 import DetailPage from "./pages/DetailPage/detailPage";
 import ErrorBoundary from "./components/ErrorBoundary";
+import OrderShop from "./pages/OrderShop/Order/OrderShop";
+import OrderHistory from "./pages/OrderShop/OrderHistory/OrderHistory";
 
 function App() {
   return (
@@ -66,6 +68,24 @@ function App() {
                 <ErrorBoundary>
                   <DetailPage />
                 </ErrorBoundary>
+              </PrivateRoute>
+            }
+          />
+          {/* Thêm tuyến đường cho trang OrderShop */}
+          <Route
+            path="/order_shop"
+            element={
+              <PrivateRoute>
+                <OrderShop />
+              </PrivateRoute>
+            }
+          />
+          {/* Thêm tuyến đường cho trang OrderHistory */}
+          <Route
+            path="/order_history"
+            element={
+              <PrivateRoute>
+                <OrderHistory />
               </PrivateRoute>
             }
           />
