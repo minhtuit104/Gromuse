@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./addProduct.css";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import Header from "../../layouts/Header/Header";
+import HeaderDashboard from "../../pages/DashboardPage/Header/HeaderDashboard";
 import ImgAddImg from "../../assets/images/icons/ic_add_image.svg";
 import ImgColor from "../../assets/images/icons/ic_color.svg";
 import IcEye from "../../assets/images/icons/ic_eye.svg";
@@ -561,7 +561,7 @@ const AddProduct = () => {
 
   return (
     <div className="add-product">
-      <Header />
+      <HeaderDashboard />
       <div className="add-product-container">
         <h1 className="add-product-header">
           {isEditMode ? "Edit Product" : "Add New Product"}

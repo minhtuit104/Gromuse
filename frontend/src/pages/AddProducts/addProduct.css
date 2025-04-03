@@ -8,10 +8,11 @@
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
+  gap: 20px;
 }
 
 .add-product-container {
-  width: 94%;
+  width: 97%;
   height: auto;
   padding: 24px;
   background-color: var(--white50);
@@ -57,6 +58,7 @@ input.ant-input.ant-input-lg.css-dev-only-do-not-override-1v613y0.ant-input-outl
 .form-group-row {
   display: flex;
   gap: 40px;
+  margin-top: 8px;
 }
 
 .date-picker-wrapper {

@@ -41,12 +41,12 @@ export class AuthController {
   @Post('/login')
   async login(@Body() loginDto: LoginDto, @Response() res) {
     try {
-      const loginResponse = await this.authService.login(loginDto);
+      const data = await this.authService.login(loginDto);
 
-      return res.status(200).json({
-        status: 200,
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
         message: 'Login success!',
-        data: loginResponse,
+        data,
       });
     } catch (error) {
       return res.status(400).json({

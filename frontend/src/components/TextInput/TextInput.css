@@ -1,9 +1,9 @@
 @import url(../../assets/css/styles.css);
 
 .text-input {
-  display: flex; 
-  flex-direction: column; 
-  gap: 15px; 
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
   width: 100%;
 }
 .input {

@@ -276,7 +276,7 @@
   align-items: center;
 }
 
-.product-image {
+.product-image-payment {
   object-fit: cover;
   width: 75px;
   height: 75px;
@@ -782,13 +782,11 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 10px;
 }
 
-.text-input {
-  margin-bottom: 15px;
-}
 /* .text-input {
-    margin-bottom: 15px;
+  margin-bottom: 15px;
 } */
 
 .label_require {

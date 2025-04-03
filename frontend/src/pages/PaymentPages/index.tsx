@@ -16,6 +16,10 @@ import UpdateAddressModal from "./modalUpdateAddress";
 import { AddressDto } from "../../dtos/address.dto";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  createOrdersFromPaymentData,
+  saveOrderDataToLocalStorage,
+} from "../../Service/OrderService";
 
 interface Product {
   id: string | number;
@@ -26,15 +30,6 @@ interface Product {
   price: number;
   amount: number;
 }
-
-// interface Shop {
-//   id: number;
-//   name: string;
-//   avatar: string;
-//   deliveryInfo: string;
-//   productIcons: boolean;
-//   products: Product[];
-// }
 
 export const PaymentPage = () => {
   const navigate = useNavigate();
@@ -368,6 +363,23 @@ export const PaymentPage = () => {
 
       setTimeout(() => {
         navigate("/", { replace: true });
+        setTimeout(() => {
+          localStorage.removeItem("tempPaymentSuccess");
+        }, 3500);
+      }, 3500);
+
+      // Lưu dữ liệu đơn hàng để hiển thị trong OrderShop
+      const allProducts = processedData.flatMap((shop) => shop.products);
+      const orderData = createOrdersFromPaymentData(
+        allProducts,
+        address.name,
+        address.address
+      );
+      saveOrderDataToLocalStorage(orderData);
+
+      // Chuyển đến trang OrderShop để hiển thị đơn hàng
+      setTimeout(() => {
+        navigate("/order_shop", { replace: true });
         setTimeout(() => {
           localStorage.removeItem("tempPaymentSuccess");
         }, 3500);

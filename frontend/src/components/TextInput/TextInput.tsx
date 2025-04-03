@@ -4,7 +4,7 @@ import "./TextInput.css";
 interface TextInputProps {
   label?: string;
   labelStyle?: string;
-  type?: string
+  type?: string;
   required?: boolean;
   placeholder?: string;
   wrapperStyle?: string;
@@ -18,7 +18,6 @@ interface TextInputProps {
   value?: string; // Nhận giá trị từ Formik
   onChange?: (value: string) => void; // Để Formik có thể kiểm soát input
   onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void; // Để Formik cập nhật trạng thái touched
-  type?: string;
 }
 
 const TextInput = ({
@@ -38,7 +37,6 @@ const TextInput = ({
   value = "",
   onBlur,
   disabled,
-  type,
 }: TextInputProps) => {
   const renderMessage = useMemo(() => {
     if (!!error) {

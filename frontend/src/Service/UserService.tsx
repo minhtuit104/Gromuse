@@ -1,10 +1,12 @@
 import axios from "./axios";
 
 const loginApi = async (identifier: string, password: string) => {
-  return await axios.post("/api/v1/auth/login", {
+  const res = await axios.post("/api/v1/auth/login", {
     identifier,
     password,
   });
+  console.log("resspon API:===", res);
+  return res;
 };
 
 const registerApi = (
@@ -19,24 +21,23 @@ const registerApi = (
     phoneNumber,
     password,
   });
-const registerApi = (name: string, email: string, phoneNumber: string, password: string) => {
-    return axios.post('/api/v1/auth/register', { 
-        name, 
-        email, 
-        phoneNumber, 
-        password 
-    });
 };
 
-const registerApiShop = (name: string, email: string, phoneNumber: string, password: string, address: string) => {
-    return axios.post('/api/v1/auth/register', { 
-        name, 
-        email, 
-        phoneNumber, 
-        password, 
-        address, 
-        role: 2 
-    });
+const registerApiShop = (
+  name: string,
+  email: string,
+  phoneNumber: string,
+  password: string,
+  address: string
+) => {
+  return axios.post("/api/v1/auth/register", {
+    name,
+    email,
+    phoneNumber,
+    password,
+    address,
+    role: 2,
+  });
 };
 
 const fectchUserName = async (idUser: number) => {
@@ -124,4 +125,12 @@ const updateUserProfile = async (updateData: {
   }
 };
 
-export {loginApi, registerApi, registerApiShop ,fectchUserName, fetchAllUser, updateAvatar, updateUserProfile};
+export {
+  loginApi,
+  registerApi,
+  registerApiShop,
+  fectchUserName,
+  fetchAllUser,
+  updateAvatar,
+  updateUserProfile,
+};

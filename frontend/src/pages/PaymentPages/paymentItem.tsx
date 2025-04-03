@@ -110,7 +110,7 @@ export const PaymentItem = ({
                     : ImgDetailLays
                 }
                 alt={product.name}
-                className="product-image"
+                className="product-image-payment"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
