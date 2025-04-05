@@ -138,4 +138,13 @@ export class ProductsService {
     }
     return category;
   }
+
+  async findMostSold(limit: number = 10): Promise<Product[]> {
+    return this.productsRepository.find({
+      where: { active: true },
+      relations: ['category'],
+      order: { sold: 'DESC' },
+      take: limit,
+    });
+  }
 }
