@@ -274,6 +274,7 @@
   height: 80px;
   display: flex;
   align-items: center;
+  gap: 20px;
 }
 
 .product-image-payment {
@@ -282,7 +283,7 @@
   height: 75px;
 }
 
-.product-info {
+.product-infomation {
   flex-grow: 1;
   margin-left: 12px;
   display: flex;
@@ -314,29 +315,30 @@
 }
 
 .custom-counter-wrapper .counter-container {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 30px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  margin-left: 200px;
 }
 
 .custom-counter-wrapper .counter-button {
-  width: 35px !important;
-  height: 35px !important;
-  border: 3px solid var(--green600) !important;
-  border-radius: 50px !important;
-  font-size: 20px !important;
-  cursor: pointer !important;
-  background-color: var(--white50) !important;
+  width: 35px;
+  height: 35px;
+  border: 3px solid var(--green600);
+  border-radius: 50px;
+  font-size: 20px;
+  cursor: pointer;
+  background-color: var(--white50);
 }
 
 .custom-counter-wrapper .counter-button img {
-  width: 20px !important;
-  height: 20px !important;
+  width: 20px;
+  height: 20px;
 }
 
 .custom-counter-wrapper .counter-value {
-  font-size: 25px !important;
+  font-size: 25px;
 }
 
 .see-more-btn {

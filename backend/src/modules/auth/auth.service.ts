@@ -101,6 +101,6 @@ export class AuthService {
 
     const { password, ...userData } = findUserByEmail;
 
-    return { data: { ...userData, access_token } };
+    return { ...userData, access_token };
   }
 }

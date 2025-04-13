@@ -199,7 +199,7 @@ input.text-input.color-text-input {
 .color-picker-icon {
   position: absolute;
   right: 10px;
-  top: 55%;
+  top: 70%;
   transform: translateY(-50%);
   width: 28px;
   height: 28px;

@@ -13,11 +13,17 @@ function Header() {
   const goToPaymentPage = () => {
     navigate("/payment");
   };
+
+  const gotoHome = () => {
+    navigate("/");
+  };
   return (
     <div className="header">
       <div className="header-left">
         <img src={IconList} alt="icon-list" className="ic_40" />
-        <span>Gromuse</span>
+        <span className="name_app" onClick={gotoHome}>
+          Gromuse
+        </span>
       </div>
       <div className="header-middle">
         <input

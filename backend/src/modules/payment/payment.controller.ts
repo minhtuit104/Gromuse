@@ -14,7 +14,6 @@ import {
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dtos/create-payment.dto';
 import { ApplyVoucherDto, UpdatePaymentDto } from './dtos/update-payment.dto';
-import { UpdateProductAmountDto } from './dtos/update-product-amount.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaymentStatus } from '../../typeorm/entities/Payment';
 
@@ -79,19 +78,6 @@ export class PaymentController {
   @ApiResponse({ status: 200, description: 'Áp dụng mã giảm giá thành công' })
   applyVoucher(@Body() applyVoucherDto: ApplyVoucherDto) {
     return this.paymentService.applyVoucher(applyVoucherDto.code);
-  }
-
-  @Post('update-product-amount')
-  @ApiOperation({ summary: 'Cập nhật số lượng sản phẩm' })
-  @ApiResponse({
-    status: 200,
-    description: 'Cập nhật số lượng sản phẩm thành công',
-  })
-  updateProductAmount(@Body() updateProductAmountDto: UpdateProductAmountDto) {
-    return this.paymentService.updateProductAmount(
-      updateProductAmountDto.productId,
-      updateProductAmountDto.amount,
-    );
   }
 
   @Post(':id/cancel')

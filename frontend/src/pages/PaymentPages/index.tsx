@@ -16,10 +16,7 @@ import UpdateAddressModal from "./modalUpdateAddress";
 import { AddressDto } from "../../dtos/address.dto";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  createOrdersFromPaymentData,
-  saveOrderDataToLocalStorage,
-} from "../../Service/OrderService";
+import { confirmPaymentAndUpdateBackend } from "../../Service/OrderService";
 
 interface Product {
   id: string | number;
@@ -28,7 +25,7 @@ interface Product {
   title: string;
   weight: number;
   price: number;
-  amount: number;
+  quantity: number;
 }
 
 export const PaymentPage = () => {
@@ -62,7 +59,6 @@ export const PaymentPage = () => {
     }
 
     const allProducts = data.flatMap((shop) => shop.products);
-
     const shop1 = {
       id: 1,
       name: "Lay's Việt Nam",
@@ -71,7 +67,6 @@ export const PaymentPage = () => {
       productIcons: true,
       products: allProducts.slice(0, 2),
     };
-
     const shop2 = {
       id: 2,
       name: "Lay's Việt Nam",
@@ -80,18 +75,17 @@ export const PaymentPage = () => {
       productIcons: true,
       products: allProducts.slice(2),
     };
-
     setProcessedData([shop1, ...(shop2.products.length > 0 ? [shop2] : [])]);
   }, [data]);
 
   // Hàm cập nhật số lượng sản phẩm
   const handleUpdateProductPrice = useCallback(
-    async (productId: string, newAmount: number) => {
+    async (productId: string, newQuantity: number) => {
       if (isCartRemoved) return;
 
       try {
         // Gọi hàm cập nhật số lượng từ usePayment
-        const updateResult = await handleUpdatePrice(productId, newAmount);
+        const updateResult = await handleUpdatePrice(productId, newQuantity);
 
         if (updateResult) {
           // Cập nhật số lượng sản phẩm trong processedData
@@ -99,7 +93,7 @@ export const PaymentPage = () => {
             ...shop,
             products: shop.products.map((product: Product) =>
               product.id === productId
-                ? { ...product, amount: newAmount }
+                ? { ...product, quantity: newQuantity }
                 : product
             ),
           }));
@@ -122,13 +116,11 @@ export const PaymentPage = () => {
         sum +
         shop.products.reduce(
           (prodSum: number, prod: Product) =>
-            prodSum + (Number(prod.price) || 0) * (Number(prod.amount) || 1),
+            prodSum + (Number(prod.price) || 0) * (Number(prod.quantity) || 1),
           0
         ),
       0
     );
-
-    // Tính couponDiscount
     let discount = 0;
     if (selectedVoucher) {
       const voucher = vouchers.find((v) => v.code === selectedVoucher);
@@ -146,10 +138,7 @@ export const PaymentPage = () => {
         }
       }
     }
-
-    // Tính total
     const newTotal = newSubtotal + deliveryFee.discounted - discount;
-
     return {
       subtotal: newSubtotal,
       couponDiscount: discount,
@@ -181,7 +170,6 @@ export const PaymentPage = () => {
   const handleOpenUpdateAddressModal = () => {
     setIsUpdateAddressModalOpen(true);
   };
-
   const handleUpdateAddress = (newAddress: {
     name: string;
     phone: string;
@@ -190,29 +178,33 @@ export const PaymentPage = () => {
     setAddress(newAddress);
     setIsUpdateAddressModalOpen(false);
   };
-
   const schema = yup.object().shape({
     vourcher: yup.string(),
   });
 
   const handleSubmit = async () => {
+    const cartIdString = localStorage.getItem("currentCartId");
+    if (!cartIdString || isNaN(parseInt(cartIdString))) {
+      toast.error("Lỗi: Không tìm thấy ID giỏ hàng hợp lệ.");
+      console.error("[PaymentPage] Invalid or missing cartId in localStorage.");
+      return;
+    }
+    const cartId = parseInt(cartIdString);
+
+    if (
+      !processedData ||
+      processedData.length === 0 ||
+      !processedData.some((shop) => shop.products && shop.products.length > 0)
+    ) {
+      toast.error("Giỏ hàng trống, không thể thanh toán.");
+      console.error("[PaymentPage] Cart is empty.");
+      return;
+    }
+
+    setIsLoading(true);
+    setPaymentStatus("");
+
     try {
-      setIsLoading(true);
-      setPaymentStatus("");
-
-      const cartId = localStorage.getItem("cartId");
-      if (!cartId) {
-        throw new Error("Không tìm thấy ID giỏ hàng");
-      }
-
-      if (
-        !processedData ||
-        processedData.length === 0 ||
-        !processedData.some((shop) => shop.products && shop.products.length > 0)
-      ) {
-        throw new Error("Giỏ hàng trống, không có sản phẩm để thanh toán");
-      }
-
       const paymentData = {
         paymentMethod: selectedPayment === 0 ? "online" : "cod",
         subtotal: calculatedValues.subtotal,
@@ -239,67 +231,13 @@ export const PaymentPage = () => {
             title: product.title,
             weight: Number(product.weight),
             price: Number(product.price),
-            amount: Number(product.amount),
+            quantity: Number(product.quantity) || 1,
           })),
         })),
-        cartId: Number(localStorage.getItem("cartId")),
+        cartId: cartId,
       };
 
-      // Log để kiểm tra dữ liệu trước khi gửi
-      console.log("cartId trước khi gửi:", cartId);
-      console.log(
-        "Dữ liệu sản phẩm cần cập nhật:",
-        processedData.flatMap((shop) =>
-          shop.products.map((product: Product) => ({
-            id: Number(product.id),
-            quantity: Number(product.amount),
-          }))
-        )
-      );
-
-      const updateCartItemsResponse = await fetch(
-        `http://localhost:3000/cart/${cartId}/update-cart-items-status`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            isPaid: true,
-            products: processedData.flatMap((shop) =>
-              shop.products.map((product: Product) => ({
-                id: Number(product.id),
-                quantity: Number(product.amount),
-              }))
-            ),
-          }),
-          credentials: "include",
-        }
-      );
-
-      // Kiểm tra phản hồi và xử lý kết quả
-      if (!updateCartItemsResponse.ok) {
-        const errorResponse = await updateCartItemsResponse.json();
-        console.error("Lỗi khi cập nhật isPaid:", errorResponse);
-        throw new Error(
-          errorResponse.message ||
-            `Không thể cập nhật trạng thái: ${updateCartItemsResponse.status}`
-        );
-      }
-
-      const updateCartResult = await updateCartItemsResponse.json();
-      console.log("Kết quả cập nhật isPaid:", updateCartResult);
-
-      if (!updateCartItemsResponse.ok) {
-        console.error(
-          "Không thể cập nhật trạng thái CartItem và số lượng Product:",
-          updateCartResult
-        );
-      } else {
-        console.log(
-          "Đã cập nhật trạng thái CartItem và số lượng Product thành công:",
-          updateCartResult
-        );
-      }
-
+      console.log("[PaymentPage] Calling API: POST /payment/create");
       const response = await fetch(`http://localhost:3000/payment/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -309,26 +247,24 @@ export const PaymentPage = () => {
 
       if (!response.ok) {
         const errorResponse = await response.json();
-        console.error("Lỗi API thanh toán:", errorResponse);
+        console.error(
+          "[PaymentPage] Payment creation API error:",
+          errorResponse
+        );
         throw new Error(
           errorResponse.message || `Không thể tạo đơn hàng: ${response.status}`
         );
       }
-
       const responseData = await response.json();
-      console.log("Kết quả API tạo đơn hàng:", responseData);
-
-      if (!responseData.data) {
-        throw new Error(
-          responseData.message || `Không thể tạo đơn hàng: Dữ liệu không hợp lệ`
-        );
-      }
-
-      const paymentId = responseData.data.id;
+      console.log("[PaymentPage] Payment creation API success:", responseData);
+      const paymentId = responseData.data?.id;
       if (!paymentId) {
         throw new Error("Không nhận được paymentId từ server");
       }
 
+      console.log(
+        `[PaymentPage] Calling API: POST /payment/${paymentId}/confirm`
+      );
       const confirmResponse = await fetch(
         `http://localhost:3000/payment/${paymentId}/confirm`,
         {
@@ -340,57 +276,70 @@ export const PaymentPage = () => {
 
       if (!confirmResponse.ok) {
         const confirmError = await confirmResponse.json();
+        console.error(
+          "[PaymentPage] Payment confirmation API error:",
+          confirmError
+        );
         throw new Error(
           confirmError.message ||
             `Không thể xác nhận thanh toán: ${confirmResponse.status}`
         );
       }
-
       const confirmData = await confirmResponse.json();
+      console.log(
+        "[PaymentPage] Payment confirmation API success:",
+        confirmData
+      );
       if (!confirmData.data) {
         throw new Error(`Không nhận được dữ liệu xác nhận thanh toán`);
       }
 
-      // Khi thanh toán thành công
+      console.log(
+        `[PaymentPage] Calling confirmPaymentAndUpdateBackend for cartId: ${cartId}`
+      );
+      const paidItems = processedData.flatMap((shop) =>
+        shop.products.map((product: Product) => ({
+          id: Number(product.id),
+          quantity: Number(product.quantity) || 1, // Đảm bảo có quantity
+        }))
+      );
+
+      const updateAndSyncSuccess = await confirmPaymentAndUpdateBackend(
+        cartId,
+        paidItems
+      );
+
+      if (!updateAndSyncSuccess) {
+        console.error("[PaymentPage] confirmPaymentAndUpdateBackend failed.");
+        toast.warn(
+          "Thanh toán thành công nhưng cập nhật trạng thái đơn hàng có lỗi."
+        );
+      } else {
+        console.log("[PaymentPage] confirmPaymentAndUpdateBackend successful.");
+        toast.success("Đặt hàng và cập nhật trạng thái thành công!");
+      }
+
       setIsPaymentComplete(true);
-      setIsCartRemoved(true);
 
       localStorage.setItem("paymentComplete", "true");
       localStorage.setItem("tempPaymentSuccess", "true");
-      localStorage.removeItem("cartId");
 
-      toast.success("Đặt hàng thành công!");
+      localStorage.setItem("lastPaidCartId", cartId.toString());
+      localStorage.removeItem("currentCartId");
 
+      // Chuyển hướng người dùng
       setTimeout(() => {
-        navigate("/", { replace: true });
+        navigate("/", { replace: true }); // Chuyển về trang chủ hoặc trang lịch sử đơn hàng
         setTimeout(() => {
           localStorage.removeItem("tempPaymentSuccess");
-        }, 3500);
-      }, 3500);
-
-      // Lưu dữ liệu đơn hàng để hiển thị trong OrderShop
-      const allProducts = processedData.flatMap((shop) => shop.products);
-      const orderData = createOrdersFromPaymentData(
-        allProducts,
-        address.name,
-        address.address
-      );
-      saveOrderDataToLocalStorage(orderData);
-
-      // Chuyển đến trang OrderShop để hiển thị đơn hàng
-      setTimeout(() => {
-        navigate("/order_shop", { replace: true });
-        setTimeout(() => {
-          localStorage.removeItem("tempPaymentSuccess");
-        }, 3500);
-      }, 3500);
+        }, 500);
+      }, 1500);
     } catch (error) {
-      console.error("Lỗi khi thanh toán:", error);
-      setPaymentStatus(
-        `Có lỗi khi thanh toán! ${
-          error instanceof Error ? error.message : "Vui lòng thử lại."
-        }`
-      );
+      console.error("[PaymentPage] Error during payment process:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Vui lòng thử lại.";
+      setPaymentStatus(`Có lỗi khi thanh toán! ${errorMessage}`);
+      toast.error(`Lỗi thanh toán: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -409,7 +358,7 @@ export const PaymentPage = () => {
     if (!validPrefixes.includes(prefix)) {
       throw new Error("Đầu số điện thoại không hợp lệ");
     }
-    return numberOnly.startsWith("0") ? numberOnly : `0${numberOnly}`;
+    return phone;
   };
 
   if (loading) {

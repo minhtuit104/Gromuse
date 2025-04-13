@@ -54,7 +54,7 @@ function HeaderDashboard() {
         <div className="separator"></div>
         <div className="header_right_avatar">
           <p>
-            Hello, <i>Ley's Việt Nam</i>
+            Hello, <i>Lay's Việt Nam</i>
           </p>
           <img src={ImgAvatar} alt="avatar" />
         </div>

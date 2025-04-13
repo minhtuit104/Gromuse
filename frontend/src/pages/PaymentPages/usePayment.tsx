@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Shop } from "./paymentItem";
-// import { toast } from "react-toastify";
+import { getBuyAgainProduct } from "../../Service/OrderService";
 
 export interface Voucher {
   id: string | number;
@@ -16,6 +16,104 @@ const usePayment = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const updateBuyAgainProductQuantity = (
+    productId: string,
+    newQuantity: number
+  ) => {
+    try {
+      // Lấy sản phẩm đang mua lại từ localStorage
+      const buyAgainProduct = getBuyAgainProduct();
+      if (
+        buyAgainProduct &&
+        buyAgainProduct.id.toString() === productId.toString()
+      ) {
+        // Cập nhật số lượng
+        buyAgainProduct.quantity = newQuantity;
+        // Lưu lại vào localStorage
+        localStorage.setItem(
+          "buyAgainProduct",
+          JSON.stringify(buyAgainProduct)
+        );
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật số lượng sản phẩm mua lại:", error);
+      return false;
+    }
+  };
+
+  const updateProductQuantity = useCallback(
+    async (productId: string, newQuantity: number) => {
+      // Hủy request cũ trước khi gửi request mới
+      cancelOngoingRequest();
+
+      // Kiểm tra kết nối mạng
+      if (!navigator.onLine) {
+        console.error("Không có kết nối mạng");
+        return false;
+      }
+
+      // Kiểm tra xem có phải là sản phẩm mua lại không
+      const cartId = localStorage.getItem("cartId");
+      if (cartId && cartId.startsWith("buyAgain_")) {
+        // Xử lý cập nhật số lượng cho sản phẩm mua lại
+        return updateBuyAgainProductQuantity(productId, newQuantity);
+      }
+
+      // Tạo controller mới cho request API
+      fetchControllerRef.current = new AbortController();
+      const controller = fetchControllerRef.current;
+
+      try {
+        if (!cartId) {
+          console.error("Không tìm thấy cartId trong localStorage");
+          return false;
+        }
+
+        // Thiết lập timeout ngắn hơn
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 5000); // 5 giây timeout
+
+        const response = await fetch(
+          `http://localhost:3000/cart/${cartId}/items/${productId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ quantity: newQuantity }),
+            signal: controller.signal,
+            credentials: "include",
+          }
+        );
+
+        // Xóa timeout
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            `Lỗi khi cập nhật số lượng sản phẩm: ${response.status}`,
+            errorText
+          );
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        return false;
+      } finally {
+        // Đảm bảo controller được reset
+        if (fetchControllerRef.current === controller) {
+          fetchControllerRef.current = null;
+        }
+      }
+    },
+    []
+  );
+
   const fetchCartData = async () => {
     try {
       setLoading(true);
@@ -26,6 +124,42 @@ const usePayment = () => {
         return;
       }
 
+      // Xử lý riêng cho sản phẩm mua lại
+      if (cartId.startsWith("buyAgain_")) {
+        const buyAgainProduct = getBuyAgainProduct();
+        if (buyAgainProduct) {
+          // Đảm bảo các thuộc tính cần thiết tồn tại
+          const shop: Shop = {
+            id: 1,
+            name: "Lay's Việt Nam",
+            avatar: "../../assets/images/imagePNG/Avatar.png",
+            deliveryInfo: "Delivery in 15 minutes ago",
+            productIcons: true,
+            products: [
+              {
+                id: buyAgainProduct.id.toString(),
+                name: buyAgainProduct.name,
+                img: buyAgainProduct.img || "",
+                title: buyAgainProduct.title || buyAgainProduct.name,
+                weight: buyAgainProduct.weight || 0,
+                price: buyAgainProduct.price || 0,
+                quantity: buyAgainProduct.quantity || 1,
+                isPaid: false,
+                created_at: new Date().toISOString(),
+              },
+            ],
+          };
+          setData([shop]);
+          setError(null);
+        } else {
+          setError("Không tìm thấy thông tin sản phẩm mua lại.");
+          setData([]);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Xử lý bình thường cho giỏ hàng thông thường
       const response = await fetch(`http://localhost:3000/cart/${cartId}`);
       if (!response.ok) {
         throw new Error(`API thất bại: ${response.status}`);
@@ -38,6 +172,7 @@ const usePayment = () => {
         return;
       }
 
+      // Phần xử lý dữ liệu giỏ hàng thông thường giữ nguyên...
       const shopsMap: Record<string, Shop> = {};
       cartItems.forEach((item: any, index: number) => {
         if (!item.product) {
@@ -70,7 +205,7 @@ const usePayment = () => {
           title: item.product.name,
           weight: item.product.weight || 0,
           price: item.product.price || 0,
-          amount: item.quantity || 1,
+          quantity: item.quantity || 1,
           isPaid: item.isPaid || false,
           created_at: item.product.createdAt || new Date().toISOString(),
         });
@@ -95,6 +230,14 @@ const usePayment = () => {
   useEffect(() => {
     fetchCartData();
 
+    // Kiểm tra xem giỏ hàng có được cập nhật không
+    const cartUpdated = localStorage.getItem("cartUpdated");
+    if (cartUpdated === "true") {
+      console.log("Giỏ hàng đã được cập nhật, đang làm mới dữ liệu");
+      localStorage.removeItem("cartUpdated");
+      fetchCartData(); // Gọi lại hàm fetch để lấy dữ liệu mới nhất
+    }
+
     const fetchVouchers = async () => {
       try {
         const response = await fetch(
@@ -106,11 +249,6 @@ const usePayment = () => {
 
         const data = await response.json();
 
-        // Thêm log chi tiết để kiểm tra
-        console.log("Raw voucher data:", data);
-        console.log("Voucher data type:", typeof data);
-        console.log("Is array?", Array.isArray(data));
-
         const formattedVouchers: Voucher[] = data.map((voucher: any) => ({
           id: voucher.id,
           type: voucher.type,
@@ -118,8 +256,6 @@ const usePayment = () => {
           description: voucher.description,
           remaining: voucher.remaining,
         }));
-
-        console.log("Formatted vouchers:", formattedVouchers);
 
         setVouchers(formattedVouchers);
         setLoading(false);
@@ -144,77 +280,13 @@ const usePayment = () => {
     }
   };
 
-  const updateProductAmount = useCallback(
-    async (productId: string, newAmount: number) => {
-      // Hủy request cũ trước khi gửi request mới
-      cancelOngoingRequest();
-
-      // Tạo controller mới
-      fetchControllerRef.current = new AbortController();
-      const controller = fetchControllerRef.current;
-
-      if (!navigator.onLine) {
-        console.error("Không có kết nối mạng");
-        return false;
-      }
-
-      try {
-        const cartId = localStorage.getItem("cartId");
-        if (!cartId) {
-          console.error("Không tìm thấy cartId trong localStorage");
-          return false;
-        }
-
-        // Thiết lập timeout ngắn hơn
-        const timeoutId = setTimeout(() => {
-          controller.abort();
-        }, 5000); // 5 giây timeout
-
-        const response = await fetch(
-          `http://localhost:3000/cart/${cartId}/items/${productId}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ quantity: newAmount }),
-            signal: controller.signal,
-            credentials: "include",
-          }
-        );
-
-        // Xóa timeout
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(
-            `Lỗi khi cập nhật số lượng sản phẩm: ${response.status}`,
-            errorText
-          );
-          return false;
-        }
-
-        return true;
-      } catch (error) {
-        return false;
-      } finally {
-        // Đảm bảo controller được reset
-        if (fetchControllerRef.current === controller) {
-          fetchControllerRef.current = null;
-        }
-      }
-    },
-    []
-  );
-
   return {
     data,
     setData,
     vouchers,
     error,
     loading,
-    handleUpdatePrice: updateProductAmount,
+    handleUpdatePrice: updateProductQuantity,
   };
 };
 

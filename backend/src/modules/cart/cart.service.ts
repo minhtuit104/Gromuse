@@ -1,4 +1,3 @@
-// src/modules/cart/cart.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -12,6 +11,7 @@ import { CartItem } from '../../typeorm/entities/CartItem';
 import { Product } from '../../typeorm/entities/Product';
 import { AddToCartDto } from './dtos/add-to-cart.dto';
 import { CreateCartDto } from './dtos/create-cart.dto';
+import { OrderStatus } from '../../typeorm/entities/CartItem';
 
 interface ProductUpdateInfo {
   id: number;
@@ -149,39 +149,38 @@ export class CartService {
         relations: ['product'],
       });
 
+      const updatedProducts = [];
+
       for (const cartItem of cartItems) {
         const matchedProduct = products.find(
           (p) => p.id === cartItem.product.id,
         );
 
         if (matchedProduct) {
+          const wasAlreadyPaid = cartItem.isPaid;
+
           cartItem.isPaid = isPaid;
-          await this.cartItemRepository.save(cartItem);
-        }
-      }
-
-      // Phần cập nhật số lượng sản phẩm giữ nguyên
-      const updatedProducts = [];
-      for (const productInfo of products) {
-        const product = await this.productRepository.findOne({
-          where: { id: productInfo.id },
-        });
-
-        if (product) {
-          // Chỉ cập nhật số lượng khi thanh toán thành công
           if (isPaid) {
-            product.sold = (product.sold || 0) + productInfo.quantity;
+            cartItem.status = OrderStatus.TO_RECEIVE;
+          }
+          await this.cartItemRepository.save(cartItem);
 
-            if (product.amount < productInfo.quantity) {
-              throw new HttpException(
-                `Sản phẩm ${product.name} không đủ số lượng. Hiện có: ${product.amount}, yêu cầu: ${productInfo.quantity}`,
-                HttpStatus.BAD_REQUEST,
-              );
+          if (isPaid && !wasAlreadyPaid) {
+            const product = await this.productRepository.findOne({
+              where: { id: matchedProduct.id },
+            });
+
+            if (product) {
+              // Lấy giá trị sold hiện tại, đảm bảo là number
+              const currentSold =
+                typeof product.sold === 'number' ? product.sold : 0;
+
+              // Cập nhật giá trị sold
+              product.sold = currentSold + matchedProduct.quantity;
+
+              await this.productRepository.save(product);
+              updatedProducts.push(product);
             }
-
-            product.amount -= productInfo.quantity;
-            await this.productRepository.save(product);
-            updatedProducts.push(product);
           }
         }
       }
@@ -208,9 +207,60 @@ export class CartService {
     }
   }
 
-  // Trong cart.service.ts
+  //phương thức để cập nhật trạng thái đơn hàng
+  async updateOrderStatus(
+    cartId: number,
+    productId: number,
+    status: OrderStatus,
+    cancelReason?: string,
+  ) {
+    console.log(
+      `Attempting to update order: cartId=${cartId}, productId=${productId}, status=${status}`,
+    );
+
+    // Find the CartItem with more logging
+    const cartItem = await this.cartItemRepository.findOne({
+      where: {
+        cart: { id: cartId },
+        product: { id: productId },
+      },
+      relations: ['product'],
+    });
+
+    console.log('Found CartItem:', cartItem ? 'Yes' : 'No');
+
+    if (!cartItem) {
+      console.log(
+        `No CartItem found for cartId=${cartId}, productId=${productId}`,
+      );
+      throw new NotFoundException('Order not found');
+    }
+
+    // Update status
+    cartItem.status = status;
+
+    // Add cancel reason if applicable
+    if (
+      cancelReason &&
+      (status === OrderStatus.CANCEL_BYUSER ||
+        status === OrderStatus.CANCEL_BYSHOP)
+    ) {
+      cartItem.cancelReason = cancelReason;
+    }
+
+    // Save to database
+    const savedItem = await this.cartItemRepository.save(cartItem);
+    console.log(`CartItem updated with status: ${savedItem.status}`);
+
+    return {
+      success: true,
+      message: `Order status updated successfully: ${status}`,
+    };
+  }
+
   async createBuyNowCart(createCartDto: CreateCartDto) {
     try {
+      console.log('Xử lý Buy Now trong service:', createCartDto);
       // Kiểm tra sản phẩm
       const product = await this.productRepository.findOne({
         where: { id: createCartDto.productId },
@@ -220,14 +270,6 @@ export class CartService {
       if (!product) {
         throw new NotFoundException(
           `Product with ID ${createCartDto.productId} not found`,
-        );
-      }
-
-      // Kiểm tra số lượng sản phẩm
-      if (product.amount < createCartDto.quantity) {
-        throw new HttpException(
-          `Sản phẩm ${product.name} không đủ số lượng. Hiện có: ${product.amount}, yêu cầu: ${createCartDto.quantity}`,
-          HttpStatus.BAD_REQUEST,
         );
       }
 

@@ -10,6 +10,13 @@ import { Product } from './Product';
 import { Shop } from './Shop';
 import { Payment } from './Payment';
 
+export enum OrderStatus {
+  TO_RECEIVE = 'TO_RECEIVE',
+  COMPLETE = 'COMPLETE',
+  CANCEL_BYSHOP = 'CANCEL_BYSHOP',
+  CANCEL_BYUSER = 'CANCEL_BYUSER',
+}
+
 @Entity()
 export class CartItem {
   @PrimaryGeneratedColumn({ type: 'int' })
@@ -23,6 +30,16 @@ export class CartItem {
 
   @Column()
   quantity: number;
+
+  @Column({
+    type: 'enum',
+    enum: OrderStatus,
+    default: OrderStatus.TO_RECEIVE,
+  })
+  status: OrderStatus;
+
+  @Column({ nullable: true })
+  cancelReason: string;
 
   @ManyToOne(() => Product, (product) => product.cartItems, { eager: true })
   product: Product;

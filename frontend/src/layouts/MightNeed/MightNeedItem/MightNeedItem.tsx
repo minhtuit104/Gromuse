@@ -3,6 +3,7 @@ import ImgItem1 from "../../../assets/images/imagePNG/green-broccoli1.png";
 import IconPlus from "../../../assets/images/icons/ic_add.svg";
 import "./MightNeedItem.css";
 import Counter from "../../../components/CountBtn/CountBtn";
+import { useNavigate } from "react-router-dom";
 
 interface Product {
   id: number;
@@ -19,8 +20,10 @@ interface Product {
 
 const MightNeedItem = ({ product }: { product: Product }) => {
   const [isCounterActive, setIsCounterActive] = useState(false);
+  const navigate = useNavigate();
 
-  const handleAddClick = () => {
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Ngăn việc navigation khi click vào nút thêm
     setIsCounterActive(true);
   };
 
@@ -30,8 +33,13 @@ const MightNeedItem = ({ product }: { product: Product }) => {
     }
   };
 
+  const handleProductClick = () => {
+    // Điều hướng đến trang chi tiết với ID sản phẩm
+    navigate(`/product/${product.id}`);
+  };
+
   return (
-    <div className="might-need-item-component">
+    <div className="might-need-item-component" onClick={handleProductClick}>
       <div className="might-need-item">
         <div className="might-need-item-header">
           <img src={product.img || ImgItem1} alt={product.name} />
@@ -45,7 +53,10 @@ const MightNeedItem = ({ product }: { product: Product }) => {
           <span className="might-need-item-weight">{product.weight}g</span>
           <span className="might-need-item-price">{product.price} $</span>
         </div>
-        <div className="might-need-item-footer">
+        <div
+          className="might-need-item-footer"
+          onClick={(e) => e.stopPropagation()}
+        >
           {!isCounterActive ? (
             <button className="might-need-item-button" onClick={handleAddClick}>
               <img src={IconPlus} alt="img-plus" />

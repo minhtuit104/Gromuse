@@ -13,7 +13,6 @@ export interface Product {
   backgroundColor?: string;
   active?: boolean;
   category?: { id: string; name: string };
-  amount?: number;
   discount?: number;
   startDate?: string;
   endDate?: string;

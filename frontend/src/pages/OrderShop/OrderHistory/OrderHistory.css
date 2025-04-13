@@ -1,4 +1,4 @@
-@import url(../../../assets//css/styles.css);
+@import url(../../../assets/css/styles.css);
 
 * {
   margin: 0;
@@ -34,7 +34,7 @@
 
 .tab {
   padding: 15px;
-  width: 50%;
+  width: 33.33%;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
@@ -97,7 +97,7 @@ img.ic_20.arrow_right {
   margin-right: 20px;
 }
 
-.product-name {
+.product-name-shop {
   color: var(--green900);
   font-weight: 700;
   font-size: 20px;
@@ -116,6 +116,7 @@ img.ic_20.arrow_right {
 
 /* Customer Info */
 .customer-info {
+  width: 400px;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
@@ -136,6 +137,7 @@ img.ic_20.arrow_right {
 
 /* Price Info */
 .price-info-history {
+  width: 100px;
   display: flex;
   align-items: center;
   gap: 10px;

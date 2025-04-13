@@ -10,16 +10,18 @@ import IconClock from "../../assets/images/icons/ic_ clock.svg";
 import IconCart from "../../assets/images/icons/ic_cart.svg";
 import IconSold from "../../assets/images/icons/ic_ flame.svg";
 import shopIcon from "../../assets/images/icons/ic_ shop.svg";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import iconStar from "../../assets/images/icons/ic_star_fill.svg";
+import ImgRate from "../../assets/images/imagePNG/beef 1.png";
 
 export interface Product {
   id: number;
   name: string;
   price: number;
-  amount: number;
   discount: number;
   weight: number;
   tag: string;
+  sold: number;
   category: { id: number; name: string };
   backgroundColor: string;
   description: string;
@@ -36,6 +38,7 @@ export interface Shop {
 
 const DetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,13 +49,16 @@ const DetailPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const productResponse = await fetch(
           `http://localhost:3000/api/products/${id}`
         );
-        const productData = await productResponse.json();
+
         if (!productResponse.ok) {
-          throw new Error("Failed to fetch product data");
+          throw new Error("Unable to load product information");
         }
+
+        const productData = await productResponse.json();
         setProduct(productData);
 
         if (productData.images && productData.images.length > 0) {
@@ -73,7 +79,7 @@ const DetailPage = () => {
             // Fallback nếu không lấy được thông tin shop
             setShop({
               id: productData.shop.id,
-              name: "Cửa hàng",
+              name: "Store",
               avatar: DefaultAvatar,
             });
           }
@@ -86,7 +92,7 @@ const DetailPage = () => {
         }
       } catch (error) {
         setError(
-          error instanceof Error ? error.message : "An unknown error occurred"
+          error instanceof Error ? error.message : "An undefined error occurred"
         );
       } finally {
         setLoading(false);
@@ -104,12 +110,12 @@ const DetailPage = () => {
 
   const handleBuyNow = async () => {
     if (!product?.id) {
-      alert("Sản phẩm không hợp lệ!");
+      alert("Invalid product!");
       return;
     }
 
     if (!shop?.id) {
-      alert("Thông tin cửa hàng không hợp lệ!");
+      alert("Invalid store information!");
       return;
     }
 
@@ -129,7 +135,7 @@ const DetailPage = () => {
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(
-          `HTTP error! status: ${response.status}${
+          `HTTP Error! Status: ${response.status}${
             errorData ? ` - ${JSON.stringify(errorData)}` : ""
           }`
         );
@@ -142,28 +148,31 @@ const DetailPage = () => {
         localStorage.setItem("cartId", data.cartId.toString());
         localStorage.setItem("isBuyNow", "true"); // Thêm flag để phân biệt
 
+        // Hiển thị thông báo thành công
+        alert("Added to cart and redirecting to payment!");
+
         // Chuyển đến trang thanh toán
-        window.location.href = "/payment";
+        navigate("/payment");
       } else {
-        throw new Error("API không trả về ID giỏ hàng hợp lệ.");
+        throw new Error("API did not return a valid cart ID.");
       }
     } catch (error) {
-      console.error("Error buying now:", error);
+      console.error("Error when buying now:", error);
       alert(
-        "Có lỗi khi mua ngay: " +
-          (error instanceof Error ? error.message : "Vui lòng thử lại!")
+        "Error when buying now: " +
+          (error instanceof Error ? error.message : "Please try again!")
       );
     }
   };
 
   const handleAddToCart = async () => {
     if (!product?.id) {
-      alert("Sản phẩm không hợp lệ!");
+      alert("Invalid product!");
       return;
     }
 
     if (!shop?.id) {
-      alert("Thông tin cửa hàng không hợp lệ!");
+      alert("Invalid store information!");
       return;
     }
 
@@ -191,7 +200,7 @@ const DetailPage = () => {
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(
-          `HTTP error! status: ${response.status}${
+          `Lỗi HTTP! Trạng thái: ${response.status}${
             errorData ? ` - ${JSON.stringify(errorData)}` : ""
           }`
         );
@@ -216,28 +225,42 @@ const DetailPage = () => {
           localStorage.setItem("cartUpdated", "true");
 
           // Thông báo thành công
-          alert("Đã thêm vào giỏ hàng!");
+          alert("Added to cart!");
 
           // Chuyển đến trang thanh toán
-          window.location.href = "/payment";
+          navigate("/payment");
         } else {
-          throw new Error("API không trả về ID giỏ hàng hợp lệ.");
+          throw new Error("API did not return a valid cart ID.");
         }
       } else {
-        throw new Error("API không trả về dữ liệu hợp lệ.");
+        throw new Error("API did not return valid data.");
       }
     } catch (error) {
-      console.error("Error adding to cart:", error);
+      console.error("Error when adding to cart:", error);
       alert(
-        "Có lỗi khi thêm vào giỏ hàng: " +
-          (error instanceof Error ? error.message : "Vui lòng thử lại!")
+        "Error when adding to cart: " +
+          (error instanceof Error ? error.message : "Please try again!")
       );
     }
   };
 
-  if (loading) return <div>Đang tải...</div>;
-  if (!product) return <div>Sản phẩm không tồn tại hoặc đang tải...</div>;
-  if (error) return <div>Error: {error}</div>;
+  // Hàm xử lý description để loại bỏ thẻ <p> và </p>
+  const formatDescription = (description: string | undefined) => {
+    if (!description) return "Chưa có mô tả chi tiết cho sản phẩm này.";
+
+    return description
+      .replace(/^<p>|<\/p>$/g, "") // Loại bỏ <p> ở đầu và </p> ở cuối
+      .trim();
+  };
+
+  if (loading) return <div className="loading-spinner">Đang tải...</div>;
+  if (!product)
+    return (
+      <div className="error-message">
+        Product does not exist or is loading...
+      </div>
+    );
+  if (error) return <div className="error-message">Lỗi: {error}</div>;
 
   return (
     <div className="detail-page">
@@ -307,10 +330,10 @@ const DetailPage = () => {
               <div className="detail-product-info-footer">
                 <div className="sold">
                   <img src={IconSold} alt="sold" className="ic_28" />
-                  <p>{product.amount || 0} sold in last 35 hours</p>
+                  <p>{product.sold || 0} sold in last 35 hours</p>
                 </div>
                 <p className="categories">
-                  Categories:
+                  Category:
                   {product.category && <span> {product.category.name}</span>}
                 </p>
               </div>
@@ -334,19 +357,62 @@ const DetailPage = () => {
         <div className="detail-product-description">
           <h2>Description</h2>
           <div className="description-list">
-            <p>{product.description || "No description available"}</p>
+            <p>
+              {formatDescription(
+                product.description || "No description for this product"
+              )}
+            </p>
             <ul>
               <li>Weight: {product.weight}g</li>
               <li>Tag: {product.tag}</li>
-              {product.active ? <li>In stock</li> : <li>Out of stock</li>}
+              {product.active ? <li>True</li> : <li>False</li>}
             </ul>
           </div>
           <div className="ad-section">
             <img
               src={ImgDescription}
-              alt="Cười với Lays Tết này"
+              alt="Smile with Lays this Tet"
               className="ad-image"
             />
+          </div>
+        </div>
+        <span className="line"></span>
+        <div className="rating-detail">
+          <h2 className="rating-title-detail">Rate</h2>
+          <span className="rating-score-detail">4.7</span>
+          <img src={iconStar} alt="iconStar" className="ic_24 rating-icon" />
+        </div>
+        <div className="reviews-list-detail">
+          <div className="review-item-detail">
+            <div className="review-header-detail">
+              <span className="reviewer-name-detail">ntluan</span>
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+            </div>
+            <p className="review-text-detail">
+              Sản phẩm cũng được không đến nỗi nào, tuyệt cà là vời, hình ảnh
+              như thực tế
+            </p>
+            <img src={ImgRate} alt="ImgRate" className="ImgRate" />
+          </div>
+          <span className="rating-line"></span>
+          <div className="review-item-detail">
+            <div className="review-header-detail">
+              <span className="reviewer-name-detail">ntluan</span>
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+            </div>
+            <p className="review-text-detail">
+              Sản phẩm cũng được không đến nỗi nào, tuyệt cà là vời, hình ảnh
+              như thực tế
+            </p>
+            <img src={ImgRate} alt="ImgRate" className="ImgRate" />
           </div>
         </div>
       </div>

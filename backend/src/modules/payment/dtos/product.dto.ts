@@ -34,9 +34,4 @@ export class ProductDto {
   @IsNotEmpty()
   @IsNumber()
   price: number;
-
-  @ApiProperty({ example: 2, description: 'Số lượng sản phẩm' })
-  @IsNotEmpty()
-  @IsNumber()
-  amount: number;
 }

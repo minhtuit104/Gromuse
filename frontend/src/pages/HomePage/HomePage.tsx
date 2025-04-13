@@ -6,17 +6,8 @@ import Header from "../../layouts/Header/Header";
 import MightNeed from "../../layouts/MightNeed/MightNeed";
 import SelectOption from "../../layouts/SelectOption/SelectOption";
 import "./homePage.css";
-import { toast } from "react-toastify";
-import { useEffect } from "react";
 
 function HomePage() {
-  useEffect(() => {
-    const paymentComplete = localStorage.getItem("paymentComplete");
-    if (paymentComplete === "true") {
-      localStorage.removeItem("paymentComplete");
-      toast.success("Cảm ơn bạn đã mua hàng!");
-    }
-  }, []);
   return (
     <div className="home-page">
       <Header />

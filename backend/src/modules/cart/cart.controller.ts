@@ -1,4 +1,3 @@
-// src/modules/cart/cart.controller.ts
 import {
   Controller,
   Post,
@@ -15,6 +14,7 @@ import { AddToCartDto } from './dtos/add-to-cart.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UpdateCartItemsStatusDto } from './dtos/update-cart-items-status';
 import { CreateCartDto } from './dtos/create-cart.dto';
+import { OrderStatus } from '../../typeorm/entities/CartItem';
 
 @ApiTags('cart')
 @Controller('cart') // Thay đổi từ 'api/cart' thành 'cart' để khớp với frontend
@@ -62,6 +62,27 @@ export class CartController {
     );
   }
 
+  // Thêm endpoint để cập nhật trạng thái đơn hàng
+  @Put(':cartId/items/:productId/status')
+  @ApiOperation({ summary: 'Cập nhật trạng thái đơn hàng' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cập nhật trạng thái đơn hàng thành công',
+  })
+  async updateOrderStatus(
+    @Param('cartId') cartId: string,
+    @Param('productId') productId: string,
+    @Body('status') status: OrderStatus,
+    @Body('cancelReason') cancelReason?: string,
+  ) {
+    return this.cartService.updateOrderStatus(
+      +cartId,
+      +productId,
+      status,
+      cancelReason,
+    );
+  }
+
   // Endpoint cập nhật trạng thái CartItem và số lượng Product
   @Put(':cartId/update-cart-items-status')
   @ApiOperation({
@@ -87,6 +108,7 @@ export class CartController {
   @ApiOperation({ summary: 'Tạo giỏ hàng để mua ngay' })
   async createBuyNowCart(@Body() createCartDto: CreateCartDto) {
     try {
+      console.log('Nhận được dữ liệu Buy Now:', createCartDto);
       const cart = await this.cartService.createBuyNowCart(createCartDto);
       return {
         success: true,

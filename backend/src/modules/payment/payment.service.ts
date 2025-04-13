@@ -135,24 +135,6 @@ export class PaymentService {
     };
   }
 
-  async updateProductAmount(
-    productId: number,
-    amount: number,
-  ): Promise<{ success: boolean; product?: Product; message: string }> {
-    const product = await this.productRepository.findOne({
-      where: { id: productId },
-    });
-    if (!product) return { success: false, message: 'Không tìm thấy sản phẩm' };
-
-    product.amount = amount;
-    await this.productRepository.save(product);
-    return {
-      success: true,
-      product,
-      message: 'Cập nhật số lượng sản phẩm thành công',
-    };
-  }
-
   async cancelPayment(id: number): Promise<Payment> {
     const payment = await this.findOne(id);
     if (payment.status === PaymentStatus.COMPLETED) {
@@ -393,12 +375,6 @@ export class PaymentService {
           }
 
           for (const productDto of shopDto.products) {
-            await queryRunner.manager.decrement(
-              Product,
-              { id: productDto.id },
-              'amount',
-              productDto.amount,
-            );
             await queryRunner.manager.update(
               CartItem,
               {
