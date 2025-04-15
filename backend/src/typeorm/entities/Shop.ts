@@ -5,6 +5,7 @@ import {
   Column,
   OneToMany,
   ManyToOne,
+  DeleteDateColumn,
 } from 'typeorm';
 import { CartItem } from './CartItem';
 import { Payment } from './Payment';
@@ -12,7 +13,7 @@ import { Product } from './Product';
 
 @Entity()
 export class Shop {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
@@ -30,7 +31,7 @@ export class Shop {
   @OneToMany(() => Product, (product) => product.shop)
   products: Product[];
 
-  @ManyToOne(() => Payment, (payment) => payment.shops)
+  @ManyToOne(() => Payment, (payment) => payment.shops, { nullable: true })
   payment: Payment;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
@@ -39,6 +40,6 @@ export class Shop {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @DeleteDateColumn({ type: 'timestamp', nullable: true })
   deletedAt: Date;
 }

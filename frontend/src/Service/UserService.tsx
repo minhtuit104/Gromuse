@@ -101,9 +101,11 @@ const updateAvatar = async (imageUrl: string) => {
 };
 
 const updateUserProfile = async (updateData: {
-  name: string;
-  email: string;
-  birthday: string;
+  name?: string;
+  email?: string;
+  birthday?: string;
+  phoneNumber?: string;
+  address?: string;
 }) => {
   try {
     const token = localStorage.getItem("token");
@@ -117,8 +119,8 @@ const updateUserProfile = async (updateData: {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-    console.log("API response ===", response);
-    return response.data;
+    console.log("API response update profile ===", response);
+    return response;
   } catch (error) {
     console.error("Error updating user profile:", error);
     throw error;

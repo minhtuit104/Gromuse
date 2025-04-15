@@ -8,6 +8,8 @@ import {
   Put,
   HttpStatus,
   HttpException,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { AddToCartDto } from './dtos/add-to-cart.dto';
@@ -15,20 +17,28 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UpdateCartItemsStatusDto } from './dtos/update-cart-items-status';
 import { CreateCartDto } from './dtos/create-cart.dto';
 import { OrderStatus } from '../../typeorm/entities/CartItem';
+import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
 
 @ApiTags('cart')
 @Controller('cart') // Thay đổi từ 'api/cart' thành 'cart' để khớp với frontend
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
-  // Endpoint hiện có: Thêm sản phẩm vào giỏ hàng
   @Post('add')
+  // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Thêm sản phẩm vào giỏ hàng' })
   @ApiResponse({
     status: 201,
     description: 'Sản phẩm đã được thêm vào giỏ hàng',
   })
   async addToCart(@Body() addToCartDto: AddToCartDto) {
+    if (!addToCartDto.userId) {
+      throw new HttpException(
+        'userId is required in the request body',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     return this.cartService.addToCart(addToCartDto);
   }
 
@@ -83,7 +93,6 @@ export class CartController {
     );
   }
 
-  // Endpoint cập nhật trạng thái CartItem và số lượng Product
   @Put(':cartId/update-cart-items-status')
   @ApiOperation({
     summary:
@@ -105,9 +114,24 @@ export class CartController {
   }
 
   @Post('/buy-now')
+  // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Tạo giỏ hàng để mua ngay' })
-  async createBuyNowCart(@Body() createCartDto: CreateCartDto) {
+  async createBuyNowCart(
+    @Body() createCartDto: CreateCartDto /*, @Req() req */,
+  ) {
     try {
+      // --- LẤY userId TỪ BODY (DTO) THAY VÌ req.user ---
+      // const user = req.user;
+      // createCartDto.userId = user.idUser; // Dòng này không cần nữa nếu DTO đã có userId
+
+      // Kiểm tra xem DTO có userId không (được gửi từ frontend)
+      if (!createCartDto.userId) {
+        throw new HttpException(
+          'userId is required in the request body',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       console.log('Nhận được dữ liệu Buy Now:', createCartDto);
       const cart = await this.cartService.createBuyNowCart(createCartDto);
       return {
@@ -116,13 +140,18 @@ export class CartController {
         message: 'Đã tạo giỏ hàng để mua ngay',
       };
     } catch (error) {
+      // Ném lại lỗi từ service hoặc lỗi kiểm tra userId
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      // Xử lý lỗi chung khác
       throw new HttpException(
         {
-          status: HttpStatus.BAD_REQUEST,
-          error: 'Lỗi khi tạo giỏ hàng',
+          status: HttpStatus.INTERNAL_SERVER_ERROR, // Hoặc BAD_REQUEST tùy ngữ cảnh lỗi
+          error: 'Lỗi khi tạo giỏ hàng mua ngay',
           message: error.message,
         },
-        HttpStatus.BAD_REQUEST,
+        HttpStatus.INTERNAL_SERVER_ERROR, // Hoặc BAD_REQUEST
       );
     }
   }

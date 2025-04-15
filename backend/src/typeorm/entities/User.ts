@@ -31,8 +31,8 @@ export class User {
   @OneToOne(() => Account, (account) => account.user)
   accounts: Account[];
 
-  @OneToOne(() => Cart, (cart) => cart.idUser)
-  cart: User[];
+  @OneToOne(() => Cart, (cart) => cart.user)
+  cart: Cart;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

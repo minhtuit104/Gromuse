@@ -5,6 +5,7 @@ import {
   Column,
   OneToMany,
   OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { CartItem } from './CartItem';
 import { User } from './User';
@@ -14,8 +15,12 @@ export class Cart {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ type: 'int' })
+  idUser: number;
+
   @OneToOne(() => User, (user) => user.cart)
-  idUser: User[];
+  @JoinColumn({ name: 'idUser' })
+  user: User;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, LessThanOrEqual } from 'typeorm';
+import { Repository, MoreThan, LessThanOrEqual, In } from 'typeorm';
 import { CreatePaymentDto } from './dtos/create-payment.dto';
 import { UpdatePaymentDto } from './dtos/update-payment.dto';
 import { Payment, PaymentStatus } from '../../typeorm/entities/Payment';
@@ -16,6 +16,7 @@ import { Product } from '../../typeorm/entities/Product';
 import { Shop } from '../../typeorm/entities/Shop';
 import { Cart } from '../../typeorm/entities/Cart';
 import { CartItem } from '../../typeorm/entities/CartItem';
+// import { ShopDto } from './dtos/shop.dto';
 
 @Injectable()
 export class PaymentService {
@@ -31,13 +32,14 @@ export class PaymentService {
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
+    // 1. Xử lý Address (giữ nguyên)
     let address = await this.addressRepository.findOne({
       where: {
         phone: createPaymentDto.address.phone.toString(),
         address: createPaymentDto.address.address,
+        name: createPaymentDto.address.name,
       },
     });
-
     if (!address) {
       address = this.addressRepository.create({
         ...createPaymentDto.address,
@@ -46,17 +48,62 @@ export class PaymentService {
       await this.addressRepository.save(address);
     }
 
+    // 2. Xử lý Vouchers (giữ nguyên)
     const vouchers = await this.processVouchers(
       createPaymentDto.voucherCodes,
       createPaymentDto.subtotal,
     );
-    const payment = this.paymentRepository.create({
-      ...createPaymentDto,
-      address,
-      vouchers,
-    });
 
-    return this.paymentRepository.save(payment);
+    // *** 3. Lấy Shop Entities từ DB dựa trên IDs trong DTO ***
+    let shopEntities: Shop[] = [];
+    if (createPaymentDto.shops && createPaymentDto.shops.length > 0) {
+      // Lấy mảng các shop ID (number)
+      const shopIds = createPaymentDto.shops.map((shopDto) => shopDto.id);
+      shopEntities = await this.shopRepository.findBy({
+        id: In(shopIds), // Sử dụng In để tìm nhiều shop cùng lúc
+      });
+
+      // Kiểm tra xem có tìm thấy đủ shop không
+      if (shopEntities.length !== shopIds.length) {
+        const foundIds = shopEntities.map((s) => s.id);
+        const missingIds = shopIds.filter((id) => !foundIds.includes(id));
+        throw new NotFoundException(
+          `Không tìm thấy các cửa hàng với ID: ${missingIds.join(', ')}`,
+        );
+      }
+    }
+    // *** Kết thúc lấy Shop Entities ***
+
+    // 4. Tạo đối tượng Payment (không bao gồm shops ban đầu)
+    const paymentDataToCreate = {
+      ...createPaymentDto,
+      address, // Gán Address entity
+      vouchers, // Gán Voucher entities
+      shops: undefined, // Bỏ shops khỏi bước tạo ban đầu
+    };
+    // Xóa các thuộc tính không thuộc Payment entity
+    delete paymentDataToCreate.voucherCodes;
+    delete paymentDataToCreate.cartId; // cartId không thuộc Payment
+    delete paymentDataToCreate.shops; // Xóa shops DTO
+
+    const payment = this.paymentRepository.create(paymentDataToCreate);
+
+    // 5. Gán Shop entities đã lấy từ DB vào đối tượng payment
+    payment.shops = shopEntities;
+
+    // 6. Lưu đối tượng Payment hoàn chỉnh
+    try {
+      const savedPayment = await this.paymentRepository.save(payment);
+      console.log('Payment saved successfully:', savedPayment);
+      return savedPayment; // Kiểu trả về là Payment
+    } catch (saveError) {
+      console.error('Error saving payment:', saveError);
+      // Có thể log chi tiết lỗi hơn
+      if (saveError.driverError) {
+        console.error('Driver Error:', saveError.driverError);
+      }
+      throw new InternalServerErrorException('Could not save payment.');
+    }
   }
 
   async findAll(options: {

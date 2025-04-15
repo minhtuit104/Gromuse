@@ -5,10 +5,12 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Product } from './Product';
 import { Shop } from './Shop';
 import { Payment } from './Payment';
+import { Cart } from './Cart';
 
 export enum OrderStatus {
   TO_RECEIVE = 'TO_RECEIVE',
@@ -45,10 +47,11 @@ export class CartItem {
   product: Product;
 
   @ManyToOne(() => Payment, (payment) => payment.cartItems, { nullable: true })
+  @JoinColumn({ name: 'paymentId' })
   payment: Payment;
 
   @ManyToOne('Cart', (cart: any) => cart.cartItems)
-  cart: any;
+  cart: Cart;
 
   @ManyToOne(() => Shop, (shop) => shop.cartItems)
   shop: Shop;

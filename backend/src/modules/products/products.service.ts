@@ -75,7 +75,7 @@ export class ProductsService {
     const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
     const product = await this.productsRepository.findOne({
       where: { id: numericId },
-      relations: ['category'],
+      relations: ['category', 'shop'],
     });
     if (!product) {
       throw new Error(`Product with ID ${id} not found`);
@@ -83,7 +83,6 @@ export class ProductsService {
     return product;
   }
 
-  // src/products/products.service.ts
   async update(
     id: string | number,
     productData: Partial<Product>,
