@@ -54,8 +54,12 @@ export class UserController{
     @UseGuards(JwtAuthGuard)
     async updateProfile(@Body() updateUserDto: UpdateUserDto, @Req() req: Request, @Response() res) {
         try {
+            console.log("updateUserDto", updateUserDto);
+            
             const user = req['user'];
             const idUser = user.idUser;
+            console.log("idUser", idUser);
+            
             const updatedUser = await this.userService.update(idUser, updateUserDto);
             
             return res.status(200).json({

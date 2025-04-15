@@ -362,6 +362,7 @@
   opacity: 0;
   overflow: hidden;
   transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  padding: 0;
 }
 
 .product-card-show {

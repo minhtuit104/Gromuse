@@ -23,21 +23,36 @@ const registerApi = (
   });
 };
 
-const registerApiShop = (
+const registerApiShop = async (
   name: string,
   email: string,
   phoneNumber: string,
   password: string,
   address: string
 ) => {
-  return axios.post("/api/v1/auth/register", {
+  const requestData = {
     name,
     email,
     phoneNumber,
     password,
     address,
     role: 2,
-  });
+  };
+
+  console.log("Sending request data:", requestData);
+
+  try {
+    const response = await axios.post("/api/v1/auth/register", requestData, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("Response from server:", response);
+    return response;
+  } catch (error:any) {
+    console.error("Registration error:", error.response?.data || error);
+    throw error;
+  }
 };
 
 const fectchUserName = async (idUser: number) => {

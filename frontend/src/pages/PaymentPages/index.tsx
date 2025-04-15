@@ -95,33 +95,33 @@ export const PaymentPage = () => {
   }, [data]); // Chạy lại khi data thay đổi
 
   // Hàm cập nhật số lượng sản phẩm (gọi hàm từ usePayment)
-  const handleUpdateProductPrice = useCallback(
-    async (productId: string, newQuantity: number) => {
-      try {
-        const updateResult = await handleUpdatePrice(productId, newQuantity);
-        if (updateResult) {
-          // Cập nhật state processedData để UI thay đổi ngay lập tức
-          setProcessedData((prevData) =>
-            prevData.map((shop) => ({
-              ...shop,
-              // Giờ đây kiểu Product đã nhất quán
-              products: shop.products.map((product: Product) =>
-                product.id.toString() === productId
-                  ? { ...product, quantity: newQuantity }
-                  : product
-              ),
-            }))
-          );
-        } else {
-          toast.error("Cập nhật số lượng thất bại. Vui lòng thử lại.");
-        }
-      } catch (error) {
-        console.error("Lỗi khi gọi handleUpdatePrice:", error);
-        toast.error("Có lỗi xảy ra khi cập nhật số lượng.");
+  const handleUpdateProductPrice = async (
+    productId: string,
+    newQuantity: number
+  ) => {
+    try {
+      const updateResult = await handleUpdatePrice(productId, newQuantity);
+      if (updateResult) {
+        // Cập nhật state processedData để UI thay đổi ngay lập tức
+        setProcessedData((prevData) =>
+          prevData.map((shop) => ({
+            ...shop,
+            // Giờ đây kiểu Product đã nhất quán
+            products: shop.products.map((product: Product) =>
+              product.id.toString() === productId
+                ? { ...product, quantity: newQuantity }
+                : product
+            ),
+          }))
+        );
+      } else {
+        toast.error("Cập nhật số lượng thất bại. Vui lòng thử lại.");
       }
-    },
-    [handleUpdatePrice] // Dependency là handleUpdatePrice từ hook
-  );
+    } catch (error) {
+      console.error("Lỗi khi gọi handleUpdatePrice:", error);
+      toast.error("Có lỗi xảy ra khi cập nhật số lượng.");
+    }
+  };
 
   // Tính toán giá trị đơn hàng
   const calculatedValues = useMemo(() => {
@@ -201,7 +201,7 @@ export const PaymentPage = () => {
     name: string;
     phone: string;
     address: string;
-  }) => {
+  }) => {    
     setIsUpdateAddressModalOpen(false); // Đóng modal
     setIsLoading(true); // Hiển thị loading (có thể dùng state loading riêng)
     try {
@@ -212,7 +212,7 @@ export const PaymentPage = () => {
         address: newAddressData.address,
         // Không cần gửi email, birthday nếu không thay đổi
       };
-
+      
       // Gọi API cập nhật profile từ UserService
       await updateUserProfile(updateData);
 

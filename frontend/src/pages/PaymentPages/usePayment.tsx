@@ -102,7 +102,7 @@ const usePayment = () => {
           // Sử dụng user.phoneNumber vì đó là tên trường trong entity User và token payload
           phone: user.phoneNumber || "Chưa cập nhật",
           // user.address có thể là null, sẽ được xử lý thành "Chưa cập nhật"
-          address: user.address || "Chưa cập nhật",
+          address: user.address,
         });
       } else {
         // Nếu userDataResponse không tồn tại hoặc không có idUser
@@ -171,12 +171,9 @@ const usePayment = () => {
         throw new Error(`API thất bại: ${response.status}`);
       }
 
-      const cartData = await response.json();
+      const cartData = await response.json();      
 
-      // Kiểm tra xem cartData có cartItems không
-      const cartItems = cartData?.cartItems;
-
-      if (!Array.isArray(cartItems) || cartItems.length === 0) {
+      if (!Array.isArray(cartData) || cartData.length === 0) {
         // Nếu giỏ hàng trống
         setData([]);
         console.log("[usePayment] Cart is empty or has no items.");
@@ -184,7 +181,7 @@ const usePayment = () => {
       } else {
         // Xử lý map dữ liệu cartItems sang cấu trúc Shop/Product
         const shopsMap: Record<string, Shop> = {};
-        cartItems.forEach((item: any) => {
+        cartData.forEach((item: any) => {
           // Kiểm tra dữ liệu item và product
           if (!item || !item.product || !item.product.id) {
             console.warn("[usePayment] Skipping invalid CartItem:", item);
@@ -319,6 +316,8 @@ const usePayment = () => {
             // credentials: "include", // Bỏ nếu không dùng cookie
           }
         );
+        console.log("response",response);
+        
         clearTimeout(timeoutId); // Xóa timeout nếu request hoàn thành
         if (!response.ok) {
           const errorText = await response.text();

@@ -1,7 +1,7 @@
 import "react-toastify/dist/ReactToastify.css";
 import { Routes, Route } from "react-router-dom";
 import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
-// import LoginShop from "./pages/LoginShop/loginShop";
+import LoginShop from "./pages/LoginShop/loginShop";
 import { AuthRoute, PrivateRoute } from "./router/protectRouter";
 import HomePage from "./pages/HomePage/HomePage";
 import { PaymentPage } from "./pages/PaymentPages/index";
@@ -26,6 +26,14 @@ function App() {
           element={
             <AuthRoute>
               <SignUpLogInForm />
+            </AuthRoute>
+          }
+        />
+        <Route
+          path="/loginShop"
+          element={
+            <AuthRoute>
+              <LoginShop />
             </AuthRoute>
           }
         />

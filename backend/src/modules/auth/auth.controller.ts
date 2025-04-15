@@ -43,7 +43,7 @@ export class AuthController {
           : error.message || 'Registration failed';
       const errorStatus =
         error instanceof HttpException ? error.getStatus() : 400;
-
+      
       return res.status(errorStatus).json({
         status: errorStatus,
         message: errorMessage,
