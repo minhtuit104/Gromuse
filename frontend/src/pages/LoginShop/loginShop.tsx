@@ -106,7 +106,7 @@ const LoginShop = () => {
         toast.success("Register successful!");
         console.log("respon: ===========", res);
         resetForm();
-        navigate("/login");
+        navigate("/loginShop");
       }
     } catch (error) {
       console.error("Registration failed:", error);

@@ -3,7 +3,7 @@ import { Modal, Button } from "antd";
 import { Formik, FormikProps, useFormikContext, Form } from "formik";
 import TextInput from "../../components/TextInput/TextInput";
 import { AddressDto } from "../../dtos/address.dto";
-
+import * as Yup from "yup";
 interface UpdateAddressModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,7 +29,7 @@ const FormikEffect = ({ initialData }: { initialData: AddressDto | null }) => {
       // Nếu không có initialData, reset form
       setValues({ name: "", phone: "", address: "" });
     }
-  }, [initialData, setValues]); // Chạy lại khi initialData hoặc setValues thay đổi
+  }, [initialData]); // Chạy lại khi initialData hoặc setValues thay đổi
 
   return null; // Component này không render gì cả
 };
@@ -40,6 +40,11 @@ const UpdateAddressModal: React.FC<UpdateAddressModalProps> = ({
   onConfirm,
   initialData, // *** 2. Nhận prop initialData ***
 }) => {
+  const validationSchema = Yup.object({
+    name: Yup.string().required("Name is required!"),
+    phone: Yup.number().required("Phone is required!"),
+    address: Yup.string().required("Address is required!"),
+  });
   return (
     <Modal
       title="Update Address"
@@ -60,7 +65,7 @@ const UpdateAddressModal: React.FC<UpdateAddressModalProps> = ({
           address: initialData?.address || "",
         }}
         // Thêm validation nếu cần
-        // validationSchema={...}
+        validationSchema={validationSchema}
         onSubmit={(values) => {
           onConfirm(values);
         }}
@@ -87,7 +92,7 @@ const UpdateAddressModal: React.FC<UpdateAddressModalProps> = ({
                 // Sử dụng các props của Formik để liên kết input
                 name="name" // Thêm name
                 value={formikProps.values.name}
-                onChange={formikProps.handleChange}
+                onChange={(value) => formikProps.setFieldValue("name", value)}
                 onBlur={formikProps.handleBlur}
                 error={
                   formikProps.touched.name ? formikProps.errors.name ?? "" : ""
@@ -101,7 +106,7 @@ const UpdateAddressModal: React.FC<UpdateAddressModalProps> = ({
                 wrapperStyle="phone-input-wrapper"
                 name="phone" // Thêm name
                 value={formikProps.values.phone}
-                onChange={formikProps.handleChange}
+                onChange={(value) => formikProps.setFieldValue("phone", value)}
                 onBlur={formikProps.handleBlur}
                 error={
                   formikProps.touched.phone
@@ -118,7 +123,7 @@ const UpdateAddressModal: React.FC<UpdateAddressModalProps> = ({
               wrapperStyle="address-input-wrapper"
               name="address" // Thêm name
               value={formikProps.values.address}
-              onChange={formikProps.handleChange}
+              onChange={(value) => formikProps.setFieldValue("address", value)}
               onBlur={formikProps.handleBlur}
               error={
                 formikProps.touched.address
@@ -130,6 +135,7 @@ const UpdateAddressModal: React.FC<UpdateAddressModalProps> = ({
             <div className="btn_updateAdress">
               <Button onClick={onClose}>Back</Button>
               <Button
+                onClick={() => formikProps.handleSubmit()}
                 type="primary"
                 htmlType="submit" // htmlType="submit" để kích hoạt onSubmit của Formik
                 disabled={formikProps.isSubmitting} // Disable nút khi đang submit

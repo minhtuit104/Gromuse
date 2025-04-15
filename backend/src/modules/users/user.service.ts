@@ -5,6 +5,7 @@ import { Repository } from "typeorm";
 import { CreateUserDto } from "./dto/create.dto";
 import { UpdateUserDto } from "./dto/update.dto";
 import { UpdateAvatarDto } from "./dto/updateAvatar.dto";
+import { log } from "console";
 
 @Injectable()
 export class UserService{
@@ -41,7 +42,8 @@ export class UserService{
     async update(id: number, updateUserDto: UpdateUserDto){
         //tìm kiếm user theo id trong database
         const findUser = await this.findOne(id);
-
+        console.log('findUser', findUser);
+        
         //kiểm tra xem id có tồn tại hay không
         if(!findUser){
             return null;
