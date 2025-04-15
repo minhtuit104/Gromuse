@@ -1,13 +1,13 @@
 // import HomePage from "./pages/HomePage/HomePage";
 import "react-toastify/dist/ReactToastify.css";
 import { Routes, Route } from "react-router-dom";
-import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
+//import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
 import LoginShop from "./pages/LoginShop/loginShop";
 import { AuthRoute, PrivateRoute } from "./router/protectRouter";
 import HomePage from "./pages/HomePage/HomePage";
 import { ToastContainer } from "react-toastify";
 import { PaymentPage } from "./pages/PaymentPages/index";
-import DashboardPage from "./pages/DashboardPage/DashboardPage";
+//import DashboardPage from "./pages/DashboardPage/DashboardPage";
 
 function App() {
   return (
@@ -19,19 +19,11 @@ function App() {
             path="/login"
             element={
               <AuthRoute>
-                <DashboardPage />
+                <LoginShop />
               </AuthRoute>
             }
           />
           {/* Chỉ có thể vào trang home nếu đã đăng nhập */}
-          <Route
-            path="/home"
-            element={
-              <PrivateRoute>
-                <HomePage />
-              </PrivateRoute>
-            }
-          />
           <Route
             path="/"
             element={
