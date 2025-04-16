@@ -6,6 +6,7 @@ import {
   OneToMany,
   ManyToOne,
   DeleteDateColumn,
+  OneToOne,
 } from 'typeorm';
 import { CartItem } from './CartItem';
 import { Payment } from './Payment';
@@ -31,7 +32,7 @@ export class Shop {
   @OneToMany(() => Product, (product) => product.shop)
   products: Product[];
 
-  @ManyToOne(() => Payment, (payment) => payment.shops, { nullable: true })
+  @OneToOne(() => Payment, (payment) => payment.shop, { nullable: true })
   payment: Payment;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

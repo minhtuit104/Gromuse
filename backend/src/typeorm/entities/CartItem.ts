@@ -50,9 +50,11 @@ export class CartItem {
   payment: Payment;
 
   @ManyToOne('Cart', (cart: any) => cart.cartItems)
+  @JoinColumn({ name: 'cartId' })
   cart: Cart;
 
   @ManyToOne(() => Shop, (shop) => shop.cartItems)
+  @JoinColumn({ name: 'shopId' })
   shop: Shop;
 
   @Column({ type: 'boolean', default: false })

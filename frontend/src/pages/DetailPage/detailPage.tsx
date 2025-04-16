@@ -248,13 +248,12 @@ const DetailPage = () => {
       return;
     }
     try {
-      const response = await fetch("http://localhost:3000/cart/add", {
+      const response = await fetch("http://localhost:3000/cart-item", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId: product.id,
+          idProduct: product.id,
           quantity: quantity,
-          userId: userId, // Sử dụng userId từ token
         }),
       });
       if (!response.ok) {

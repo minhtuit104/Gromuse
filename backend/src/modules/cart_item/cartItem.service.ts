@@ -20,27 +20,17 @@ import { CreateCartItemDto } from './dtos/cart_item.dto';
 @Injectable()
 export class CartItemService {
   constructor(
-    @InjectRepository(Payment) private paymentRepository: Repository<Payment>,
-    @InjectRepository(Address) private addressRepository: Repository<Address>,
-    @InjectRepository(Voucher) private voucherRepository: Repository<Voucher>,
-    @InjectRepository(Product) private productRepository: Repository<Product>,
-    @InjectRepository(Shop) private shopRepository: Repository<Shop>,
-    @InjectRepository(Cart) private cartRepository: Repository<Cart>,
     @InjectRepository(CartItem)
     private cartItemRepository: Repository<CartItem>,
   ) {}
 
-  async create(createPaymentDto: CreateCartItemDto): Promise<Payment> {
-    // 2. Xử lý Vouchers (giữ nguyên)
-
-    const payment = this.paymentRepository.create(createPaymentDto);
-
-    // 6. Lưu đối tượng Payment hoàn chỉnh
+  async create(createCartItemDto: CreateCartItemDto): Promise<CartItem> {
+    const cartItem = this.cartItemRepository.create(createCartItemDto);
     try {
-      const savedPayment = await this.paymentRepository.save(payment);
-      console.log('Payment saved successfully:', savedPayment);
+      const savedCartItem = await this.cartItemRepository.save(cartItem);
+      console.log('Payment saved successfully:', savedCartItem);
 
-      return savedPayment; // Kiểu trả về là Payment
+      return savedCartItem; // Kiểu trả về là Payment
     } catch (saveError) {
       console.error('Error saving payment:', saveError);
       // Có thể log chi tiết lỗi hơn

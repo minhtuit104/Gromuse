@@ -24,6 +24,18 @@ import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Tạo cart mới' })
+  @ApiResponse({ status: 201, description: 'Tạo cart thành công' })
+  async create(@Body() createCartItemDto: CreateCartDto) {
+    const payment = await this.cartService.create(createCartItemDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Payment created successfully',
+      data: payment,
+    };
+  }
+
   @Post('add')
   // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Thêm sản phẩm vào giỏ hàng' })

@@ -56,8 +56,8 @@ export class Payment {
   @Column()
   cartId: number;
 
-  @Column('int', { array: true, nullable: true })
-  cartItemId: number[];
+  @Column('json')
+  cartItemIds: number[];
 
   @Column()
   phone: string;
@@ -80,4 +80,13 @@ export class Payment {
 
   @Column({ type: 'timestamp', nullable: true })
   deletedAt: Date;
+  @OneToMany(() => CartItem, (cartItem) => cartItem.payment)
+  cartItems: CartItem[];
+
+  @OneToOne(() => Shop, (shop) => shop.payment)
+  shop: Shop;
+
+  @ManyToMany(() => Voucher, (voucher) => voucher.payments)
+  @JoinTable()
+  vouchers: Voucher[];
 }
