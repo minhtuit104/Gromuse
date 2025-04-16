@@ -30,29 +30,16 @@ const registerApiShop = async (
   password: string,
   address: string
 ) => {
-  const requestData = {
+  const res = await axios.post("/api/v1/auth/register", {
     name,
     email,
     phoneNumber,
     password,
     address,
     role: 2,
-  };
-
-  console.log("Sending request data:", requestData);
-
-  try {
-    const response = await axios.post("/api/v1/auth/register", requestData, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    console.log("Response from server:", response);
-    return response;
-  } catch (error:any) {
-    console.error("Registration error:", error.response?.data || error);
-    throw error;
-  }
+  });
+  console.log("API dang ki: ", res);
+  return res;
 };
 
 const fectchUserName = async (idUser: number) => {

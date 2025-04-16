@@ -68,6 +68,7 @@ const LoginShop = () => {
     setIsLoading(true);
     try {
       let res = await loginApi(values.email, values.password);
+      console.log("API login: ", res);
       if (res && res.data.access_token) {
         localStorage.setItem("token", res.data.access_token);
         setTimeout(() => {
@@ -100,13 +101,13 @@ const LoginShop = () => {
         values.password,
         values.address
       );
+      console.log("API sign up: ", res);
       if (res && res.status === 400) {
         toast.error(res.data.message.message);
       } else {
         toast.success("Register successful!");
-        console.log("respon: ===========", res);
         resetForm();
-        navigate("/loginShop");
+        navigate("/login");
       }
     } catch (error) {
       console.error("Registration failed:", error);

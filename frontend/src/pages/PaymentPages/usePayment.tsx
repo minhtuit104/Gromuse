@@ -26,19 +26,17 @@ export interface Voucher {
 }
 
 const usePayment = () => {
-  const [data, setData] = useState<Shop[]>([]); // State cho dữ liệu giỏ hàng (shops và products)
-  const [vouchers, setVouchers] = useState<Voucher[]>([]); // State cho vouchers
-  const [error, setError] = useState<string | null>(null); // State lỗi cho việc fetch giỏ hàng/voucher
-  const [loading, setLoading] = useState(true); // State loading cho việc fetch giỏ hàng/voucher
-  const fetchControllerRef = useRef<AbortController | null>(null); // Ref để hủy request API
+  const [data, setData] = useState<Shop[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const fetchControllerRef = useRef<AbortController | null>(null);
 
-  // *** START: THÊM STATE CHO THÔNG TIN USER ***
-  const [userAddress, setUserAddress] = useState<AddressDto | null>(null); // State lưu trữ thông tin địa chỉ user
-  const [userLoading, setUserLoading] = useState(true); // State loading riêng cho việc fetch user
-  const [userError, setUserError] = useState<string | null>(null); // State lỗi riêng cho việc fetch user
-  // *** END: THÊM STATE CHO THÔNG TIN USER ***
+  const [userAddress, setUserAddress] = useState<AddressDto | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState<string | null>(null);
 
-  // *** START: HÀM LẤY idUser TỪ TOKEN ***
+  //HÀM LẤY idUser TỪ TOKEN ***
   const getUserIdFromToken = useCallback((): number | null => {
     const token = localStorage.getItem("token"); // Lấy token từ localStorage
     if (!token) {
@@ -71,16 +69,15 @@ const usePayment = () => {
       localStorage.removeItem("token"); // Xóa token lỗi
       return null;
     }
-  }, []); // useCallback để tránh tạo lại hàm không cần thiết
+  }, []);
 
   const fetchUserData = useCallback(async () => {
     const userId = getUserIdFromToken(); // Lấy userId
     if (!userId) {
-      // Nếu không có userId (chưa đăng nhập hoặc token lỗi/hết hạn)
       setUserError("Không thể xác thực người dùng. Vui lòng đăng nhập lại.");
       setUserLoading(false);
       setUserAddress(null); // Đặt địa chỉ về null
-      return; // Dừng thực thi
+      return;
     }
 
     setUserLoading(true); // Bắt đầu loading user data
@@ -144,11 +141,8 @@ const usePayment = () => {
       return; // Dừng thực thi
     }
 
-    // Đồng bộ cartId vào các key liên quan để nhất quán
     localStorage.setItem("cartId", cartIdToFetch);
     localStorage.setItem("currentCartId", cartIdToFetch);
-
-    // Bỏ logic buyAgain nếu không dùng
 
     try {
       console.log(
@@ -171,15 +165,12 @@ const usePayment = () => {
         throw new Error(`API thất bại: ${response.status}`);
       }
 
-      const cartData = await response.json();      
+      const cartData = await response.json();
 
       if (!Array.isArray(cartData) || cartData.length === 0) {
-        // Nếu giỏ hàng trống
         setData([]);
         console.log("[usePayment] Cart is empty or has no items.");
-        // Không cần đặt lỗi nếu giỏ hàng trống là hợp lệ
       } else {
-        // Xử lý map dữ liệu cartItems sang cấu trúc Shop/Product
         const shopsMap: Record<string, Shop> = {};
         cartData.forEach((item: any) => {
           // Kiểm tra dữ liệu item và product
@@ -189,9 +180,8 @@ const usePayment = () => {
           }
 
           const shopInfo = item.product.shop || {};
-          const shopId =
-            shopInfo.id?.toString() || `default_shop_${item.product.id}`; // Tạo ID shop duy nhất nếu thiếu
-          const shopName = shopInfo.name || "Cửa hàng";
+          const shopId = shopInfo.id?.toString() || "1";
+          const shopName = shopInfo.name || "Lay's Viet Nam";
           const shopAvatar = shopInfo.avatar || DefaultAvatar;
 
           if (!shopsMap[shopId]) {
@@ -199,7 +189,7 @@ const usePayment = () => {
               id: shopId,
               avatar: shopAvatar,
               name: shopName,
-              deliveryInfo: "Giao hàng nhanh",
+              deliveryInfo: "Fast Delivery",
               productIcons: true,
               products: [],
             };
@@ -316,8 +306,8 @@ const usePayment = () => {
             // credentials: "include", // Bỏ nếu không dùng cookie
           }
         );
-        console.log("response",response);
-        
+        console.log("response", response);
+
         clearTimeout(timeoutId); // Xóa timeout nếu request hoàn thành
         if (!response.ok) {
           const errorText = await response.text();

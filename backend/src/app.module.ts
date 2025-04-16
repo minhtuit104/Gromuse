@@ -25,7 +25,7 @@ import { Voucher } from './typeorm/entities/Voucher';
     TypeOrmModule.forRoot({
       database: 'web_gromuse',
       username: 'root',
-      password: 'luangoc0204',
+      password: '12345',
       port: 3306,
       host: 'localhost',
       type: 'mysql',
@@ -43,7 +43,7 @@ import { Voucher } from './typeorm/entities/Voucher';
         Payment,
         Voucher,
       ],
-      synchronize: false,
+      synchronize: true,
     }),
     AuthModule,
     UserModule,

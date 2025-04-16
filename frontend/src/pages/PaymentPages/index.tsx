@@ -1,5 +1,4 @@
-// src/pages/PaymentPages/index.tsx
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./paymentPage.css";
 import IconVoucher from "../../assets/images/icons/ic_ voucher.svg";
@@ -201,18 +200,18 @@ export const PaymentPage = () => {
     name: string;
     phone: string;
     address: string;
-  }) => {    
+  }) => {
     setIsUpdateAddressModalOpen(false); // Đóng modal
     setIsLoading(true); // Hiển thị loading (có thể dùng state loading riêng)
     try {
       // Chuẩn bị dữ liệu gửi lên API
       const updateData = {
         name: newAddressData.name,
-        phoneNumber: newAddressData.phone, // Khớp với backend DTO
+        phoneNumber: newAddressData.phone,
         address: newAddressData.address,
         // Không cần gửi email, birthday nếu không thay đổi
       };
-      
+
       // Gọi API cập nhật profile từ UserService
       await updateUserProfile(updateData);
 
@@ -232,14 +231,12 @@ export const PaymentPage = () => {
       setIsLoading(false); // Tắt loading
     }
   };
-  // *** END: CẬP NHẬT HÀM handleUpdateAddress ***
 
   // Schema validation cho voucher (nếu cần)
   const schema = yup.object().shape({
     vourcher: yup.string(), // Đổi tên thành voucher nếu muốn
   });
 
-  // *** START: CẬP NHẬT HÀM handleSubmit ***
   const handleSubmit = async () => {
     console.log("[handleSubmit] Bắt đầu chạy...");
     // Sử dụng cartId từ state đã được cập nhật
@@ -267,6 +264,8 @@ export const PaymentPage = () => {
       if (refetchUser) refetchUser(); // Thử fetch lại user nếu chưa có
       return;
     }
+
+    const finalAddress = userAddress.address || "Chưa cung cấp";
     // -------------------------------------------------
 
     // Kiểm tra giỏ hàng trống
@@ -284,35 +283,83 @@ export const PaymentPage = () => {
     setPaymentStatus(""); // Reset trạng thái thanh toán
 
     try {
+      const validShopsData = processedData
+        .map((shop) => {
+          // Kiểm tra shop và id của shop
+          if (!shop || typeof shop.id === "undefined" || shop.id === null) {
+            console.error(
+              "[PaymentPage] Dữ liệu shop không hợp lệ hoặc thiếu ID:",
+              shop
+            );
+            toast.error("Lỗi dữ liệu shop, không thể tiếp tục thanh toán.");
+            throw new Error("Dữ liệu shop không hợp lệ.");
+          }
+          const shopId = Number(shop.id);
+          if (isNaN(shopId) || shopId <= 0) {
+            // Backend thường yêu cầu ID > 0
+            console.error(`[PaymentPage] Shop ID không hợp lệ: ${shop.id}.`);
+            toast.error(`Shop ID không hợp lệ: ${shop.id}.`);
+            throw new Error(`Shop ID không hợp lệ: ${shop.id}.`);
+          }
+
+          // Map và kiểm tra product data
+          const validProducts = shop.products.map((product: Product) => {
+            if (
+              !product ||
+              typeof product.id === "undefined" ||
+              product.id === null
+            ) {
+              console.error(
+                "[PaymentPage] Dữ liệu sản phẩm không hợp lệ hoặc thiếu ID:",
+                product
+              );
+              throw new Error("Dữ liệu sản phẩm không hợp lệ.");
+            }
+            const productId = Number(product.id);
+            if (isNaN(productId) || productId <= 0) {
+              console.error(
+                `[PaymentPage] Product ID không hợp lệ: ${product.id}.`
+              );
+              throw new Error(`Product ID không hợp lệ: ${product.id}.`);
+            }
+          });
+
+          return {
+            id: shop.id,
+            name: shop.name || "Lay's Việt Nam", // Cần dữ liệu thật
+            avatar: shop.avatar || "../../assets/images/imagePNG/Avatar.png", // Cần dữ liệu thật
+            products: validProducts,
+          };
+        })
+        // Lọc bỏ các shop có thể trả về null nếu có lỗi (mặc dù đã throw error ở trên)
+        .filter((shop) => shop !== null);
+
+      // Nếu sau khi kiểm tra không còn shop nào hợp lệ
+      if (validShopsData.length === 0 && processedData.length > 0) {
+        console.error("[PaymentPage] Không có dữ liệu shop hợp lệ để gửi đi.");
+        toast.error("Không có dữ liệu shop hợp lệ để thanh toán.");
+        setIsLoading(false);
+        return; // Dừng lại nếu không có shop hợp lệ
+      }
+
       // Chuẩn bị dữ liệu gửi lên API /payment/create
       const paymentData = {
-        paymentMethod: selectedPayment === 0 ? "online" : "cod", // Phương thức thanh toán
-        subtotal: calculatedValues.subtotal,
+        paymentMethod: selectedPayment === 0 ? "online" : "cod",
         deliveryFeeOriginal: deliveryFee.original,
-        deliveryFeeDiscounted: calculatedValues.finalDeliveryFee, // Phí ship cuối cùng
+        deliveryFeeDiscounted: calculatedValues.finalDeliveryFee,
         couponDiscount:
-          calculatedValues.couponDiscount + calculatedValues.deliveryDiscount, // Tổng giảm giá
+          calculatedValues.couponDiscount + calculatedValues.deliveryDiscount,
         total: calculatedValues.total,
-        // --- Sử dụng userAddress từ state ---
         address: {
           name: userAddress.name,
-          phone: userAddress.phone.replace(/[^\d]/g, ""), // Chỉ lấy số
-          address: userAddress.address,
+          phone: userAddress.phone,
+          // phone: userAddress.phone.replace(/[^\d]/g, ""),
+          // address: userAddress.address,
+          address: finalAddress,
         },
         // -----------------------------------
-        voucherCodes: selectedVoucher ? [selectedVoucher] : [], // Mã voucher đã chọn
+        voucherCodes: selectedVoucher ? [selectedVoucher] : [],
         // Dữ liệu shops và products (đảm bảo đúng cấu trúc backend yêu cầu)
-        shops: processedData.map((shop) => ({
-          id: shop.id, // ID của shop
-          products: shop.products.map((product: Product) => ({
-            id: Number(product.id), // ID sản phẩm (number)
-            quantity: Number(product.quantity) || 1, // Số lượng (number)
-            price: Number(product.price) || 0, // Giá tại thời điểm mua (number)
-            // Thêm các thông tin khác nếu backend cần
-            name: product.name,
-            img: product.img,
-          })),
-        })),
         cartId: cartIdValue, // ID của giỏ hàng đang thanh toán
       };
 
@@ -325,7 +372,6 @@ export const PaymentPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(paymentData),
-        // credentials: "include", // Bỏ nếu không dùng cookie phức tạp
       });
 
       if (!response.ok) {
@@ -454,14 +500,14 @@ export const PaymentPage = () => {
   // *** END: CẬP NHẬT HÀM handleSubmit ***
 
   // Hàm định dạng số điện thoại (giữ nguyên)
-  const formatPhoneNumber = (phone: string): string => {
-    const numberOnly = phone.replace(/\D/g, "");
-    if (numberOnly.length < 10) {
-      console.warn("Số điện thoại không đủ 10 chữ số:", phone);
-      return phone; // Trả về chuỗi gốc
-    }
-    return phone;
-  };
+  // const formatPhoneNumber = (phone: string): string => {
+  //   const numberOnly = phone.replace(/\D/g, "");
+  //   if (numberOnly.length < 10) {
+  //     console.warn("Số điện thoại không đủ 10 chữ số:", phone);
+  //     return phone; // Trả về chuỗi gốc
+  //   }
+  //   return phone;
+  // };
 
   if (loading || userLoading) {
     return (

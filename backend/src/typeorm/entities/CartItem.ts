@@ -4,7 +4,6 @@ import {
   Column,
   PrimaryGeneratedColumn,
   ManyToOne,
-  OneToOne,
   JoinColumn,
 } from 'typeorm';
 import { Product } from './Product';
@@ -36,9 +35,9 @@ export class CartItem {
   @Column({
     type: 'enum',
     enum: OrderStatus,
-    default: OrderStatus.TO_RECEIVE,
+    nullable: true,
   })
-  status: OrderStatus;
+  status: OrderStatus | null;
 
   @Column({ nullable: true })
   cancelReason: string;

@@ -43,7 +43,7 @@ const UpdateAddressModal: React.FC<UpdateAddressModalProps> = ({
   const validationSchema = Yup.object({
     name: Yup.string().required("Name is required!"),
     phone: Yup.number().required("Phone is required!"),
-    address: Yup.string().required("Address is required!"),
+    // address: Yup.string().required("Address is required!"),
   });
   return (
     <Modal
@@ -137,8 +137,8 @@ const UpdateAddressModal: React.FC<UpdateAddressModalProps> = ({
               <Button
                 onClick={() => formikProps.handleSubmit()}
                 type="primary"
-                htmlType="submit" // htmlType="submit" để kích hoạt onSubmit của Formik
-                disabled={formikProps.isSubmitting} // Disable nút khi đang submit
+                htmlType="submit"
+                disabled={formikProps.isSubmitting}
               >
                 Confirm
               </Button>

@@ -238,10 +238,9 @@ export class CartService {
         .leftJoinAndSelect('cartItem.product', 'product')
         .leftJoinAndSelect('product.shop', 'shop')
         .leftJoinAndSelect('product.category', 'category')
-        .where('cart.id = :cartId', { cartId }) // Lọc theo cartId
-        .andWhere('cartItem.isPaid = :isPaid', { isPaid: false })
-        .orderBy('cartItem.createdAt', 'ASC') // Sắp xếp item theo thứ tự thêm vào (tùy chọn)
-        .getOne(); // Lấy một Cart duy nhất
+        .where('cart.id = :cartId', { cartId })
+        .orderBy('cartItem.createdAt', 'ASC')
+        .getOne();
 
       if (!cart) {
         this.logger.warn(`[getCartItems] Cart with ID ${cartId} not found.`);
@@ -533,9 +532,43 @@ export class CartService {
       throw new NotFoundException('Order item not found in the specified cart');
     }
 
+    const currentStatus = cartItem.status;
     this.logger.log(
       `[updateOrderStatus] Found CartItem ID: ${cartItem.id}. Current status: ${cartItem.status}. New status: ${status}`,
     );
+
+    // Chỉ cho phép chuyển thành COMPLETE nếu đang là TO_RECEIVE
+    if (
+      status === OrderStatus.COMPLETE &&
+      currentStatus !== OrderStatus.TO_RECEIVE
+    ) {
+      this.logger.warn(
+        `[updateOrderStatus] Blocked attempt to set status to COMPLETE for CartItem ID: ${cartItem.id} because current status is ${currentStatus}, not TO_RECEIVE.`,
+      );
+      // Có thể trả về lỗi hoặc chỉ đơn giản là không làm gì và trả về thành công giả
+      // throw new HttpException('Cannot complete an order that is not in TO_RECEIVE status', HttpStatus.BAD_REQUEST);
+      return {
+        success: false, // Hoặc true nếu muốn coi như không có lỗi
+        message: `Order item is already in status ${currentStatus}, cannot set to COMPLETE.`,
+        updatedItem: cartItem,
+      };
+    }
+
+    // Cho phép cập nhật thành CANCELLED từ TO_RECEIVE (hoặc các trạng thái khác nếu cần)
+    if (
+      (status === OrderStatus.CANCEL_BYUSER ||
+        status === OrderStatus.CANCEL_BYSHOP) &&
+      currentStatus !== OrderStatus.TO_RECEIVE // Chỉ cho hủy nếu đang chờ nhận
+    ) {
+      this.logger.warn(
+        `[updateOrderStatus] Blocked attempt to cancel CartItem ID: ${cartItem.id} because current status is ${currentStatus}, not TO_RECEIVE.`,
+      );
+      return {
+        success: false,
+        message: `Order item is already in status ${currentStatus}, cannot cancel.`,
+        updatedItem: cartItem,
+      };
+    }
 
     // Cập nhật trạng thái
     cartItem.status = status;
@@ -550,8 +583,11 @@ export class CartService {
       this.logger.log(
         `[updateOrderStatus] Setting cancel reason for CartItem ID: ${cartItem.id}`,
       );
-    } else {
-      // cartItem.cancelReason = null;
+    } else if (
+      status !== OrderStatus.CANCEL_BYUSER &&
+      status !== OrderStatus.CANCEL_BYSHOP
+    ) {
+      cartItem.cancelReason = null;
     }
 
     try {

@@ -114,6 +114,7 @@ export class PaymentController {
   @Post('create')
   @ApiOperation({ summary: 'Tạo đơn thanh toán trực tiếp' })
   async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
+    console.log('Payment created:', createPaymentDto);
     const payment =
       await this.paymentService.createDirectPayment(createPaymentDto);
 

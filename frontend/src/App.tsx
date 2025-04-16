@@ -1,7 +1,8 @@
 import "react-toastify/dist/ReactToastify.css";
 import { Routes, Route } from "react-router-dom";
 import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
-import LoginShop from "./pages/LoginShop/loginShop";
+// import LoginShop from "./pages/LoginShop/loginShop";
+// import DashboardPage from "./pages/DashboardPage/DashboardPage";
 import { AuthRoute, PrivateRoute } from "./router/protectRouter";
 import HomePage from "./pages/HomePage/HomePage";
 import { PaymentPage } from "./pages/PaymentPages/index";
@@ -11,7 +12,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import OrderShop from "./pages/OrderShop/Order/OrderShop";
 import OrderHistory from "./pages/OrderShop/OrderHistory/OrderHistory";
 import OrderCancel from "./pages/OrderShop/OrderCancel/OrderCancel";
-// import DashboardPage from "./pages/DashboardPage/DashboardPage";
 import RatingProduct from "./pages/OrderStatus/RatingProduct/RatingProduct";
 import ListProduct from "./pages/ListProduct/ListProduct";
 import OrderStatuss from "./pages/OrderStatus/OrderStatus";
@@ -29,14 +29,14 @@ function App() {
             </AuthRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/loginShop"
           element={
             <AuthRoute>
               <LoginShop />
             </AuthRoute>
           }
-        />
+        /> */}
         {/* Chỉ có thể vào trang home nếu đã đăng nhập */}
         <Route
           path="/"

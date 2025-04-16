@@ -7,6 +7,7 @@ import {
   IsArray,
   ValidateNested,
   IsOptional,
+  IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentMethod } from '../../../typeorm/entities/Payment';
@@ -49,17 +50,6 @@ export class CreatePaymentDto {
   @Min(0)
   total: number;
 
-  @ApiProperty({ type: AddressDto })
-  @ValidateNested()
-  @Type(() => AddressDto)
-  address: AddressDto;
-
-  @ApiProperty({ type: [ShopDto] })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ShopDto)
-  shops: ShopDto[];
-
   @ApiProperty({ example: ['#FREE20', '#DISCOUNT10'], required: false })
   @IsOptional()
   @IsArray()
@@ -69,4 +59,16 @@ export class CreatePaymentDto {
   @IsNotEmpty()
   @IsNumber()
   cartId: number;
+
+  @ApiProperty({ example: ['1,2'], required: true })
+  @IsArray()
+  cartItemId?: number[];
+
+  @ApiProperty({ example: 'abcd', required: true })
+  @IsString()
+  address?: string;
+
+  @ApiProperty({ example: '0123456789', required: true })
+  @IsString()
+  phone?: string;
 }

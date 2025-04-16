@@ -53,11 +53,17 @@ export class Payment {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total: number;
 
-  @OneToMany(() => Shop, (shop) => shop.payment)
-  shops: Shop[];
+  @Column()
+  cartId: number;
 
-  @OneToMany(() => CartItem, (cartItem) => cartItem.payment)
-  cartItems: CartItem[];
+  @Column('int', { array: true, nullable: true })
+  cartItemId: number[];
+
+  @Column()
+  phone: string;
+
+  @Column()
+  address: string;
 
   @Column({
     type: 'enum',
@@ -72,13 +78,6 @@ export class Payment {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', nullable: true })
   deletedAt: Date;
-
-  @ManyToOne(() => Address, (address) => address.payments)
-  address: Address;
-
-  @ManyToMany(() => Voucher, (voucher) => voucher.payments)
-  @JoinTable()
-  vouchers: Voucher[];
 }
