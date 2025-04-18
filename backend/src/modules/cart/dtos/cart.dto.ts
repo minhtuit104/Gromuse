@@ -2,14 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber } from 'class-validator';
 import { PaymentMethod } from '../../../typeorm/entities/Payment';
 
-export class CreateCartItemDto {
+export class CreateCartDto {
   @ApiProperty({ example: 1, required: true })
   @IsNotEmpty()
   @IsNumber()
-  idProduct: number;
-
-  @ApiProperty({ example: 1 })
-  @IsNotEmpty()
-  @IsNumber()
-  quantity: number;
+  idUser: number;
 }

@@ -4,12 +4,22 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cart } from '../../typeorm/entities/Cart';
 import { CreateCartDto } from './dtos/create-cart.dto';
 import { Product } from '../../typeorm/entities/Product';
+import { AddToCartDto } from './dtos/add-to-cart.dto';
+import { OrderStatus } from '../../typeorm/entities/CartItem';
+import { CreateCartDto } from './dtos/cart.dto';
+
+interface ProductUpdateInfo {
+  id: number;
+  quantity: number;
+}
+
 @Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name);
@@ -21,7 +31,22 @@ export class CartService {
     @InjectRepository(Product) // Vẫn cần để kiểm tra product tồn tại trong createBuyNowCart
     private productRepository: Repository<Product>,
   ) {}
+  async create(createCartDto: CreateCartDto): Promise<Cart> {
+    const cart = this.cartRepository.create(createCartDto);
+    try {
+      const savedCart = await this.cartRepository.save(cart);
+      console.log('Payment saved successfully:', savedCart);
 
+      return savedCart;
+    } catch (saveError) {
+      console.error('Error saving payment:', saveError);
+      // Có thể log chi tiết lỗi hơn
+      if (saveError.driverError) {
+        console.error('Driver Error:', saveError.driverError);
+      }
+      throw new InternalServerErrorException('Could not save payment.');
+    }
+  }
   async getOrCreateUserCart(userId: number): Promise<Cart> {
     this.logger.log(
       `[getOrCreateUserCart] Finding or creating cart for userId: ${userId}`,

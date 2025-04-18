@@ -18,12 +18,37 @@ import { CartItemService } from '../cart_item/cartItem.service';
 @ApiTags('cart')
 @Controller('cart')
 export class CartController {
-  private readonly logger = new Logger(CartController.name);
+  constructor(private readonly cartService: CartService) {}
 
-  constructor(
-    private readonly cartService: CartService,
-    private readonly cartItemService: CartItemService, // Inject CartItemService
-  ) {}
+  @Post()
+  @ApiOperation({ summary: 'Tạo cart mới' })
+  @ApiResponse({ status: 201, description: 'Tạo cart thành công' })
+  async create(@Body() createCartItemDto: CreateCartDto) {
+    const payment = await this.cartService.create(createCartItemDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Payment created successfully',
+      data: payment,
+    };
+  }
+
+  @Post('add')
+  // @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Thêm sản phẩm vào giỏ hàng' })
+  @ApiResponse({
+    status: 201,
+    description: 'Sản phẩm đã được thêm vào giỏ hàng',
+  })
+  async addToCart(@Body() addToCartDto: AddToCartDto) {
+    if (!addToCartDto.userId) {
+      throw new HttpException(
+        'userId is required in the request body',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.cartService.addToCart(addToCartDto);
+  }
 
   // Endpoint để lấy hoặc tạo giỏ hàng cho user (ví dụ)
   @Get('user/:userId')

@@ -19,13 +19,14 @@ import { Cart } from './typeorm/entities/Cart';
 import { PaymentModule } from './modules/payment/payment.module';
 import { Payment } from './typeorm/entities/Payment';
 import { Voucher } from './typeorm/entities/Voucher';
+import { CartItemModule } from './modules/cart_item/cartItem.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       database: 'web_gromuse',
       username: 'root',
-      password: '12345',
+      password: 'luangoc0204',
       port: 3306,
       host: 'localhost',
       type: 'mysql',
@@ -52,6 +53,7 @@ import { Voucher } from './typeorm/entities/Voucher';
     CartModule,
     DetailModule,
     PaymentModule,
+    CartItemModule
   ],
   controllers: [AppController],
   providers: [AppService],

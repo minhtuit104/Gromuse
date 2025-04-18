@@ -260,9 +260,8 @@ const DetailPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId: product.id,
+          idProduct: product.id,
           quantity: quantity,
-          userId: userId, // Sử dụng userId từ token
         }),
       });
       if (!response.ok) {

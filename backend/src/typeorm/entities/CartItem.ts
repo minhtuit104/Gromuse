@@ -52,19 +52,13 @@ export class CartItem {
   @JoinColumn({ name: 'paymentId' })
   payment: Payment | null;
 
-  @ManyToOne(() => Cart, (cart) => cart.cartItems)
+  @ManyToOne('Cart', (cart: any) => cart.cartItems)
   @JoinColumn({ name: 'cartId' })
   cart: Cart;
 
-  @Column({ type: 'int' })
-  cartId: number;
-
-  @ManyToOne(() => Shop, (shop) => shop.cartItems, { nullable: true })
+  @ManyToOne(() => Shop, (shop) => shop.cartItems)
   @JoinColumn({ name: 'shopId' })
-  shop: Shop | null;
-
-  @Column({ type: 'int', nullable: true })
-  shopId: number | null;
+  shop: Shop;
 
   @Column({ type: 'boolean', default: false })
   isPaid: boolean;
