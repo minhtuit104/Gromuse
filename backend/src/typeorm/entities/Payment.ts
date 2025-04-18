@@ -1,16 +1,13 @@
+// src/typeorm/entities/Payment.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
+  OneToMany,
   ManyToMany,
   JoinTable,
-  OneToMany,
-  OneToOne,
 } from 'typeorm';
-import { Address } from './Address';
 import { Voucher } from './Voucher';
-import { Shop } from './Shop';
 import { CartItem } from './CartItem';
 
 export enum PaymentMethod {
@@ -53,24 +50,15 @@ export class Payment {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total: number;
 
-  @Column()
-  cartId: number;
-
-  @Column('int', { array: true, nullable: true })
-  cartItemId: number[];
-
-  @Column()
-  phone: string;
-
-  @Column()
-  address: string;
-
   @Column({
     type: 'enum',
     enum: PaymentStatus,
     default: PaymentStatus.PENDING,
   })
   status: PaymentStatus;
+
+  @OneToMany(() => CartItem, (cartItem) => cartItem.payment)
+  cartItems: CartItem[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
@@ -80,4 +68,8 @@ export class Payment {
 
   @Column({ type: 'timestamp', nullable: true })
   deletedAt: Date;
+
+  @ManyToMany(() => Voucher)
+  @JoinTable()
+  vouchers: Voucher[];
 }

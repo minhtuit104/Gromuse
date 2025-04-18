@@ -16,7 +16,7 @@ import {
   updateOrderStatusOnBackend,
   reconstructOrderMappings,
   getOrderDetails,
-  synchronizeOrdersWithBackend,
+  // synchronizeOrdersWithBackend,
 } from "../../Service/OrderService";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -64,39 +64,51 @@ const OrderStatuss = () => {
     console.log("[OrderStatus] Component mounted. Initializing...");
     reconstructOrderMappings();
 
-    const syncAndLoad = () => {
-      console.log("[OrderStatus] Starting syncAndLoad...");
-      synchronizeOrdersWithBackend()
-        .then((syncSuccess) => {
-          if (syncSuccess) {
-            console.log("[OrderStatus] Sync successful.");
-          } else {
-            console.warn(
-              "[OrderStatus] Sync failed, loading local data anyway."
-            );
-          }
-          // Luôn tải dữ liệu sau khi đồng bộ (thành công hoặc thất bại)
-          loadOrderData();
-        })
-        .catch((error) => {
-          console.error("[OrderStatus] Error during sync/load:", error);
-          toast.error("Lỗi khi đồng bộ hoặc tải đơn hàng.");
-          // Vẫn thử tải dữ liệu local nếu sync lỗi
-          loadOrderData();
-        });
+    // const syncAndLoad = () => {
+    //   console.log("[OrderStatus] Starting syncAndLoad...");
+    //   synchronizeOrdersWithBackend()
+    //     .then((syncSuccess) => {
+    //       if (syncSuccess) {
+    //         console.log("[OrderStatus] Sync successful.");
+    //       } else {
+    //         console.warn(
+    //           "[OrderStatus] Sync failed, loading local data anyway."
+    //         );
+    //       }
+    //       // Luôn tải dữ liệu sau khi đồng bộ (thành công hoặc thất bại)
+    //       loadOrderData();
+    //     })
+    //     .catch((error) => {
+    //       console.error("[OrderStatus] Error during sync/load:", error);
+    //       toast.error("Lỗi khi đồng bộ hoặc tải đơn hàng.");
+    //       // Vẫn thử tải dữ liệu local nếu sync lỗi
+    //       loadOrderData();
+    //     });
+    // };
+
+    // // Chạy lần đầu
+    // syncAndLoad();
+
+    // // Thiết lập interval
+    // console.log("[OrderStatus] Setting up polling interval (5 seconds)...");
+    // const intervalId = setInterval(syncAndLoad, 5000);
+
+    // Thêm: Tải lại dữ liệu khi cửa sổ được focus
+    const handleFocus = () => {
+      console.log(
+        "[OrderStatus] Window focused, reloading data from localStorage..."
+      );
+      loadOrderData();
     };
-
-    // Chạy lần đầu
-    syncAndLoad();
-
-    // Thiết lập interval
-    console.log("[OrderStatus] Setting up polling interval (5 seconds)...");
-    const intervalId = setInterval(syncAndLoad, 5000);
+    window.addEventListener("focus", handleFocus);
+    console.log("[OrderStatus] Added focus event listener.");
 
     // Cleanup
     return () => {
-      console.log("[OrderStatus] Component unmounting. Clearing interval.");
-      clearInterval(intervalId);
+      console.log("[OrderStatus] Component unmounting.");
+      // clearInterval(intervalId); // Bỏ cleanup interval
+      window.removeEventListener("focus", handleFocus); // Gỡ bỏ listener khi unmount
+      console.log("[OrderStatus] Removed focus event listener.");
     };
   }, [loadOrderData]);
 

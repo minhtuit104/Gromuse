@@ -1,74 +1,62 @@
+// src/modules/payment/dtos/create-payment.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsNotEmpty,
   IsEnum,
   IsNumber,
-  Min,
-  IsArray,
-  ValidateNested,
-  IsOptional,
   IsString,
+  IsArray,
+  IsOptional,
+  Min,
+  IsNotEmpty,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import { PaymentMethod } from '../../../typeorm/entities/Payment';
-import { AddressDto } from './address.dto';
-import { ShopDto } from './shop.dto';
 
 export class CreatePaymentDto {
-  @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.COD })
-  @IsNotEmpty()
+  @ApiProperty({ enum: PaymentMethod, default: PaymentMethod.COD })
   @IsEnum(PaymentMethod)
   paymentMethod: PaymentMethod;
 
-  @ApiProperty({ example: 35.75 })
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
+  @ApiProperty({ example: 100.5 })
+  @IsNotEmpty({ message: 'subtotal should not be empty' })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message:
+        'subtotal must be a number conforming to the specified constraints',
+    },
+  )
+  @Min(0, { message: 'subtotal must not be less than 0' })
   subtotal: number;
 
   @ApiProperty({ example: 25.0 })
-  @IsNotEmpty()
   @IsNumber()
-  @Min(0)
   deliveryFeeOriginal: number;
 
   @ApiProperty({ example: 15.0 })
-  @IsNotEmpty()
   @IsNumber()
-  @Min(0)
   deliveryFeeDiscounted: number;
 
-  @ApiProperty({ example: 10.75 })
-  @IsNotEmpty()
+  @ApiProperty({ example: 10.0, default: 0 })
   @IsNumber()
-  @Min(0)
-  couponDiscount: number;
+  @IsOptional()
+  couponDiscount?: number;
 
-  @ApiProperty({ example: 40.0 })
-  @IsNotEmpty()
+  @ApiProperty({ example: 110.5 })
   @IsNumber()
-  @Min(0)
   total: number;
 
-  @ApiProperty({ example: ['#FREE20', '#DISCOUNT10'], required: false })
-  @IsOptional()
+  @ApiProperty({ example: '0987654321' })
+  @IsNotEmpty({ message: 'phone should not be empty' })
+  @IsString({ message: 'phone must be a string' })
+  phone: string;
+
+  @ApiProperty({ example: ['VOUCHER1', 'VOUCHER2'], required: false })
   @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
   voucherCodes?: string[];
 
-  @ApiProperty({ example: 1, description: 'ID của giỏ hàng', required: true })
-  @IsNotEmpty()
+  @ApiProperty({ example: 1 })
   @IsNumber()
   cartId: number;
-
-  @ApiProperty({ example: ['1,2'], required: true })
-  @IsArray()
-  cartItemId?: number[];
-
-  @ApiProperty({ example: 'abcd', required: true })
-  @IsString()
-  address?: string;
-
-  @ApiProperty({ example: '0123456789', required: true })
-  @IsString()
-  phone?: string;
 }

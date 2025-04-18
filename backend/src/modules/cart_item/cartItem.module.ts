@@ -1,29 +1,20 @@
-import { Module } from '@nestjs/common';
+// src/modules/cart_item/cartItem.module.ts
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PaymentController } from './payment.controller';
-import { PaymentService } from './cartItem.service';
-import { Payment } from '../../typeorm/entities/Payment';
-import { Address } from '../../typeorm/entities/Address';
-import { Voucher } from '../../typeorm/entities/Voucher';
-import { Product } from '../../typeorm/entities/Product';
-import { Shop } from '../../typeorm/entities/Shop';
-import { Cart } from '../../typeorm/entities/Cart';
+import { CartItemController } from './cartItem.controller';
+import { CartItemService } from './cartItem.service';
 import { CartItem } from '../../typeorm/entities/CartItem';
+import { Product } from '../../typeorm/entities/Product';
+import { Cart } from '../../typeorm/entities/Cart';
+import { CartModule } from '../cart/cart.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Payment,
-      Address,
-      Voucher,
-      Product,
-      Shop,
-      Cart,
-      CartItem,
-    ]),
+    TypeOrmModule.forFeature([CartItem, Product, Cart]),
+    forwardRef(() => CartModule),
   ],
-  controllers: [PaymentController],
-  providers: [PaymentService],
-  exports: [PaymentService],
+  controllers: [CartItemController],
+  providers: [CartItemService],
+  exports: [CartItemService],
 })
-export class PaymentModule {}
+export class CartItemModule {}

@@ -174,256 +174,255 @@ export const reconstructOrderMappings = async () => {
   }
 };
 
-export const fetchAndUpdateOrders = async (): Promise<boolean> => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-  const cartId = localStorage.getItem("currentCartId");
+// export const fetchAndUpdateOrders = async (): Promise<boolean> => {
+//   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+//   const cartId = localStorage.getItem("currentCartId");
 
-  if (!cartId || isNaN(parseInt(cartId))) {
-    console.warn(
-      "[fetchAndUpdateOrders] No valid currentCartId found in localStorage. Cannot fetch cart data."
-    );
-    return true;
-  }
+//   if (!cartId || isNaN(parseInt(cartId))) {
+//     console.warn(
+//       "[fetchAndUpdateOrders] No valid currentCartId found in localStorage. Cannot fetch cart data."
+//     );
+//     return true;
+//   }
 
-  const numericCartId = parseInt(cartId);
-  console.log(
-    `[fetchAndUpdateOrders] Attempting to fetch orders for cartId: ${numericCartId}`
-  );
+//   const numericCartId = parseInt(cartId);
+//   console.log(
+//     `[fetchAndUpdateOrders] Attempting to fetch orders for cartId: ${numericCartId}`
+//   );
 
-  try {
-    const response = await fetch(`${apiURL}/cart/${numericCartId}`, {
-      // Sử dụng numericCartId
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        // Authorization: `Bearer ${token}`,
-      },
-      credentials: "include",
-    });
+//   try {
+//     const response = await fetch(`${apiURL}/cart-items/cart/${numericCartId}`, {
+//       method: "GET",
+//       headers: {
+//         "Content-Type": "application/json",
+//         // Authorization: `Bearer ${token}`,
+//       },
+//       credentials: "include",
+//     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(
-        `[fetchAndUpdateOrders] API Error ${response.status} for cartId ${numericCartId}:`,
-        errorBody
-      );
-      if (response.status === 404) {
-        console.warn(
-          `[fetchAndUpdateOrders] Cart ${numericCartId} not found on backend. Clearing local data potentially related to this cart.`
-        );
-        const currentPending = getOrdersFromLocalStorage();
-        const filteredPending = currentPending.filter(
-          (o) => o.cartId !== numericCartId
-        );
-        saveOrderDataToLocalStorage(filteredPending);
+//     if (!response.ok) {
+//       const errorBody = await response.text();
+//       console.error(
+//         `[fetchAndUpdateOrders] API Error ${response.status} for cartId ${numericCartId}:`,
+//         errorBody
+//       );
+//       if (response.status === 404) {
+//         console.warn(
+//           `[fetchAndUpdateOrders] Cart ${numericCartId} not found on backend. Clearing local data potentially related to this cart.`
+//         );
+//         const currentPending = getOrdersFromLocalStorage();
+//         const filteredPending = currentPending.filter(
+//           (o) => o.cartId !== numericCartId
+//         );
+//         saveOrderDataToLocalStorage(filteredPending);
 
-        const currentHistory = getOrderHistoryFromLocalStorage();
-        const filteredHistory = currentHistory.filter(
-          (h) => h.cartId !== numericCartId
-        );
-        saveOrderHistoryToLocalStorage(filteredHistory);
+//         const currentHistory = getOrderHistoryFromLocalStorage();
+//         const filteredHistory = currentHistory.filter(
+//           (h) => h.cartId !== numericCartId
+//         );
+//         saveOrderHistoryToLocalStorage(filteredHistory);
 
-        const currentMappings = JSON.parse(
-          localStorage.getItem("orderMappings") || "[]"
-        ) as OrderMapping[];
-        const filteredMappings = currentMappings.filter(
-          (m) => m.cartId !== numericCartId
-        );
-        localStorage.setItem("orderMappings", JSON.stringify(filteredMappings));
-      } else {
-        toast.error(`Lỗi ${response.status} khi tải dữ liệu giỏ hàng.`);
-      }
-      return false;
-    }
+//         const currentMappings = JSON.parse(
+//           localStorage.getItem("orderMappings") || "[]"
+//         ) as OrderMapping[];
+//         const filteredMappings = currentMappings.filter(
+//           (m) => m.cartId !== numericCartId
+//         );
+//         localStorage.setItem("orderMappings", JSON.stringify(filteredMappings));
+//       } else {
+//         toast.error(`Lỗi ${response.status} khi tải dữ liệu giỏ hàng.`);
+//       }
+//       return false;
+//     }
 
-    const cartData = await response.json();
-    console.log(
-      `[fetchAndUpdateOrders] Raw data received from API for cartId ${numericCartId}:`,
-      JSON.stringify(cartData, null, 2)
-    );
+//     const cartData = await response.json();
+//     console.log(
+//       `[fetchAndUpdateOrders] Raw data received from API for cartId ${numericCartId}:`,
+//       JSON.stringify(cartData, null, 2)
+//     );
 
-    const newPendingOrders: OrderData[] = [];
-    const newHistoryOrders: OrderData[] = [];
-    const newMappingsForThisCart: OrderMapping[] = [];
+//     const newPendingOrders: OrderData[] = [];
+//     const newHistoryOrders: OrderData[] = [];
+//     const newMappingsForThisCart: OrderMapping[] = [];
 
-    const itemsArray = cartData;
+//     const itemsArray = cartData;
 
-    if (itemsArray && Array.isArray(itemsArray)) {
-      if (itemsArray.length === 0) {
-        console.log(
-          `[fetchAndUpdateOrders] Cart ${numericCartId} is empty on backend. Clearing local pending data for this cart.`
-        );
-        const currentPending = getOrdersFromLocalStorage();
-        const filteredPending = currentPending.filter(
-          (o) => o.cartId !== numericCartId
-        );
-        saveOrderDataToLocalStorage(filteredPending);
-        const currentMappings = JSON.parse(
-          localStorage.getItem("orderMappings") || "[]"
-        ) as OrderMapping[];
-        const filteredMappings = currentMappings.filter(
-          (m) => m.cartId !== numericCartId
-        );
-        localStorage.setItem("orderMappings", JSON.stringify(filteredMappings));
-      } else {
-        itemsArray.forEach((item: any) => {
-          const backendCartItemId = item.id;
-          const backendProductId = item.product?.id;
-          const backendCartId = numericCartId;
+//     if (itemsArray && Array.isArray(itemsArray)) {
+//       if (itemsArray.length === 0) {
+//         console.log(
+//           `[fetchAndUpdateOrders] Cart ${numericCartId} is empty on backend. Clearing local pending data for this cart.`
+//         );
+//         const currentPending = getOrdersFromLocalStorage();
+//         const filteredPending = currentPending.filter(
+//           (o) => o.cartId !== numericCartId
+//         );
+//         saveOrderDataToLocalStorage(filteredPending);
+//         const currentMappings = JSON.parse(
+//           localStorage.getItem("orderMappings") || "[]"
+//         ) as OrderMapping[];
+//         const filteredMappings = currentMappings.filter(
+//           (m) => m.cartId !== numericCartId
+//         );
+//         localStorage.setItem("orderMappings", JSON.stringify(filteredMappings));
+//       } else {
+//         itemsArray.forEach((item: any) => {
+//           const backendCartItemId = item.id;
+//           const backendProductId = item.product?.id;
+//           const backendCartId = numericCartId;
 
-          if (
-            !backendCartItemId ||
-            !backendProductId ||
-            !backendCartId ||
-            backendCartId <= 0 ||
-            backendCartItemId <= 0 ||
-            backendProductId <= 0
-          ) {
-            console.warn(
-              "[fetchAndUpdateOrders] Skipping item due to missing or invalid IDs (cartItemId, productId, cartId):",
-              item
-            );
-            return;
-          }
+//           if (
+//             !backendCartItemId ||
+//             !backendProductId ||
+//             !backendCartId ||
+//             backendCartId <= 0 ||
+//             backendCartItemId <= 0 ||
+//             backendProductId <= 0
+//           ) {
+//             console.warn(
+//               "[fetchAndUpdateOrders] Skipping item due to missing or invalid IDs (cartItemId, productId, cartId):",
+//               item
+//             );
+//             return;
+//           }
 
-          const orderId = `FE_ORD-${backendCartId}-${backendCartItemId}`;
+//           const orderId = `FE_ORD-${backendCartId}-${backendCartItemId}`;
 
-          const orderData: OrderData = {
-            orderId: orderId,
-            cartItemId: backendCartItemId,
-            cartId: backendCartId,
-            product: {
-              id: backendProductId,
-              name: item.product?.name || "Sản phẩm không tên",
-              img: item.product?.img || "/placeholder.png",
-              price: item.product?.price || 0,
-              quantity: item.quantity || 1,
-              weight: item.product?.weight || 0,
-              title: item.product?.title,
-            },
-            customer: {
-              name: localStorage.getItem("customerName") || "Khách hàng",
-              address:
-                localStorage.getItem("customerAddress") || "Chưa cung cấp",
-            },
-            orderStatus: item.status as OrderStatus,
-            cancelReason: item.cancelReason,
-          };
+//           const orderData: OrderData = {
+//             orderId: orderId,
+//             cartItemId: backendCartItemId,
+//             cartId: backendCartId,
+//             product: {
+//               id: backendProductId,
+//               name: item.product?.name || "Sản phẩm không tên",
+//               img: item.product?.img || "/placeholder.png",
+//               price: item.product?.price || 0,
+//               quantity: item.quantity || 1,
+//               weight: item.product?.weight || 0,
+//               title: item.product?.title,
+//             },
+//             customer: {
+//               name: localStorage.getItem("customerName") || "Khách hàng",
+//               address:
+//                 localStorage.getItem("customerAddress") || "Chưa cung cấp",
+//             },
+//             orderStatus: item.status as OrderStatus,
+//             cancelReason: item.cancelReason,
+//           };
 
-          newMappingsForThisCart.push({
-            orderId: orderData.orderId,
-            cartId: orderData.cartId,
-            productId: Number(orderData.product.id),
-            cartItemId: orderData.cartItemId,
-          });
+//           newMappingsForThisCart.push({
+//             orderId: orderData.orderId,
+//             cartId: orderData.cartId,
+//             productId: Number(orderData.product.id),
+//             cartItemId: orderData.cartItemId,
+//           });
 
-          if (item.isPaid && item.status === OrderStatus.TO_RECEIVE) {
-            newPendingOrders.push(orderData);
-          } else if (
-            item.isPaid &&
-            (item.status === OrderStatus.COMPLETE ||
-              item.status === OrderStatus.CANCEL_BYSHOP ||
-              item.status === OrderStatus.CANCEL_BYUSER)
-          ) {
-            newHistoryOrders.push(orderData);
-          } else {
-            console.log(
-              `[fetchAndUpdateOrders] Skipping item for local storage (not paid or unexpected status):`,
-              item
-            );
-          }
-        });
+//           if (item.isPaid && item.status === OrderStatus.TO_RECEIVE) {
+//             newPendingOrders.push(orderData);
+//           } else if (
+//             item.isPaid &&
+//             (item.status === OrderStatus.COMPLETE ||
+//               item.status === OrderStatus.CANCEL_BYSHOP ||
+//               item.status === OrderStatus.CANCEL_BYUSER)
+//           ) {
+//             newHistoryOrders.push(orderData);
+//           } else {
+//             console.log(
+//               `[fetchAndUpdateOrders] Skipping item for local storage (not paid or unexpected status):`,
+//               item
+//             );
+//           }
+//         });
 
-        const currentPending = getOrdersFromLocalStorage();
-        const currentHistory = getOrderHistoryFromLocalStorage();
-        const currentMappings = JSON.parse(
-          localStorage.getItem("orderMappings") || "[]"
-        ) as OrderMapping[];
+//         const currentPending = getOrdersFromLocalStorage();
+//         const currentHistory = getOrderHistoryFromLocalStorage();
+//         const currentMappings = JSON.parse(
+//           localStorage.getItem("orderMappings") || "[]"
+//         ) as OrderMapping[];
 
-        const otherPending = currentPending.filter(
-          (o) => o.cartId !== numericCartId
-        );
-        const otherHistory = currentHistory.filter(
-          (h) => h.cartId !== numericCartId
-        );
-        const otherMappings = currentMappings.filter(
-          (m) => m.cartId !== numericCartId
-        );
+//         const otherPending = currentPending.filter(
+//           (o) => o.cartId !== numericCartId
+//         );
+//         const otherHistory = currentHistory.filter(
+//           (h) => h.cartId !== numericCartId
+//         );
+//         const otherMappings = currentMappings.filter(
+//           (m) => m.cartId !== numericCartId
+//         );
 
-        const finalPending = [...otherPending, ...newPendingOrders];
-        const finalHistory = [...otherHistory, ...newHistoryOrders];
-        const finalMappings = [...otherMappings, ...newMappingsForThisCart];
+//         const finalPending = [...otherPending, ...newPendingOrders];
+//         const finalHistory = [...otherHistory, ...newHistoryOrders];
+//         const finalMappings = [...otherMappings, ...newMappingsForThisCart];
 
-        const uniqueHistoryMap = new Map(
-          finalHistory.map((order) => [order.orderId, order])
-        );
-        const uniqueFinalHistory = Array.from(uniqueHistoryMap.values());
+//         const uniqueHistoryMap = new Map(
+//           finalHistory.map((order) => [order.orderId, order])
+//         );
+//         const uniqueFinalHistory = Array.from(uniqueHistoryMap.values());
 
-        saveOrderDataToLocalStorage(finalPending);
-        saveOrderHistoryToLocalStorage(uniqueFinalHistory);
-        localStorage.setItem("orderMappings", JSON.stringify(finalMappings));
+//         saveOrderDataToLocalStorage(finalPending);
+//         saveOrderHistoryToLocalStorage(uniqueFinalHistory);
+//         localStorage.setItem("orderMappings", JSON.stringify(finalMappings));
 
-        console.log(
-          `[fetchAndUpdateOrders] Updated local storage for cartId ${numericCartId}: ${newPendingOrders.length} pending, ${newHistoryOrders.length} history items added/updated.`
-        );
-        console.log(
-          `[fetchAndUpdateOrders] Updated mappings for cartId ${numericCartId}: ${newMappingsForThisCart.length} mappings.`
-        );
-      }
-    } else {
-      console.warn(
-        `[fetchAndUpdateOrders] Invalid or missing 'cartItems' array in API response for cartId ${numericCartId}. Clearing local data for this cart.`,
-        cartData
-      );
-      const currentPending = getOrdersFromLocalStorage();
-      const filteredPending = currentPending.filter(
-        (o) => o.cartId !== numericCartId
-      );
-      saveOrderDataToLocalStorage(filteredPending);
+//         console.log(
+//           `[fetchAndUpdateOrders] Updated local storage for cartId ${numericCartId}: ${newPendingOrders.length} pending, ${newHistoryOrders.length} history items added/updated.`
+//         );
+//         console.log(
+//           `[fetchAndUpdateOrders] Updated mappings for cartId ${numericCartId}: ${newMappingsForThisCart.length} mappings.`
+//         );
+//       }
+//     } else {
+//       console.warn(
+//         `[fetchAndUpdateOrders] Invalid or missing 'cartItems' array in API response for cartId ${numericCartId}. Clearing local data for this cart.`,
+//         cartData
+//       );
+//       const currentPending = getOrdersFromLocalStorage();
+//       const filteredPending = currentPending.filter(
+//         (o) => o.cartId !== numericCartId
+//       );
+//       saveOrderDataToLocalStorage(filteredPending);
 
-      const currentHistory = getOrderHistoryFromLocalStorage();
-      const filteredHistory = currentHistory.filter(
-        (h) => h.cartId !== numericCartId
-      );
-      saveOrderHistoryToLocalStorage(filteredHistory);
+//       const currentHistory = getOrderHistoryFromLocalStorage();
+//       const filteredHistory = currentHistory.filter(
+//         (h) => h.cartId !== numericCartId
+//       );
+//       saveOrderHistoryToLocalStorage(filteredHistory);
 
-      const currentMappings = JSON.parse(
-        localStorage.getItem("orderMappings") || "[]"
-      ) as OrderMapping[];
-      const filteredMappings = currentMappings.filter(
-        (m) => m.cartId !== numericCartId
-      );
-      localStorage.setItem("orderMappings", JSON.stringify(filteredMappings));
-    }
+//       const currentMappings = JSON.parse(
+//         localStorage.getItem("orderMappings") || "[]"
+//       ) as OrderMapping[];
+//       const filteredMappings = currentMappings.filter(
+//         (m) => m.cartId !== numericCartId
+//       );
+//       localStorage.setItem("orderMappings", JSON.stringify(filteredMappings));
+//     }
 
-    return true;
-  } catch (error) {
-    console.error(
-      `[fetchAndUpdateOrders] Critical error during fetch/processing for cartId ${numericCartId}:`,
-      error
-    );
-    toast.error("Lỗi nghiêm trọng khi đồng bộ dữ liệu đơn hàng.");
-    return false;
-  }
-};
+//     return true;
+//   } catch (error) {
+//     console.error(
+//       `[fetchAndUpdateOrders] Critical error during fetch/processing for cartId ${numericCartId}:`,
+//       error
+//     );
+//     toast.error("Lỗi nghiêm trọng khi đồng bộ dữ liệu đơn hàng.");
+//     return false;
+//   }
+// };
 
-export const synchronizeOrdersWithBackend = async (): Promise<boolean> => {
-  console.log("[synchronizeOrdersWithBackend] Starting synchronization...");
-  const success = await fetchAndUpdateOrders();
-  if (success) {
-    console.log(
-      "[synchronizeOrdersWithBackend] Synchronization finished successfully."
-    );
-  } else {
-    console.error(
-      "[synchronizeOrdersWithBackend] Synchronization finished with errors."
-    );
-  }
-  return success;
-};
+// export const synchronizeOrdersWithBackend = async (): Promise<boolean> => {
+//   console.log("[synchronizeOrdersWithBackend] Starting synchronization...");
+//   // const success = await fetchAndUpdateOrders();
+//   // if (success) {
+//   //   console.log(
+//   //     "[synchronizeOrdersWithBackend] Synchronization finished successfully."
+//   //   );
+//   // } else {
+//   //   console.error(
+//   //     "[synchronizeOrdersWithBackend] Synchronization finished with errors."
+//   //   );
+//   // }
+//   // return success;
+// };
 
 export async function updateOrderStatusOnBackend(
-  orderId: string, // Frontend stable orderId
+  orderId: string,
   status: OrderStatus,
   cancelReason?: string
 ): Promise<boolean> {
@@ -433,20 +432,20 @@ export async function updateOrderStatusOnBackend(
     }`
   );
 
-  console.log(
-    `[updateOrderStatusOnBackend] Forcing synchronization before updating orderId: ${orderId}`
-  );
-  const syncSuccess = await synchronizeOrdersWithBackend();
-  if (!syncSuccess) {
-    toast.error("Đồng bộ dữ liệu thất bại. Không thể cập nhật trạng thái.");
-    console.error(
-      "[updateOrderStatusOnBackend] Sync failed before update, stopping."
-    );
-    return false;
-  }
-  console.log(
-    "[updateOrderStatusOnBackend] Sync complete. Proceeding to find order details."
-  );
+  // console.log(
+  //   `[updateOrderStatusOnBackend] Forcing synchronization before updating orderId: ${orderId}`
+  // );
+  // const syncSuccess = await synchronizeOrdersWithBackend();
+  // if (!syncSuccess) {
+  //   toast.error("Đồng bộ dữ liệu thất bại. Không thể cập nhật trạng thái.");
+  //   console.error(
+  //     "[updateOrderStatusOnBackend] Sync failed before update, stopping."
+  //   );
+  //   return false;
+  // }
+  // console.log(
+  //   "[updateOrderStatusOnBackend] Sync complete. Proceeding to find order details."
+  // );
 
   const orderDetails = getOrderDetails(orderId);
   const cartId = orderDetails.cartId;
@@ -480,7 +479,7 @@ export async function updateOrderStatusOnBackend(
   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
   // const token = localStorage.getItem("userToken") || ""; // Bỏ comment nếu dùng token
 
-  const endpointUrl = `${apiURL}/cart/${cartId}/items/${productId}/status`;
+  const endpointUrl = `${apiURL}/cart-items/cart/${cartId}/product/${productId}/order-status`;
 
   const requestBody: { status: string; cancelReason?: string } = {
     status: status.toString(),
@@ -684,7 +683,7 @@ export const getCancelledByShopOrdersFromLocalStorage = (): OrderData[] => {
 
 export const confirmPaymentAndUpdateBackend = async (
   cartId: number,
-  paidItems: { id: number; quantity: number }[]
+  paidItems: { id: number; quantity: number }[] // Chứa productId và quantity
 ): Promise<boolean> => {
   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -701,41 +700,29 @@ export const confirmPaymentAndUpdateBackend = async (
     return false;
   }
 
-  /* // Bỏ comment nếu cần token
-    if (!token) {
-        console.error("[confirmPaymentAndUpdateBackend] No userToken found.");
-        toast.error("Lỗi xác thực. Không thể xác nhận thanh toán.");
-        return false;
-    }
-    */
-
-  const endpointUrl = `${apiURL}/cart/${cartId}/update-cart-items-status`;
+  const endpointUrl = `${apiURL}/cart-items/cart/${cartId}/status`;
   const payload = {
     isPaid: true,
-    products: paidItems.map((item) => ({
-      id: Number(item.id),
-      quantity: item.quantity,
-    })),
+    products: paidItems.map((item) => ({ id: Number(item.id) })), // Chỉ gửi product ID
   };
 
-  console.log(
-    `[confirmPaymentAndUpdateBackend] Calling PUT ${endpointUrl} with payload:`,
-    JSON.stringify(payload)
-  );
-
   try {
+    // 1. Gọi API backend để cập nhật isPaid, sold count, và status thành TO_RECEIVE
     const response = await fetch(endpointUrl, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        // Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       credentials: "include",
     });
 
     if (!response.ok) {
-      return false;
+      const errorText = await response.text();
+      console.error(
+        `[confirmPaymentAndUpdateBackend] API Error ${response.status}:`,
+        errorText
+      );
+      toast.error(`Lỗi ${response.status} khi cập nhật trạng thái thanh toán.`);
+      return false; // Trả về false nếu API lỗi
     }
 
     const result = await response.json();
@@ -747,28 +734,49 @@ export const confirmPaymentAndUpdateBackend = async (
       result.message || "Đã cập nhật trạng thái thanh toán thành công!"
     );
 
+    // 2. Cập nhật trực tiếp Local Storage
     console.log(
-      "[confirmPaymentAndUpdateBackend] Triggering synchronization AFTER successful payment confirmation."
+      "[confirmPaymentAndUpdateBackend] Updating local storage status to TO_RECEIVE..."
     );
-    const syncResult = await synchronizeOrdersWithBackend();
+    let updateCount = 0;
+    // Lấy mapping hiện tại
+    const mappings: OrderMapping[] = JSON.parse(
+      localStorage.getItem("orderMappings") || "[]"
+    );
 
-    if (!syncResult) {
-      console.error(
-        "[confirmPaymentAndUpdateBackend] Synchronization failed after payment confirmation."
+    for (const paidItem of paidItems) {
+      const productId = Number(paidItem.id);
+      // Tìm mapping cho cartId và productId cụ thể này
+      const mapping = mappings.find(
+        (m) => m.cartId === cartId && m.productId === productId
       );
-      toast.warn(
-        "Đã xác nhận thanh toán, nhưng đồng bộ dữ liệu cục bộ có lỗi."
-      );
-      return true;
-    } else {
-      console.log(
-        "[confirmPaymentAndUpdateBackend] Synchronization successful after payment."
-      );
+
+      if (mapping && mapping.orderId) {
+        console.log(
+          `[confirmPaymentAndUpdateBackend] Found mapping for productId ${productId}: orderId ${mapping.orderId}. Updating local status.`
+        );
+        // Gọi hàm có sẵn để cập nhật trạng thái trong localStorage
+        updateLocalOrder(mapping.orderId, OrderStatus.TO_RECEIVE);
+        updateCount++;
+      } else {
+        // Cảnh báo nếu không tìm thấy mapping (có thể xảy ra nếu mapping chưa được tạo đúng)
+        console.warn(
+          `[confirmPaymentAndUpdateBackend] Could not find mapping for cartId ${cartId} and productId ${productId}. Local status might not be updated immediately.`
+        );
+        // Bạn có thể thêm logic dự phòng ở đây nếu cần, ví dụ tìm trong pendingOrders dựa trên productId và cartId
+      }
     }
+    console.log(
+      `[confirmPaymentAndUpdateBackend] Updated status for ${updateCount} items in local storage.`
+    );
 
     return true;
   } catch (error) {
-    // ... (xử lý lỗi)
+    console.error(
+      "[confirmPaymentAndUpdateBackend] Network or unexpected error:",
+      error
+    );
+    toast.error("Lỗi kết nối hoặc lỗi không xác định khi cập nhật thanh toán.");
     return false;
   }
 };

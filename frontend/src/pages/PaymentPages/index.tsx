@@ -265,7 +265,7 @@ export const PaymentPage = () => {
       return;
     }
 
-    const finalAddress = userAddress.address || "Chưa cung cấp";
+    // const finalAddress = userAddress.address || "Chưa cung cấp";
     // -------------------------------------------------
 
     // Kiểm tra giỏ hàng trống
@@ -345,22 +345,15 @@ export const PaymentPage = () => {
       // Chuẩn bị dữ liệu gửi lên API /payment/create
       const paymentData = {
         paymentMethod: selectedPayment === 0 ? "online" : "cod",
+        subtotal: calculatedValues.subtotal,
         deliveryFeeOriginal: deliveryFee.original,
         deliveryFeeDiscounted: calculatedValues.finalDeliveryFee,
         couponDiscount:
           calculatedValues.couponDiscount + calculatedValues.deliveryDiscount,
         total: calculatedValues.total,
-        address: {
-          name: userAddress.name,
-          phone: userAddress.phone,
-          // phone: userAddress.phone.replace(/[^\d]/g, ""),
-          // address: userAddress.address,
-          address: finalAddress,
-        },
-        // -----------------------------------
+        phone: userAddress.phone,
         voucherCodes: selectedVoucher ? [selectedVoucher] : [],
-        // Dữ liệu shops và products (đảm bảo đúng cấu trúc backend yêu cầu)
-        cartId: cartIdValue, // ID của giỏ hàng đang thanh toán
+        cartId: cartIdValue,
       };
 
       console.log(
@@ -497,17 +490,6 @@ export const PaymentPage = () => {
       setIsLoading(false); // Kết thúc loading
     }
   };
-  // *** END: CẬP NHẬT HÀM handleSubmit ***
-
-  // Hàm định dạng số điện thoại (giữ nguyên)
-  // const formatPhoneNumber = (phone: string): string => {
-  //   const numberOnly = phone.replace(/\D/g, "");
-  //   if (numberOnly.length < 10) {
-  //     console.warn("Số điện thoại không đủ 10 chữ số:", phone);
-  //     return phone; // Trả về chuỗi gốc
-  //   }
-  //   return phone;
-  // };
 
   if (loading || userLoading) {
     return (

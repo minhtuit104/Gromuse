@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Payment } from './Payment';
 
 @Entity('addresses')
 export class Address {
@@ -26,7 +25,4 @@ export class Address {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   deletedAt: Date;
-
-  @OneToMany(() => Payment, (payment) => payment.address)
-  payments: Payment[];
 }

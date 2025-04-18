@@ -1,29 +1,24 @@
-// src/modules/cart/dtos/update-cart-items-status.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsArray, ValidateNested, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class ProductUpdateDto {
-  @ApiProperty({ description: 'ID của sản phẩm' })
+export class PaidProductIdentifierDto {
+  @ApiProperty({ description: 'ID của sản phẩm đã được thanh toán' })
   @IsNumber()
   id: number;
-
-  @ApiProperty({ description: 'Số lượng sản phẩm được mua' })
-  @IsNumber()
-  quantity: number;
 }
 
 export class UpdateCartItemsStatusDto {
-  @ApiProperty({ description: 'Trạng thái thanh toán của CartItem' })
+  @ApiProperty({ description: 'Trạng thái thanh toán mới của các CartItem' })
   @IsBoolean()
   isPaid: boolean;
 
   @ApiProperty({
-    description: 'Danh sách sản phẩm cần cập nhật số lượng',
-    type: [ProductUpdateDto],
+    description: 'Danh sách ID các sản phẩm cần cập nhật trạng thái',
+    type: [PaidProductIdentifierDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ProductUpdateDto)
-  products: ProductUpdateDto[];
+  @Type(() => PaidProductIdentifierDto)
+  products: PaidProductIdentifierDto[];
 }

@@ -217,8 +217,10 @@ const DetailPage = () => {
         }),
       });
       if (!response.ok) {
-        /* ... xử lý lỗi ... */ throw new Error(
-          `HTTP Error! Status: ${response.status}`
+        const errorText = await response.text();
+        console.error("Buy Now API Error:", errorText);
+        throw new Error(
+          `HTTP Error! Status: ${response.status} - ${errorText}`
         );
       }
       const data = await response.json();
@@ -229,10 +231,16 @@ const DetailPage = () => {
         alert("Đang chuyển đến trang thanh toán!");
         navigate("/payment");
       } else {
-        /* ... xử lý lỗi ... */
+        console.error("Buy Now response data invalid:", data);
+        throw new Error("Phản hồi từ server không hợp lệ sau khi mua ngay.");
       }
     } catch (error) {
-      /* ... xử lý lỗi ... */
+      console.error("Lỗi khi thực hiện mua ngay:", error);
+      alert(
+        `Lỗi khi mua ngay: ${
+          error instanceof Error ? error.message : "Lỗi không xác định"
+        }`
+      );
     }
   };
 
@@ -248,7 +256,7 @@ const DetailPage = () => {
       return;
     }
     try {
-      const response = await fetch("http://localhost:3000/cart/add", {
+      const response = await fetch("http://localhost:3000/cart-items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -258,23 +266,38 @@ const DetailPage = () => {
         }),
       });
       if (!response.ok) {
-        /* ... xử lý lỗi ... */ throw new Error(
-          `Lỗi HTTP! Trạng thái: ${response.status}`
+        const errorText = await response.text();
+        console.error("Add To Cart API Error:", errorText);
+        throw new Error(
+          `Lỗi HTTP! Trạng thái: ${response.status} - ${errorText}`
         );
       }
-      const data = await response.json();
-      if (data && data.id) {
-        localStorage.setItem("currentCartId", data.id.toString());
+      const data = await response.json(); // data là đối tượng CartItem
+      // *** SỬA LẠI ĐIỀU KIỆN VÀ CÁCH LẤY ID ***
+      if (data && data.cart && data.cart.id) {
+        // Kiểm tra data.cart và data.cart.id
+        localStorage.setItem("currentCartId", data.cart.id.toString()); // <<< LẤY ĐÚNG CART ID
         localStorage.removeItem("buyNowCartId");
         localStorage.removeItem("isBuyNow");
         localStorage.setItem("cartUpdated", "true");
         alert("Đã thêm vào giỏ hàng!");
         navigate("/payment");
       } else {
-        /* ... xử lý lỗi ... */
+        console.error(
+          "Add to cart response data invalid or missing cart ID:",
+          data
+        ); // Log lỗi rõ hơn
+        throw new Error(
+          "Phản hồi từ server không hợp lệ sau khi thêm vào giỏ."
+        );
       }
     } catch (error) {
-      /* ... xử lý lỗi ... */
+      console.error("Lỗi khi thêm vào giỏ hàng:", error);
+      alert(
+        `Lỗi khi thêm vào giỏ: ${
+          error instanceof Error ? error.message : "Lỗi không xác định"
+        }`
+      );
     }
   };
 

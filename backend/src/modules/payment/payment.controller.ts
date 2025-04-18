@@ -22,17 +22,17 @@ import { PaymentStatus } from '../../typeorm/entities/Payment';
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Tạo đơn thanh toán mới' })
-  @ApiResponse({ status: 201, description: 'Tạo đơn thanh toán thành công' })
-  async create(@Body() createPaymentDto: CreatePaymentDto) {
-    const payment = await this.paymentService.create(createPaymentDto);
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: 'Payment created successfully',
-      data: payment,
-    };
-  }
+  // @Post()
+  // @ApiOperation({ summary: 'Tạo đơn thanh toán mới' })
+  // @ApiResponse({ status: 201, description: 'Tạo đơn thanh toán thành công' })
+  // async create(@Body() createPaymentDto: CreatePaymentDto) {
+  //   const payment = await this.paymentService.create(createPaymentDto);
+  //   return {
+  //     statusCode: HttpStatus.CREATED,
+  //     message: 'Payment created successfully',
+  //     data: payment,
+  //   };
+  // }
 
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách đơn thanh toán' })
@@ -114,14 +114,18 @@ export class PaymentController {
   @Post('create')
   @ApiOperation({ summary: 'Tạo đơn thanh toán trực tiếp' })
   async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
-    console.log('Payment created:', createPaymentDto);
+    console.log('Received request to /payment/create:', createPaymentDto);
     const payment =
       await this.paymentService.createDirectPayment(createPaymentDto);
+    console.log('Payment record created:', payment);
 
     // Cập nhật paymentId cho các CartItem
     await this.paymentService.updateCartItemsWithPayment(
       createPaymentDto.cartId,
       payment.id,
+    );
+    console.log(
+      `Associated cart items from cart ${createPaymentDto.cartId} with payment ${payment.id}`,
     );
 
     return {

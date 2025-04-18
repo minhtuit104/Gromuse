@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, LessThanOrEqual, In } from 'typeorm';
@@ -16,10 +17,10 @@ import { Product } from '../../typeorm/entities/Product';
 import { Shop } from '../../typeorm/entities/Shop';
 import { Cart } from '../../typeorm/entities/Cart';
 import { CartItem } from '../../typeorm/entities/CartItem';
-// import { ShopDto } from './dtos/shop.dto';
 
 @Injectable()
 export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name);
   constructor(
     @InjectRepository(Payment) private paymentRepository: Repository<Payment>,
     @InjectRepository(Address) private addressRepository: Repository<Address>,
@@ -79,12 +80,22 @@ export class PaymentService {
   }
 
   async findOne(id: number): Promise<Payment> {
+    this.logger.log(`[findOne] Fetching payment with ID: ${id}`);
     const payment = await this.paymentRepository.findOne({
       where: { id },
-      relations: ['address', 'vouchers'],
+      relations: [
+        'vouchers', // Giữ lại nếu cần
+        'cartItems', // <<< THÊM ĐỂ LOAD CART ITEMS
+        'cartItems.product', // <<< THÊM NẾU CẦN THÔNG TIN SẢN PHẨM
+      ],
     });
-    if (!payment)
+    if (!payment) {
+      this.logger.warn(`[findOne] Payment with ID ${id} not found.`);
       throw new NotFoundException(`Không tìm thấy đơn thanh toán với ID ${id}`);
+    }
+    this.logger.log(
+      `[findOne] Found payment ID: ${id} with ${payment.cartItems?.length || 0} associated cart items.`,
+    );
     return payment;
   }
 
@@ -196,21 +207,6 @@ export class PaymentService {
         throw new BadRequestException('Cart is empty or not found');
       }
 
-      let address = await this.addressRepository.findOne({
-        where: {
-          phone: createPaymentDto.address.phone.toString(),
-          address: createPaymentDto.address.address,
-        },
-      });
-
-      if (!address) {
-        address = this.addressRepository.create({
-          ...createPaymentDto.address,
-          phone: createPaymentDto.address.phone.toString(),
-        });
-        await this.addressRepository.save(address);
-      }
-
       const vouchers = await this.processVouchers(
         createPaymentDto.voucherCodes,
         createPaymentDto.subtotal,
@@ -230,34 +226,12 @@ export class PaymentService {
           couponDiscount;
       }
 
-      const shops = await Promise.all(
-        createPaymentDto.shops.map(async (shopDto) => {
-          let shop = await this.shopRepository.findOne({
-            where: { name: shopDto.name },
-          });
-          if (!shop) {
-            shop = this.shopRepository.create({
-              name: shopDto.name,
-              avatar: shopDto.avatar,
-              deliveryInfo: shopDto.deliveryInfo,
-            });
-            shop.products = shopDto.products.map((productDto) =>
-              this.productRepository.create(productDto),
-            );
-            await this.shopRepository.save(shop);
-          }
-          return shop;
-        }),
-      );
-
       const payment = this.paymentRepository.create({
         ...createPaymentDto,
         couponDiscount,
         total: createPaymentDto.total,
         status: PaymentStatus.PENDING,
-        address,
         vouchers,
-        shops,
       });
 
       await this.paymentRepository.save(payment);
@@ -367,18 +341,60 @@ export class PaymentService {
     cartId: number,
     paymentId: number,
   ): Promise<void> {
+    this.logger.log(
+      `[updateCartItemsWithPayment] Attempting to link items from cartId: ${cartId} to paymentId: ${paymentId}`,
+    );
     // Tìm tất cả CartItem thuộc cart đã thanh toán
     const cartItems = await this.cartItemRepository.find({
       where: {
         cart: { id: cartId },
-        isPaid: true,
+        // isPaid: true,
+        paymentId: null,
       },
     });
 
-    // Cập nhật paymentId cho từng CartItem
-    for (const cartItem of cartItems) {
+    if (cartItems.length === 0) {
+      this.logger.warn(
+        `[updateCartItemsWithPayment] No unlinked cart items found for cartId: ${cartId} to link with paymentId: ${paymentId}. This might be expected or indicate an issue.`,
+      );
+      return; // Không có gì để cập nhật
+    }
+
+    this.logger.log(
+      `[updateCartItemsWithPayment] Found ${cartItems.length} items to link.`,
+    );
+
+    const updatePromises = cartItems.map(async (cartItem) => {
       cartItem.paymentId = paymentId;
-      await this.cartItemRepository.save(cartItem);
+      try {
+        await this.cartItemRepository.save(cartItem);
+        this.logger.log(
+          `[updateCartItemsWithPayment] Successfully linked cartItemId: ${cartItem.id} to paymentId: ${paymentId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `[updateCartItemsWithPayment] Failed to link cartItemId: ${cartItem.id} to paymentId: ${paymentId}`,
+          error.stack,
+        );
+        // Cân nhắc: Có nên throw lỗi ở đây để rollback transaction (nếu có)?
+        // throw new InternalServerErrorException(`Failed to update cartItem ${cartItem.id}`);
+      }
+    });
+
+    try {
+      await Promise.all(updatePromises);
+      this.logger.log(
+        `[updateCartItemsWithPayment] Finished linking items for cartId: ${cartId} to paymentId: ${paymentId}`,
+      );
+    } catch (error) {
+      // Xử lý lỗi tổng hợp nếu cần
+      this.logger.error(
+        `[updateCartItemsWithPayment] Error during Promise.all for linking items`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Failed to link all cart items to payment.',
+      );
     }
   }
 }

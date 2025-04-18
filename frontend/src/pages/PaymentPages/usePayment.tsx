@@ -150,7 +150,7 @@ const usePayment = () => {
       );
       // Gọi API lấy chi tiết giỏ hàng
       const response = await fetch(
-        `http://localhost:3000/cart/${cartIdToFetch}`
+        `http://localhost:3000/cart-items/cart/${cartIdToFetch}`
       );
 
       console.log(
@@ -297,13 +297,14 @@ const usePayment = () => {
 
       try {
         const response = await fetch(
-          `http://localhost:3000/cart/${cartIdToUpdate}/items/${productId}`,
+          `http://localhost:3000/cart-items/cart/${cartIdToUpdate}/product/${productId}`, // Đổi URL
           {
-            method: "PATCH",
+            method: "PATCH", // Giữ nguyên PATCH
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ quantity: newQuantity }),
+            // *** ĐẢM BẢO BODY ĐÚNG ***
+            body: JSON.stringify({ quantity: newQuantity }), // Gửi đúng DTO { quantity: number }
             signal: controller.signal,
-            // credentials: "include", // Bỏ nếu không dùng cookie
+            // credentials: "include",
           }
         );
         console.log("response", response);
@@ -317,25 +318,41 @@ const usePayment = () => {
           );
           return false;
         }
+        // Xử lý response thành công (có thể trả về item đã cập nhật hoặc chỉ message)
+        const result = await response.json();
         console.log(
-          `[usePayment] Quantity updated for product ${productId} in cart ${cartIdToUpdate}`
+          `[usePayment] Quantity updated successfully for product ${productId} in cart ${cartIdToUpdate}. Response:`,
+          result
         );
+
+        // Nếu backend trả về message "Item removed successfully"
+        if (result && result.message === "Item removed successfully") {
+          console.log(
+            `[usePayment] Product ${productId} removed from cart ${cartIdToUpdate}.`
+          );
+          // Không cần toast ở đây, UI sẽ tự cập nhật khi fetch lại
+        }
+
+        // Trigger fetch lại cart data để cập nhật UI
+        fetchCartData();
         return true; // Trả về true nếu thành công
       } catch (error: any) {
+        clearTimeout(timeoutId); // Đảm bảo timeout được xóa nếu có lỗi khác
         if (error.name === "AbortError") {
           console.log("[usePayment] Update quantity request was aborted.");
+          // Không cần toast lỗi nếu là do người dùng hủy hoặc timeout
         } else {
           console.error("[usePayment] Fetch error updating quantity:", error);
         }
         return false; // Trả về false nếu có lỗi
       } finally {
-        // Đảm bảo controller được reset
+        // Đảm bảo controller được reset sau khi request kết thúc (thành công, lỗi, hoặc hủy)
         if (fetchControllerRef.current === controller) {
           fetchControllerRef.current = null;
         }
       }
     },
-    [] // Dependencies rỗng vì logic lấy cartId đã ở trong hàm
+    [fetchCartData] // Dependencies rỗng vì logic lấy cartId đã ở trong hàm
   );
 
   // Hàm hủy request đang chạy

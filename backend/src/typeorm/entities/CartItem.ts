@@ -1,10 +1,10 @@
-// src/typeorm/entities/Cart.ts
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Product } from './Product';
 import { Shop } from './Shop';
@@ -24,8 +24,7 @@ export class CartItem {
   id: number;
 
   @Column({ type: 'int', nullable: true })
-  paymentId: number;
-
+  paymentId: number | null;
   @Column({ type: 'int' })
   productId: number;
 
@@ -43,17 +42,29 @@ export class CartItem {
   cancelReason: string;
 
   @ManyToOne(() => Product, (product) => product.cartItems, { eager: true })
+  @JoinColumn({ name: 'productId' })
   product: Product;
 
-  @ManyToOne(() => Payment, (payment) => payment.cartItems, { nullable: true })
+  @ManyToOne(() => Payment, (payment) => payment.cartItems, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'paymentId' })
-  payment: Payment;
+  payment: Payment | null;
 
-  @ManyToOne('Cart', (cart: any) => cart.cartItems)
+  @ManyToOne(() => Cart, (cart) => cart.cartItems)
+  @JoinColumn({ name: 'cartId' })
   cart: Cart;
 
-  @ManyToOne(() => Shop, (shop) => shop.cartItems)
-  shop: Shop;
+  @Column({ type: 'int' })
+  cartId: number;
+
+  @ManyToOne(() => Shop, (shop) => shop.cartItems, { nullable: true })
+  @JoinColumn({ name: 'shopId' })
+  shop: Shop | null;
+
+  @Column({ type: 'int', nullable: true })
+  shopId: number | null;
 
   @Column({ type: 'boolean', default: false })
   isPaid: boolean;
@@ -64,6 +75,6 @@ export class CartItem {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  deletedAt: Date;
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 }

@@ -13,7 +13,7 @@ import {
   OrderStatus,
   updateOrderStatusOnBackend,
   reconstructOrderMappings,
-  synchronizeOrdersWithBackend,
+  // synchronizeOrdersWithBackend,
 } from "../../../Service/OrderService";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -54,39 +54,52 @@ const OrderShop = () => {
     reconstructOrderMappings();
 
     // Hàm thực hiện đồng bộ và tải dữ liệu
-    const syncAndLoad = () => {
-      console.log("[OrderShop] Starting syncAndLoad...");
-      synchronizeOrdersWithBackend()
-        .then((syncSuccess) => {
-          if (syncSuccess) {
-            console.log("[OrderShop] Sync successful.");
-          } else {
-            console.warn("[OrderShop] Sync failed, loading local data anyway.");
-            toast.warn("Đồng bộ thất bại, hiển thị dữ liệu cục bộ.", {
-              autoClose: 2000,
-            });
-          }
-          // Luôn tải dữ liệu từ local storage sau khi đồng bộ (hoặc thất bại)
-          loadPendingOrders();
-        })
-        .catch((error) => {
-          console.error("[OrderShop] Error during sync/load:", error);
-          toast.error("Lỗi khi đồng bộ hoặc tải đơn hàng.");
-          // Vẫn thử tải dữ liệu local nếu sync lỗi
-          loadPendingOrders();
-        });
-    };
+    // const syncAndLoad = () => {
+    //   console.log("[OrderShop] Starting syncAndLoad...");
+    //   synchronizeOrdersWithBackend()
+    //     .then((syncSuccess) => {
+    //       if (syncSuccess) {
+    //         console.log("[OrderShop] Sync successful.");
+    //       } else {
+    //         console.warn("[OrderShop] Sync failed, loading local data anyway.");
+    //         toast.warn("Đồng bộ thất bại, hiển thị dữ liệu cục bộ.", {
+    //           autoClose: 2000,
+    //         });
+    //       }
+    //       // Luôn tải dữ liệu từ local storage sau khi đồng bộ (hoặc thất bại)
+    //       loadPendingOrders();
+    //     })
+    //     .catch((error) => {
+    //       console.error("[OrderShop] Error during sync/load:", error);
+    //       toast.error("Lỗi khi đồng bộ hoặc tải đơn hàng.");
+    //       // Vẫn thử tải dữ liệu local nếu sync lỗi
+    //       loadPendingOrders();
+    //     });
+    // };
 
-    syncAndLoad();
+    // syncAndLoad();
 
-    // Thiết lập interval để chạy lại syncAndLoad mỗi 5 giây
-    console.log("[OrderShop] Setting up polling interval (5 seconds)...");
-    const intervalId = setInterval(syncAndLoad, 5000); // 5000ms = 5 giây
+    // // Thiết lập interval để chạy lại syncAndLoad mỗi 5 giây
+    // console.log("[OrderShop] Setting up polling interval (5 seconds)...");
+    // const intervalId = setInterval(syncAndLoad, 5000); // 5000ms = 5 giây
 
     // Cleanup function: Xóa interval khi component unmount
+    // Thêm: Tải lại dữ liệu khi cửa sổ được focus
+    const handleFocus = () => {
+      console.log(
+        "[OrderStatus] Window focused, reloading data from localStorage..."
+      );
+      loadPendingOrders();
+    };
+    window.addEventListener("focus", handleFocus);
+    console.log("[OrderStatus] Added focus event listener.");
+
+    // Cleanup
     return () => {
-      console.log("[OrderShop] Component unmounting. Clearing interval.");
-      clearInterval(intervalId);
+      console.log("[OrderStatus] Component unmounting.");
+      // clearInterval(intervalId); // Bỏ cleanup interval
+      window.removeEventListener("focus", handleFocus); // Gỡ bỏ listener khi unmount
+      console.log("[OrderStatus] Removed focus event listener.");
     };
   }, [loadPendingOrders]); // Thêm loadPendingOrders vào dependency array
 
