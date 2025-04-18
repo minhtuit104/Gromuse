@@ -8,18 +8,24 @@ import IconCart from "../../assets/images/icons/ic_cart.svg";
 import IconSend from "../../assets/images/icons/ic_ send.svg";
 import { useNavigate } from "react-router-dom";
 import {
-  getOrdersFromLocalStorage,
-  getOrderHistoryFromLocalStorage,
   OrderData,
   OrderStatus,
-  saveBuyAgainProduct,
+  fetchOrdersByStatus,
   updateOrderStatusOnBackend,
-  reconstructOrderMappings,
-  getOrderDetails,
-  // synchronizeOrdersWithBackend,
 } from "../../Service/OrderService";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { jwtDecode } from "jwt-decode";
+
+interface DecodedToken {
+  idAccount: number;
+  idUser: number;
+  email: string;
+  phoneNumber: string;
+  role: number;
+  iat: number;
+  exp: number;
+}
 
 type TabType = "toReceive" | "completed" | "cancelled";
 
@@ -28,98 +34,92 @@ const OrderStatuss = () => {
   const [pendingOrders, setPendingOrders] = useState<OrderData[]>([]);
   const [completedOrders, setCompletedOrders] = useState<OrderData[]>([]);
   const [cancelledOrders, setCancelledOrders] = useState<OrderData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Hàm tải dữ liệu đơn hàng từ localStorage
-  const loadOrderData = useCallback(() => {
-    // Thêm useCallback
-    console.log(
-      "[OrderStatus] Attempting to load all order data from localStorage..."
-    );
-    const allPending = getOrdersFromLocalStorage();
-    const orderHistory = getOrderHistoryFromLocalStorage();
+  // Hàm fetch dữ liệu cho tab hiện tại từ API
+  const loadDataForTab = useCallback(async (tab: TabType) => {
+    setIsLoading(true);
+    console.log(`[OrderStatus] Loading data for tab: ${tab} from API...`);
+    try {
+      let orders: OrderData[] = [];
+      if (tab === "toReceive") {
+        orders = await fetchOrdersByStatus([OrderStatus.TO_RECEIVE]);
+        setPendingOrders(orders);
+      } else if (tab === "completed") {
+        orders = await fetchOrdersByStatus([OrderStatus.COMPLETE]);
+        setCompletedOrders(orders);
+      } else if (tab === "cancelled") {
+        // Lấy cả 2 loại hủy
+        orders = await fetchOrdersByStatus([
+          OrderStatus.CANCEL_BYUSER,
+          OrderStatus.CANCEL_BYSHOP,
+        ]);
+        // Lọc lại chỉ lấy CANCEL_BYUSER cho tab này (nếu muốn tách bạch)
+        const userCancelled = orders.filter(
+          (o) => o.orderStatus === OrderStatus.CANCEL_BYUSER
+        );
+        setCancelledOrders(userCancelled);
+        console.log(
+          `[OrderStatus] Filtered user cancelled orders:`,
+          userCancelled.length
+        );
+      }
+      console.log(
+        `[OrderStatus] Loaded ${orders.length} orders for tab ${tab}`
+      );
+    } catch (error) {
+      console.error(`[OrderStatus] Error loading data for tab ${tab}:`, error);
+      // toast.error(...) đã có trong service
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // useCallback không phụ thuộc gì khác
 
-    const pendingOrdersList = allPending.filter(
-      (order) => order.orderStatus === OrderStatus.TO_RECEIVE
-    );
-    const completedOrdersList = orderHistory.filter(
-      (order) => order.orderStatus === OrderStatus.COMPLETE
-    );
-    const cancelledOrdersList = orderHistory.filter(
-      (order) => order.orderStatus === OrderStatus.CANCEL_BYUSER
-    );
-
-    // Cập nhật state (có thể thêm kiểm tra thay đổi như OrderShop nếu muốn tối ưu)
-    setPendingOrders(pendingOrdersList);
-    setCompletedOrders(completedOrdersList);
-    setCancelledOrders(cancelledOrdersList);
-    console.log("[OrderStatus] Loaded data:", {
-      pending: pendingOrdersList.length,
-      completed: completedOrdersList.length,
-      cancelled: cancelledOrdersList.length,
-    });
-  }, []); // useCallback vì nó không phụ thuộc state/props khác
-
-  // Thêm interval để liên tục cập nhật dữ liệu
+  // Load dữ liệu khi component mount hoặc tab thay đổi
   useEffect(() => {
-    console.log("[OrderStatus] Component mounted. Initializing...");
-    reconstructOrderMappings();
+    console.log(
+      `[OrderStatus] Tab changed to ${activeTab} or component mounted. Loading data...`
+    );
+    loadDataForTab(activeTab);
+  }, [activeTab, loadDataForTab]); // Phụ thuộc activeTab và loadDataForTab
 
-    // const syncAndLoad = () => {
-    //   console.log("[OrderStatus] Starting syncAndLoad...");
-    //   synchronizeOrdersWithBackend()
-    //     .then((syncSuccess) => {
-    //       if (syncSuccess) {
-    //         console.log("[OrderStatus] Sync successful.");
-    //       } else {
-    //         console.warn(
-    //           "[OrderStatus] Sync failed, loading local data anyway."
-    //         );
-    //       }
-    //       // Luôn tải dữ liệu sau khi đồng bộ (thành công hoặc thất bại)
-    //       loadOrderData();
-    //     })
-    //     .catch((error) => {
-    //       console.error("[OrderStatus] Error during sync/load:", error);
-    //       toast.error("Lỗi khi đồng bộ hoặc tải đơn hàng.");
-    //       // Vẫn thử tải dữ liệu local nếu sync lỗi
-    //       loadOrderData();
-    //     });
-    // };
-
-    // // Chạy lần đầu
-    // syncAndLoad();
-
-    // // Thiết lập interval
-    // console.log("[OrderStatus] Setting up polling interval (5 seconds)...");
-    // const intervalId = setInterval(syncAndLoad, 5000);
-
-    // Thêm: Tải lại dữ liệu khi cửa sổ được focus
+  // Thêm listener để fetch lại khi focus (tùy chọn, nhưng hữu ích)
+  useEffect(() => {
     const handleFocus = () => {
       console.log(
-        "[OrderStatus] Window focused, reloading data from localStorage..."
+        "[OrderStatus] Window focused, reloading data for current tab..."
       );
-      loadOrderData();
+      loadDataForTab(activeTab); // Gọi lại hàm fetch
     };
     window.addEventListener("focus", handleFocus);
     console.log("[OrderStatus] Added focus event listener.");
 
-    // Cleanup
+    // Cleanup function
     return () => {
       console.log("[OrderStatus] Component unmounting.");
-      // clearInterval(intervalId); // Bỏ cleanup interval
-      window.removeEventListener("focus", handleFocus); // Gỡ bỏ listener khi unmount
+      window.removeEventListener("focus", handleFocus); // Remove focus listener
       console.log("[OrderStatus] Removed focus event listener.");
     };
-  }, [loadOrderData]);
+  }, [activeTab, loadDataForTab]); // Phụ thuộc activeTab và loadDataForTab
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
+    // useEffect sẽ tự động gọi loadDataForTab khi activeTab thay đổi
+  };
+
+  // Hàm callback để load lại dữ liệu sau khi update thành công
+  const handleOrderUpdate = () => {
+    console.log(
+      "[OrderStatus] Order updated, reloading data for current tab..."
+    );
+    loadDataForTab(activeTab); // Gọi lại hàm fetch cho tab hiện tại
   };
 
   return (
     <div className="order-status-container">
       <Header />
       <div className="three-tab-status">
+        {/* Tab Header giữ nguyên */}
         <div className="tab-header-status">
           <div
             className={`tab-item-status ${
@@ -127,7 +127,7 @@ const OrderStatuss = () => {
             }`}
             onClick={() => handleTabChange("toReceive")}
           >
-            To Receive
+            To Receive ({pendingOrders.length}) {/* Hiển thị số lượng */}
           </div>
           <div className="vertical_line">|</div>
           <div
@@ -136,7 +136,7 @@ const OrderStatuss = () => {
             }`}
             onClick={() => handleTabChange("completed")}
           >
-            Completed
+            Completed ({completedOrders.length}) {/* Hiển thị số lượng */}
           </div>
           <div className="vertical_line">|</div>
           <div
@@ -145,24 +145,27 @@ const OrderStatuss = () => {
             }`}
             onClick={() => handleTabChange("cancelled")}
           >
-            Cancelled
+            Cancelled ({cancelledOrders.length}) {/* Hiển thị số lượng */}
           </div>
         </div>
+        {/* Tab Content */}
         <div className="tab-content-status">
-          {activeTab === "toReceive" && (
+          {isLoading && <div className="loading-indicator">Đang tải...</div>}
+          {!isLoading && activeTab === "toReceive" && (
             <ToReceiveTab
               orders={pendingOrders}
-              onOrderUpdate={loadOrderData}
+              onOrderUpdate={handleOrderUpdate} // Truyền callback để load lại
             />
           )}
-          {activeTab === "completed" && (
+          {!isLoading && activeTab === "completed" && (
             <CompletedTab orders={completedOrders} />
           )}
-          {activeTab === "cancelled" && (
+          {!isLoading && activeTab === "cancelled" && (
             <CancelledTab orders={cancelledOrders} />
           )}
         </div>
       </div>
+      {/* ToastContainer giữ nguyên */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -178,12 +181,14 @@ const OrderStatuss = () => {
   );
 };
 
+// --- Props cho các Tab Component ---
 interface OrderTabProps {
   orders: OrderData[];
-  onOrderUpdate?: () => void;
+  onOrderUpdate?: () => void; // Callback để báo cho cha load lại (chỉ cần cho ToReceiveTab)
 }
 
-const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
+// --- Sửa ToReceiveTab ---
+const ToReceiveTab: React.FC<OrderTabProps> = ({ orders, onOrderUpdate }) => {
   const [showCancelInputs, setShowCancelInputs] = useState<{
     [key: string]: boolean;
   }>({});
@@ -191,36 +196,43 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
     {}
   );
 
+  // State và logic phân trang giữ nguyên
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [ordersPerPage] = useState<number>(10);
-
-  const totalPages = Math.ceil(orders.length / ordersPerPage);
+  const totalPages = Math.max(1, Math.ceil(orders.length / ordersPerPage)); // Đảm bảo totalPages >= 1
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
   const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
 
-  // Xử lý thay đổi trang
+  // Đảm bảo currentPage không vượt quá totalPages khi orders thay đổi
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  // Xử lý chuyển đến trang tiếp theo
   const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
-
-  // Xử lý chuyển đến trang trước
   const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
+  // Hàm xử lý khi nhấn nút Cancel trên OrderItem
   const handleCancelClick = (orderId: string) => {
     setShowCancelInputs((prev) => ({
       ...prev,
-      [orderId]: !prev[orderId],
+      [orderId]: !prev[orderId], // Toggle hiển thị input
     }));
+    // Reset lý do khi đóng input
+    if (showCancelInputs[orderId]) {
+      setCancelReasons((prev) => {
+        const newReasons = { ...prev };
+        delete newReasons[orderId];
+        return newReasons;
+      });
+    }
   };
 
   const handleReasonChange = (orderId: string, reason: string) => {
@@ -230,31 +242,39 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
     }));
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    const reason = cancelReasons[orderId] || "Người dùng hủy đơn hàng";
+  // Hàm xử lý khi nhấn nút Send (gửi lý do và hủy)
+  const handleCancelOrder = async (order: OrderData) => {
+    // *** THAY ĐỔI: Nhận cả order object ***
+    const reason = cancelReasons[order.orderId] || "Người dùng hủy đơn hàng"; // Lấy lý do từ state
+    const cartItemId = order.cartItemId; // *** Lấy cartItemId từ order data ***
+
+    // Validate reason
+    if (!reason.trim()) {
+      toast.warning("Vui lòng cung cấp lý do hủy đơn hàng");
+      return;
+    }
+    // Validate cartItemId
+    if (!cartItemId || cartItemId <= 0) {
+      toast.error("Lỗi: Không tìm thấy mã định danh hợp lệ để hủy.");
+      console.error(
+        "[ToReceiveTab] Invalid cartItemId for cancellation:",
+        order
+      );
+      return;
+    }
+
+    const toastId = toast.loading("Đang hủy đơn hàng của bạn...");
+    console.log(
+      `[ToReceiveTab] Attempting cancel for cartItemId: ${cartItemId} with reason: ${reason}`
+    );
 
     try {
-      if (!reason.trim()) {
-        toast.warning("Vui lòng cung cấp lý do hủy đơn hàng");
-        return;
-      }
-
-      const toastId = toast.loading("Đang hủy đơn hàng của bạn...");
-
-      console.log(`Đang hủy đơn hàng ${orderId} với lý do: ${reason}`);
-
-      // Get current order details for debugging (đã có)
-      const details = getOrderDetails(orderId);
-      console.log(
-        `Thông tin đơn hàng trước khi hủy: cartId=${details.cartId}, productId=${details.productId}`
-      );
-
+      // Gọi hàm update đã sửa, truyền cartItemId
       const backendSuccess = await updateOrderStatusOnBackend(
-        orderId,
+        cartItemId, // *** TRUYỀN cartItemId ***
         OrderStatus.CANCEL_BYUSER,
         reason
       );
-      // -----------------------------
 
       if (backendSuccess) {
         toast.update(toastId, {
@@ -264,29 +284,43 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
           autoClose: 3000,
         });
 
-        // Xóa inputs (đã có)
+        // Đóng input và xóa lý do khỏi state
         setShowCancelInputs((prev) => {
           const newState = { ...prev };
-          delete newState[orderId];
+          delete newState[order.orderId];
           return newState;
         });
         setCancelReasons((prev) => {
           const newReasons = { ...prev };
-          delete newReasons[orderId];
+          delete newReasons[order.orderId];
           return newReasons;
         });
+
+        // Gọi callback để báo cho component cha fetch lại dữ liệu
+        if (onOrderUpdate) {
+          onOrderUpdate();
+        }
       } else {
+        // Lỗi đã được toast trong service, chỉ cần update toast loading
         toast.update(toastId, {
-          render: "Không thể hủy đơn hàng của bạn. Vui lòng thử lại sau!",
+          render: "Không thể hủy đơn hàng. Vui lòng thử lại.",
           type: "error",
           isLoading: false,
-          autoClose: 3000,
+          autoClose: 4000,
         });
       }
     } catch (error) {
-      // Xử lý lỗi không mong muốn (đã có)
-      console.error("Lỗi khi cập nhật trạng thái:", error);
-      toast.error("Đã xảy ra lỗi khi hủy đơn hàng!");
+      // Xử lý lỗi không mong muốn (ví dụ: network error)
+      console.error(
+        "[ToReceiveTab] Unexpected error during cancellation:",
+        error
+      );
+      toast.update(toastId, {
+        render: "Đã xảy ra lỗi không mong muốn khi hủy đơn hàng!",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
     }
   };
 
@@ -294,7 +328,7 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
     <div className="order-list-status">
       {orders.length === 0 ? (
         <div className="no-orders-status">
-          <p>Không có đơn hàng nào đang được xử lý</p>
+          <p>Không có đơn hàng nào đang chờ nhận</p> {/* Sửa text */}
         </div>
       ) : (
         <>
@@ -303,9 +337,11 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
               <OrderItem
                 order={order}
                 showCancelButton={true}
+                // Truyền hàm để xử lý click nút Cancel trên OrderItem
                 onCancelOrder={() => handleCancelClick(order.orderId)}
                 expanded={showCancelInputs[order.orderId]}
               />
+              {/* Input hủy chỉ hiển thị khi `showCancelInputs[order.orderId]` là true */}
               {showCancelInputs[order.orderId] && (
                 <div className="cancel-reason-container-status">
                   <input
@@ -316,10 +352,14 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
                     onChange={(e) =>
                       handleReasonChange(order.orderId, e.target.value)
                     }
+                    autoFocus // Tự động focus
                   />
                   <button
                     className="send-reason-button-status"
-                    onClick={() => handleCancelOrder(order.orderId)}
+                    // Gọi handleCancelOrder với cả object order
+                    onClick={() => handleCancelOrder(order)}
+                    disabled={!cancelReasons[order.orderId]?.trim()} // Disable nếu chưa nhập lý do
+                    title="Gửi lý do và hủy"
                   >
                     <img src={IconSend} alt="Send" className="ic_28" />
                   </button>
@@ -328,7 +368,7 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
             </div>
           ))}
 
-          {/* Thêm thanh phân trang */}
+          {/* Thanh phân trang (giữ nguyên) */}
           {totalPages > 1 && (
             <div className="pagination">
               <button
@@ -340,7 +380,6 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
               >
                 &laquo;
               </button>
-
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                 (number) => (
                   <button
@@ -354,7 +393,6 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
                   </button>
                 )
               )}
-
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
@@ -372,32 +410,29 @@ const ToReceiveTab: React.FC<OrderTabProps> = ({ orders }) => {
   );
 };
 
+// --- CompletedTab ---
 const CompletedTab: React.FC<OrderTabProps> = ({ orders }) => {
-  // Thêm state cho phân trang
+  // State và logic phân trang giữ nguyên
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [ordersPerPage] = useState<number>(10); // Số đơn hàng mỗi trang
-
-  // Tính toán số trang và đơn hàng hiện tại
-  const totalPages = Math.ceil(orders.length / ordersPerPage);
+  const [ordersPerPage] = useState<number>(10);
+  const totalPages = Math.max(1, Math.ceil(orders.length / ordersPerPage));
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
   const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
 
-  // Xử lý thay đổi trang
+  // Đảm bảo currentPage không vượt quá totalPages khi orders thay đổi
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  // Xử lý chuyển đến trang tiếp theo
   const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
-
-  // Xử lý chuyển đến trang trước
   const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
   return (
@@ -412,11 +447,10 @@ const CompletedTab: React.FC<OrderTabProps> = ({ orders }) => {
             <OrderItem
               key={order.orderId}
               order={order}
-              showRateButton={true}
+              showRateButton={true} // Chỉ hiển thị nút Rate
             />
           ))}
-
-          {/* Thêm thanh phân trang */}
+          {/* Thanh phân trang (giữ nguyên) */}
           {totalPages > 1 && (
             <div className="pagination">
               <button
@@ -428,7 +462,6 @@ const CompletedTab: React.FC<OrderTabProps> = ({ orders }) => {
               >
                 &laquo;
               </button>
-
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                 (number) => (
                   <button
@@ -442,7 +475,6 @@ const CompletedTab: React.FC<OrderTabProps> = ({ orders }) => {
                   </button>
                 )
               )}
-
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
@@ -460,19 +492,18 @@ const CompletedTab: React.FC<OrderTabProps> = ({ orders }) => {
   );
 };
 
+// --- CancelledTab ---
 const CancelledTab: React.FC<OrderTabProps> = ({ orders }) => {
-  const cancelledOrders = orders.filter(
-    (order) =>
-      order.orderStatus === OrderStatus.CANCEL_BYUSER ||
-      order.orderStatus === OrderStatus.CANCEL_BYSHOP
-  );
+  // Không cần lọc lại ở đây vì component cha đã lọc
+  const cancelledOrders = orders;
 
-  // Thêm state cho phân trang
+  // State và logic phân trang giữ nguyên
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [ordersPerPage] = useState<number>(10); // Số đơn hàng mỗi trang
-
-  // Tính toán số trang và đơn hàng hiện tại
-  const totalPages = Math.ceil(cancelledOrders.length / ordersPerPage);
+  const [ordersPerPage] = useState<number>(10);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(cancelledOrders.length / ordersPerPage)
+  );
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
   const currentOrders = cancelledOrders.slice(
@@ -480,21 +511,19 @@ const CancelledTab: React.FC<OrderTabProps> = ({ orders }) => {
     indexOfLastOrder
   );
 
-  // Xử lý thay đổi trang
+  // Đảm bảo currentPage không vượt quá totalPages khi orders thay đổi
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  // Xử lý chuyển đến trang tiếp theo
   const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
-
-  // Xử lý chuyển đến trang trước
   const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
   return (
@@ -509,11 +538,10 @@ const CancelledTab: React.FC<OrderTabProps> = ({ orders }) => {
             <OrderItem
               key={order.orderId}
               order={order}
-              showBuyAgainButton={true}
+              showBuyAgainButton={true} // Chỉ hiển thị nút Buy Again
             />
           ))}
-
-          {/* Thêm thanh phân trang */}
+          {/* Thanh phân trang (giữ nguyên) */}
           {totalPages > 1 && (
             <div className="pagination">
               <button
@@ -525,7 +553,6 @@ const CancelledTab: React.FC<OrderTabProps> = ({ orders }) => {
               >
                 &laquo;
               </button>
-
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                 (number) => (
                   <button
@@ -539,7 +566,6 @@ const CancelledTab: React.FC<OrderTabProps> = ({ orders }) => {
                   </button>
                 )
               )}
-
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
@@ -557,13 +583,14 @@ const CancelledTab: React.FC<OrderTabProps> = ({ orders }) => {
   );
 };
 
+// --- OrderItem Component ---
 interface OrderItemProps {
   order: OrderData;
   showCancelButton?: boolean;
   showRateButton?: boolean;
   showBuyAgainButton?: boolean;
   onCancelOrder?: (orderId: string) => void;
-  expanded?: boolean; // Thêm thuộc tính expanded
+  expanded?: boolean;
 }
 
 const OrderItem: React.FC<OrderItemProps> = ({
@@ -575,9 +602,90 @@ const OrderItem: React.FC<OrderItemProps> = ({
   expanded,
 }) => {
   const navigate = useNavigate();
-  // Xử lý việc hiển thị giá gốc (nếu có)
   const originalPrice = order.product.price * 1.15 * order.product.quantity;
   const currentPrice = order.product.price * order.product.quantity;
+
+  const getUserIdFromToken = (): number | null => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("[OrderItem] Token not found.");
+      return null;
+    }
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      const currentTime = Date.now() / 1000;
+      if (decoded.exp < currentTime) {
+        console.error("[OrderItem] Token expired.");
+        localStorage.removeItem("token"); // Xóa token hết hạn
+        return null;
+      }
+      if (typeof decoded.idUser !== "number") {
+        console.error("[OrderItem] Invalid idUser in token.");
+        return null;
+      }
+      return decoded.idUser;
+    } catch (error) {
+      console.error("[OrderItem] Error decoding token:", error);
+      return null;
+    }
+  };
+
+  const addItemToCartAPI = async (
+    userId: number,
+    productId: number | string,
+    quantity: number
+  ): Promise<{ cartId: number | null; error?: string }> => {
+    try {
+      const response = await fetch("http://localhost:3000/cart-items", {
+        // Endpoint thêm vào giỏ
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: Number(productId),
+          quantity,
+          userId,
+        }), // Đảm bảo productId là number
+      });
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: response.statusText }));
+        console.error("Add Item API Error:", errorData);
+        return {
+          cartId: null,
+          error: `Lỗi HTTP ${response.status}: ${
+            errorData.message || response.statusText
+          }`,
+        };
+      }
+
+      const addedItemData = await response.json();
+      console.log("Add Item API Success:", addedItemData);
+
+      if (addedItemData && addedItemData.cart && addedItemData.cart.id) {
+        return { cartId: addedItemData.cart.id };
+      } else {
+        console.error(
+          "Add Item API response invalid or missing cartId:",
+          addedItemData
+        );
+        return {
+          cartId: null,
+          error: "Phản hồi từ server không hợp lệ (thiếu cartId).",
+        };
+      }
+    } catch (error) {
+      console.error("Lỗi gọi API thêm vào giỏ:", error);
+      return {
+        cartId: null,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Lỗi mạng hoặc không xác định.",
+      };
+    }
+  };
 
   const handleCancelClick = () => {
     if (onCancelOrder) {
@@ -585,77 +693,70 @@ const OrderItem: React.FC<OrderItemProps> = ({
     }
   };
 
-  // Xử lý khi người dùng nhấn nút Rate
   const handleRateClick = () => {
     navigate("/rating_product");
   };
 
-  // Xử lý khi người dùng nhấn nút Buy Again
   const handleBuyAgainClick = async () => {
-    try {
-      const buyAgainProduct = {
-        id: order.product.id,
-        name: order.product.name,
-        img: order.product.img || ImgProductDefault,
-        title: order.product.title || order.product.name,
-        weight: order.product.weight || 0,
-        price: order.product.price,
-      };
+    // Chuyển đổi productId sang kiểu number ngay từ đầu
+    const productId = Number(order.product.id);
+    const quantity = order.product.quantity || 1; // Lấy số lượng gốc, mặc định là 1 nếu không có
 
-      // Sử dụng service để lưu sản phẩm
-      saveBuyAgainProduct(buyAgainProduct);
+    // Kiểm tra xem productId có phải là số hợp lệ và lớn hơn 0 không
+    if (isNaN(productId) || productId <= 0) {
+      // Bây giờ phép so sánh hợp lệ
+      toast.error("Lỗi: ID sản phẩm không hợp lệ.");
+      return;
+    }
 
-      toast.info("Đang chuyển đến trang thanh toán...");
+    const userId = getUserIdFromToken();
+    if (userId === null) {
+      toast.error("Bạn cần đăng nhập để mua lại sản phẩm.");
+      navigate("/login"); // Chuyển hướng đăng nhập
+      return;
+    }
 
-      // Tạo cartId tạm thời cho quá trình mua lại
-      localStorage.setItem("cartId", "buyAgain_" + Date.now());
-      localStorage.setItem("isBuyNow", "true");
+    console.log(
+      `[handleBuyAgainClick] Adding productId: ${productId}, quantity: ${quantity} to cart for userId: ${userId}`
+    );
+    const toastId = toast.loading("Đang thêm sản phẩm vào giỏ...");
 
-      // Kiểm tra xem có cần tạo giỏ hàng mới ở backend không
-      if (typeof order.product.id === "number") {
-        try {
-          // Gọi API để tạo giỏ hàng mua ngay
-          const response = await fetch("http://localhost:3000/cart/buy-now", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              productId: order.product.id,
-              quantity: order.product.quantity || 1,
-            }),
-            credentials: "include",
-          });
+    // Gọi hàm API chung để thêm vào giỏ
+    // Hàm addItemToCartAPI đã xử lý Number(productId) bên trong, nên không cần đổi ở đây
+    const result = await addItemToCartAPI(userId, productId, quantity);
 
-          if (!response.ok) {
-            console.error(
-              "Không thể tạo giỏ hàng mua ngay:",
-              await response.text()
-            );
-          } else {
-            const result = await response.json();
-            if (result.cartId) {
-              localStorage.setItem("cartId", result.cartId.toString());
-              console.log("Đã tạo giỏ hàng mới với ID:", result.cartId);
-            }
-          }
-        } catch (error) {
-          console.error("Lỗi khi tạo giỏ hàng mua ngay:", error);
-          // Tiếp tục với cartId tạm thời nếu API gặp lỗi
-        }
-      }
+    if (result.cartId) {
+      // Lưu cartId vào localStorage để trang Payment sử dụng
+      localStorage.setItem("currentCartId", result.cartId.toString());
+      // Xóa các key cũ không cần thiết
+      localStorage.removeItem("buyNowCartId");
+      localStorage.removeItem("isBuyNow");
+      localStorage.removeItem("buyAgainProduct"); // Xóa key này nếu có
+
+      toast.update(toastId, {
+        render: "Đã thêm vào giỏ! Đang chuyển đến thanh toán...",
+        type: "success",
+        isLoading: false,
+        autoClose: 1500,
+      });
 
       // Chuyển hướng đến trang thanh toán
       setTimeout(() => {
-        window.location.href = "/payment";
-      }, 800);
-    } catch (error) {
-      console.error("Lỗi khi xử lý mua lại:", error);
-      toast.error("Có lỗi xảy ra. Vui lòng thử lại!");
+        navigate("/payment");
+      }, 500); // Chờ 0.5s
+    } else {
+      // Xử lý lỗi
+      toast.update(toastId, {
+        render: `Lỗi khi mua lại: ${result.error || "Lỗi không xác định"}`,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
     }
   };
 
   return (
+    // Phần JSX của OrderItem giữ nguyên cấu trúc, chỉ thay đổi cách gọi hàm onClick
     <div className={`order-item-status ${expanded ? "expanded" : ""}`}>
       <div className="item-content-status">
         <div className="product-image-status">
@@ -676,6 +777,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
           </div>
         </div>
         <div className="product-price-status">
+          {/* Chỉ hiển thị giá gốc nếu là tab ToReceive */}
           {showCancelButton && (
             <div className="original-price-status">
               ${originalPrice.toFixed(0)}
@@ -713,6 +815,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
           </button>
         )}
       </div>
+      {/* Hiển thị lý do hủy nếu có */}
       {order.cancelReason &&
         (order.orderStatus === OrderStatus.CANCEL_BYUSER ||
           order.orderStatus === OrderStatus.CANCEL_BYSHOP) && (

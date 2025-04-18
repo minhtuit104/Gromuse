@@ -1,30 +1,78 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import HeaderDashboard from "../../../pages/DashboardPage/Header/HeaderDashboard";
 import { useNavigate } from "react-router-dom";
 import "./OrderCancel.css";
 import ImgProductDefault from "../../../assets/images/imagePNG/banana 1.png";
 import IconArrowRight from "../../../assets/images/icons/ic_ arrow-right.svg";
 import {
-  getCancelledByShopOrdersFromLocalStorage,
   OrderData,
+  OrderStatus,
+  fetchOrdersByStatus,
 } from "../../../Service/OrderService";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const OrderCancel = () => {
   const navigate = useNavigate();
   const [cancelledOrders, setCancelledOrders] = useState<OrderData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Thêm state cho phân trang
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [ordersPerPage] = useState<number>(10); // Số đơn hàng mỗi trang
 
-  useEffect(() => {
-    // Chỉ lấy các đơn hàng bị hủy bởi shop
-    const orders = getCancelledByShopOrdersFromLocalStorage();
-    setCancelledOrders(orders);
-  }, []);
+  // Hàm fetch dữ liệu đơn hàng bị hủy bởi shop từ API
+  const loadCancelledByShopOrders = useCallback(async () => {
+    setIsLoading(true);
+    console.log("[OrderCancel] Loading CANCEL_BYSHOP orders from API...");
+    try {
+      // Fetch các đơn hàng có trạng thái CANCEL_BYSHOP
+      const cancelled = await fetchOrdersByStatus([OrderStatus.CANCEL_BYSHOP]);
+      setCancelledOrders(cancelled); // Cập nhật state
+      console.log(
+        `[OrderCancel] Loaded ${cancelled.length} cancelled by shop orders.`
+      );
+    } catch (error) {
+      console.error(
+        "[OrderCancel] Error loading cancelled by shop orders:",
+        error
+      );
+      toast.error("Lỗi khi tải danh sách đơn hàng đã hủy."); // Thông báo lỗi
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // useCallback không có dependencies
 
-  // Tính toán số trang và đơn hàng hiện tại
-  const totalPages = Math.ceil(cancelledOrders.length / ordersPerPage);
+  // Load dữ liệu khi component mount
+  useEffect(() => {
+    console.log("[OrderCancel] Component mounted. Initial load...");
+    loadCancelledByShopOrders();
+  }, [loadCancelledByShopOrders]); // Phụ thuộc loadCancelledByShopOrders
+
+  // Thêm listener để fetch lại khi focus
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log(
+        "[OrderCancel] Window focused, reloading cancelled by shop orders..."
+      );
+      loadCancelledByShopOrders(); // Gọi lại hàm fetch
+    };
+    window.addEventListener("focus", handleFocus);
+    console.log("[OrderCancel] Added focus event listener.");
+
+    // Cleanup function
+    return () => {
+      console.log("[OrderCancel] Component unmounting.");
+      window.removeEventListener("focus", handleFocus); // Remove focus listener
+      console.log("[OrderCancel] Removed focus event listener.");
+    };
+  }, [loadCancelledByShopOrders]); // Phụ thuộc loadCancelledByShopOrders
+
+  // Tính toán số trang và đơn hàng hiện tại (giữ nguyên)
+  const totalPages = Math.max(
+    1,
+    Math.ceil(cancelledOrders.length / ordersPerPage)
+  );
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
   const currentOrders = cancelledOrders.slice(
@@ -32,31 +80,27 @@ const OrderCancel = () => {
     indexOfLastOrder
   );
 
-  const handleOrdersClick = () => {
-    navigate("/order_shop");
-  };
+  // Đảm bảo currentPage không vượt quá totalPages khi orders thay đổi
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
-  const handleHistoryClick = () => {
-    navigate("/order_history");
-  };
+  // Hàm chuyển hướng (giữ nguyên)
+  const handleOrdersClick = () => navigate("/order_shop");
+  const handleHistoryClick = () => navigate("/order_history");
 
-  // Xử lý thay đổi trang
+  // Xử lý phân trang (giữ nguyên)
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  // Xử lý chuyển đến trang tiếp theo
   const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
-
-  // Xử lý chuyển đến trang trước
   const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
+  // Định dạng giá (giữ nguyên)
   const formatPrice = (price: number, quantity: number = 1) => {
     return `$${(price * quantity).toFixed(0)}`;
   };
@@ -74,15 +118,24 @@ const OrderCancel = () => {
             History
           </div>
           <div className="vertical_line">|</div>
-          <div className="tab active">Cancelled</div>
+          <div className="tab active">Cancelled ({cancelledOrders.length})</div>
         </div>
 
         <div className="order-list-cancel">
-          {cancelledOrders.length === 0 ? (
+          {/* Hiển thị loading */}
+          {isLoading && (
+            <div className="loading-indicator">Đang tải đơn hàng đã hủy...</div>
+          )}
+
+          {/* Hiển thị khi không có đơn hàng */}
+          {!isLoading && cancelledOrders.length === 0 && (
             <div className="no-orders">
               <p>Chưa có đơn hàng nào bị hủy bởi shop.</p>
             </div>
-          ) : (
+          )}
+
+          {/* Hiển thị danh sách đơn hàng */}
+          {!isLoading && cancelledOrders.length > 0 && (
             <>
               {currentOrders.map((order, index) => (
                 <React.Fragment key={order.orderId}>

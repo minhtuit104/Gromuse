@@ -11,14 +11,20 @@ import {
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { CreateCartDto } from './dtos/create-cart.dto';
+import { CreateCartDto } from './dtos/cart.dto';
+import { AddToCartDto } from './dtos/add-to-cart.dto';
 // import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard'; // Giữ lại nếu dùng
 import { CartItemService } from '../cart_item/cartItem.service';
 
 @ApiTags('cart')
 @Controller('cart')
 export class CartController {
-  constructor(private readonly cartService: CartService) {}
+  private readonly logger = new Logger(CartController.name);
+
+  constructor(
+    private readonly cartService: CartService,
+    private readonly cartItemService: CartItemService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Tạo cart mới' })
@@ -84,8 +90,8 @@ export class CartController {
       `[POST /cart/buy-now] Received DTO: ${JSON.stringify(createCartDto)}`,
     );
     try {
-      if (!createCartDto.userId) {
-        throw new HttpException('userId is required', HttpStatus.BAD_REQUEST);
+      if (!createCartDto.idUser) {
+        throw new HttpException('idUser is required', HttpStatus.BAD_REQUEST);
       }
       if (isNaN(createCartDto.productId) || createCartDto.productId <= 0) {
         throw new HttpException('Invalid productId', HttpStatus.BAD_REQUEST);
@@ -95,7 +101,7 @@ export class CartController {
       }
 
       const cart = await this.cartService.createBuyNowCart(
-        createCartDto.userId,
+        createCartDto.idUser,
         createCartDto.productId,
       );
       this.logger.log(`[POST /cart/buy-now] Cart created with ID: ${cart.id}`);

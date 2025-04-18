@@ -6,9 +6,10 @@ import {
   Logger,
   Inject,
   forwardRef,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindManyOptions } from 'typeorm';
 import { Cart } from '../../typeorm/entities/Cart';
 import { CartItem, OrderStatus } from '../../typeorm/entities/CartItem';
 import { Product } from '../../typeorm/entities/Product';
@@ -30,8 +31,6 @@ export class CartItemService {
     @Inject(forwardRef(() => CartService))
     private cartService: CartService,
   ) {}
-
-  // --- Các hàm xử lý CartItem ---
 
   async addItemToCart(dto: AddToCartDto): Promise<CartItem> {
     this.logger.log(`[addItemToCart] Adding item: ${JSON.stringify(dto)}`);
@@ -200,22 +199,18 @@ export class CartItemService {
     }
 
     try {
-      // Lấy tất cả CartItem thuộc về cartId này, chỉ lấy những item chưa thanh toán
       const items = await this.cartItemRepository.find({
         where: {
           cart: { id: cartId },
-          isPaid: false, // Chỉ lấy các item chưa thanh toán trong giỏ hàng
+          isPaid: false,
         },
-        relations: ['product', 'product.category'], // Load các relations cần thiết
-        order: { createdAt: 'ASC' }, // Sắp xếp theo thời gian tạo
+        relations: ['product', 'product.category'],
+        order: { createdAt: 'ASC' },
       });
 
       this.logger.log(
         `[getCartItemsByCartId] Found ${items.length} unpaid items for cart ID ${cartId}.`,
       );
-      // Log chi tiết nếu cần debug
-      // this.logger.log(`[getCartItemsByCartId] Items: ${JSON.stringify(items, null, 2)}`);
-
       return items;
     } catch (error) {
       this.logger.error(
@@ -360,13 +355,11 @@ export class CartItemService {
         };
       }
 
-      // Tìm các CartItem liên quan (có thể đã thanh toán hoặc chưa)
       const cartItems = await this.cartItemRepository.find({
         where: {
           cart: { id: cartId },
           product: { id: In(productIds) },
         },
-        relations: ['product'], // Load product để cập nhật sold count
       });
 
       this.logger.log(
@@ -377,8 +370,6 @@ export class CartItemService {
         this.logger.warn(
           `[updateItemsStatus] No matching CartItems found in cart ${cartId} for the provided product IDs.`,
         );
-        // Có thể throw NotFoundException nếu yêu cầu phải tìm thấy item
-        // throw new NotFoundException(`No matching items found in cart ${cartId}`);
         return {
           success: false,
           message: `Không tìm thấy sản phẩm phù hợp trong giỏ hàng ${cartId}.`,
@@ -387,9 +378,7 @@ export class CartItemService {
         };
       }
 
-      const updatedProductsInfo = [];
       const itemsToSave: CartItem[] = [];
-      const productsToUpdate: Product[] = [];
 
       for (const cartItem of cartItems) {
         const matchedProductInfo = products.find(
@@ -402,44 +391,18 @@ export class CartItemService {
             `[updateItemsStatus] Processing CartItem ID: ${cartItem.id} (productId: ${cartItem.productId}). Current isPaid: ${wasAlreadyPaid}. Setting isPaid to: ${isPaid}`,
           );
 
-          // Chỉ cập nhật nếu trạng thái isPaid thay đổi
           if (cartItem.isPaid !== isPaid) {
             cartItem.isPaid = isPaid;
             if (isPaid) {
-              // Đặt là TO_RECEIVE khi thanh toán thành công
               cartItem.status = OrderStatus.TO_RECEIVE;
             } else {
-              // Nếu chuyển về chưa thanh toán (ít xảy ra), reset status
               cartItem.status = null;
-              cartItem.cancelReason = null; // Xóa lý do hủy nếu có
+              cartItem.cancelReason = null;
             }
-            itemsToSave.push(cartItem); // Thêm vào danh sách cần lưu
+            itemsToSave.push(cartItem);
           } else if (isPaid && cartItem.status !== OrderStatus.TO_RECEIVE) {
-            // Nếu đã paid nhưng status chưa đúng (ví dụ null), cập nhật status
             cartItem.status = OrderStatus.TO_RECEIVE;
             itemsToSave.push(cartItem);
-          }
-
-          // Chỉ cập nhật số lượng 'sold' của Product nếu chuyển từ chưa thanh toán -> đã thanh toán
-          if (isPaid && !wasAlreadyPaid && cartItem.product) {
-            this.logger.log(
-              `[updateItemsStatus] Queuing sold count update for Product ID: ${cartItem.product.id}`,
-            );
-            const product = cartItem.product; // Đã load từ relation
-            const currentSold =
-              typeof product.sold === 'number' ? product.sold : 0;
-            // Lấy quantity từ cartItem thay vì DTO để đảm bảo đúng số lượng thực tế trong giỏ
-            const quantityToAdd =
-              typeof cartItem.quantity === 'number' ? cartItem.quantity : 0;
-
-            if (quantityToAdd > 0) {
-              product.sold = currentSold + quantityToAdd;
-              productsToUpdate.push(product); // Thêm vào danh sách product cần cập nhật
-              updatedProductsInfo.push({
-                id: product.id,
-                newSoldCount: product.sold,
-              });
-            }
           }
         } else {
           this.logger.warn(
@@ -448,27 +411,18 @@ export class CartItemService {
         }
       }
 
-      // Lưu tất cả thay đổi trong một transaction (nếu có thể) hoặc tuần tự
       if (itemsToSave.length > 0) {
         await this.cartItemRepository.save(itemsToSave);
         this.logger.log(
           `[updateItemsStatus] Saved ${itemsToSave.length} CartItems.`,
         );
       }
-      if (productsToUpdate.length > 0) {
-        await this.productRepository.save(productsToUpdate);
-        this.logger.log(
-          `[updateItemsStatus] Updated sold count for ${productsToUpdate.length} Products.`,
-        );
-      }
 
       return {
         success: true,
-        message: isPaid
-          ? 'Cập nhật trạng thái CartItem và số lượng Product thành công'
-          : 'Cập nhật trạng thái CartItem chưa thanh toán',
-        updatedProductsCount: updatedProductsInfo.length,
-        details: updatedProductsInfo,
+        message: 'Cập nhật trạng thái CartItem thành công',
+        updatedProductsCount: 0,
+        details: [],
       };
     } catch (error) {
       this.logger.error(
@@ -486,35 +440,34 @@ export class CartItemService {
   }
 
   async updateItemOrderStatus(
-    cartId: number,
-    productId: number,
+    cartItemId: number,
     status: OrderStatus,
     cancelReason?: string,
+    // requestingUserId?: number, // Thêm nếu cần check quyền
+    // requestingUserRole?: number // Thêm nếu cần check quyền
   ): Promise<{
     success: boolean;
     message: string;
     updatedItem: CartItem | null;
   }> {
     this.logger.log(
-      `[updateItemOrderStatus] Attempting update: cartId=${cartId}, productId=${productId}, status=${status}, reason=${cancelReason || 'N/A'}`,
+      `[updateItemOrderStatus] Attempting update for cartItemId=${cartItemId}, status=${status}, reason=${cancelReason || 'N/A'}`,
     );
 
-    // Tìm CartItem (nên tìm item đã thanh toán nếu logic yêu cầu)
     const cartItem = await this.cartItemRepository.findOne({
       where: {
-        cart: { id: cartId },
-        product: { id: productId },
-        isPaid: true, // Chỉ cho phép cập nhật status của item đã thanh toán
+        id: cartItemId,
+        isPaid: true,
       },
-      relations: ['product', 'cart'], // Load relations cần thiết
+      relations: ['product', 'cart'],
     });
 
     if (!cartItem) {
       this.logger.warn(
-        `[updateItemOrderStatus] Paid CartItem not found for cartId=${cartId}, productId=${productId}`,
+        `[updateItemOrderStatus] Paid CartItem not found for cartItemId=${cartItemId}`,
       );
       throw new NotFoundException(
-        'Paid order item not found in the specified cart',
+        `Paid order item with ID ${cartItemId} not found`,
       );
     }
 
@@ -523,8 +476,6 @@ export class CartItemService {
       `[updateItemOrderStatus] Found CartItem ID: ${cartItem.id}. Current status: ${currentStatus}. New status: ${status}`,
     );
 
-    // --- Logic kiểm tra chuyển đổi trạng thái ---
-    // Chỉ cho phép chuyển thành COMPLETE nếu đang là TO_RECEIVE
     if (
       status === OrderStatus.COMPLETE &&
       currentStatus !== OrderStatus.TO_RECEIVE
@@ -535,11 +486,9 @@ export class CartItemService {
       return {
         success: false,
         message: `Không thể hoàn thành đơn hàng đang ở trạng thái ${currentStatus}.`,
-        updatedItem: cartItem, // Trả về item hiện tại
+        updatedItem: cartItem,
       };
     }
-
-    // Chỉ cho phép hủy (CANCEL_BYUSER/CANCEL_BYSHOP) nếu đang là TO_RECEIVE
     if (
       (status === OrderStatus.CANCEL_BYUSER ||
         status === OrderStatus.CANCEL_BYSHOP) &&
@@ -554,36 +503,97 @@ export class CartItemService {
         updatedItem: cartItem,
       };
     }
-    // --- Kết thúc Logic kiểm tra ---
 
-    // Cập nhật trạng thái
+    // Cập nhật trạng thái và lý do
     cartItem.status = status;
-
-    // Thêm/Xóa lý do hủy
     if (
       (status === OrderStatus.CANCEL_BYUSER ||
         status === OrderStatus.CANCEL_BYSHOP) &&
-      cancelReason &&
-      cancelReason.trim()
+      cancelReason?.trim()
     ) {
       cartItem.cancelReason = cancelReason.trim();
-      this.logger.log(
-        `[updateItemOrderStatus] Setting cancel reason for CartItem ID: ${cartItem.id}`,
-      );
     } else if (
       status !== OrderStatus.CANCEL_BYUSER &&
       status !== OrderStatus.CANCEL_BYSHOP
     ) {
-      // Xóa lý do nếu trạng thái không phải là hủy
       cartItem.cancelReason = null;
     }
 
-    // Lưu thay đổi
     try {
       const savedItem = await this.cartItemRepository.save(cartItem);
       this.logger.log(
-        `[updateItemOrderStatus] Successfully updated CartItem ID: ${savedItem.id} to status: ${savedItem.status}`,
+        `[updateItemOrderStatus] Successfully saved CartItem ID: ${savedItem.id} to status: ${savedItem.status}`,
       );
+      const quantity = savedItem.quantity;
+      const productId = savedItem.productId;
+
+      if (productId && quantity > 0) {
+        if (
+          status === OrderStatus.COMPLETE &&
+          currentStatus === OrderStatus.TO_RECEIVE
+        ) {
+          this.logger.log(
+            `[updateItemOrderStatus] Incrementing sold count for productId: ${productId} by ${quantity}`,
+          );
+          try {
+            // Sử dụng increment để tăng số lượng bán
+            await this.productRepository.increment(
+              { id: productId },
+              'sold',
+              quantity,
+            );
+            this.logger.log(
+              `[updateItemOrderStatus] Successfully incremented sold count for productId: ${productId}`,
+            );
+          } catch (productError) {
+            this.logger.error(
+              `[updateItemOrderStatus] Failed to increment sold count for productId: ${productId}`,
+              productError.stack,
+            );
+          }
+        } else if (
+          (status === OrderStatus.CANCEL_BYSHOP ||
+            status === OrderStatus.CANCEL_BYUSER) &&
+          currentStatus === OrderStatus.TO_RECEIVE
+        ) {
+          this.logger.log(
+            `[updateItemOrderStatus] Decrementing sold count for productId: ${productId} by ${quantity}`,
+          );
+          try {
+            const product = await this.productRepository.findOne({
+              where: { id: productId },
+            });
+            if (product) {
+              const currentSold = product.sold || 0;
+              const newSold = Math.max(0, currentSold - quantity);
+              if (newSold !== currentSold) {
+                // Chỉ update nếu giá trị thay đổi
+                await this.productRepository.update(
+                  { id: productId },
+                  { sold: newSold },
+                );
+                this.logger.log(
+                  `[updateItemOrderStatus] Successfully decremented sold count for productId: ${productId} to ${newSold}`,
+                );
+              } else {
+                this.logger.log(
+                  `[updateItemOrderStatus] Sold count for productId: ${productId} is already 0 or quantity is 0. No decrement needed.`,
+                );
+              }
+            } else {
+              this.logger.warn(
+                `[updateItemOrderStatus] Product not found for decrementing sold count: productId: ${productId}`,
+              );
+            }
+          } catch (productError) {
+            this.logger.error(
+              `[updateItemOrderStatus] Failed to decrement sold count for productId: ${productId}`,
+              productError.stack,
+            );
+          }
+        }
+      }
+
       return {
         success: true,
         message: `Trạng thái đơn hàng đã được cập nhật thành: ${status}`,
@@ -601,7 +611,99 @@ export class CartItemService {
     }
   }
 
-  // Có thể thêm các hàm khác nếu cần, ví dụ:
-  // async getItemById(itemId: number): Promise<CartItem> { ... }
-  // async deleteItemById(itemId: number): Promise<void> { ... }
+  async findPaidItemsByStatusTemp(
+    statuses: OrderStatus[],
+  ): Promise<CartItem[]> {
+    this.logger.log(
+      `[findPaidItemsByStatusTemp] Finding paid items with statuses: ${statuses}`,
+    );
+    if (!statuses || statuses.length === 0) {
+      return [];
+    }
+
+    const options: FindManyOptions<CartItem> = {
+      where: {
+        isPaid: true,
+        status: In(statuses),
+      },
+      relations: ['product', 'product.shop', 'cart', 'cart.user'],
+      order: {
+        updatedAt: 'DESC',
+      },
+    };
+
+    try {
+      const items = await this.cartItemRepository.find(options);
+      this.logger.log(
+        `[findPaidItemsByStatusTemp] Found ${items.length} items.`,
+      );
+      return items;
+    } catch (error) {
+      this.logger.error(
+        `[findPaidItemsByStatusTemp] Error fetching items`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Could not fetch paid items by status',
+      );
+    }
+  }
 }
+
+// ----- HÀM ĐẦY ĐỦ HƠN (Cần implement logic user/shop) -----
+/*
+async findPaidItemsByStatus(
+    requestingUserId: number,
+    requestingUserRole: number, // Giả sử có role
+    statuses: OrderStatus[],
+    filterShopId?: number // Optional: Lọc theo shop cụ thể nếu là admin/shop
+): Promise<CartItem[]> {
+    this.logger.log(`[findPaidItemsByStatus] User ${requestingUserId} (Role: ${requestingUserRole}) finding paid items with statuses: ${statuses}`);
+    if (!statuses || statuses.length === 0) {
+        return [];
+    }
+
+    const options: FindManyOptions<CartItem> = {
+        where: {
+            isPaid: true,
+            status: In(statuses),
+        },
+        relations: ['product', 'product.shop', 'cart', 'cart.user'],
+        order: { updatedAt: 'DESC' },
+    };
+
+    // --- Logic Phân Quyền ---
+    if (requestingUserRole === USER_ROLE) { // Giả sử USER_ROLE là role của user thường
+         // Thêm điều kiện lọc theo cart.idUser
+         options.where = { ...options.where, cart: { idUser: requestingUserId } };
+    } else if (requestingUserRole === SHOP_ROLE) { // Giả sử SHOP_ROLE là role của shop
+        // Thêm điều kiện lọc theo product.shop.id (cần đảm bảo shop chỉ thấy đơn hàng của mình)
+        // Cách 1: Join và lọc (phức tạp hơn với TypeORM where)
+        // Cách 2: Lấy shopId của user đang login và lọc trực tiếp nếu có quan hệ dễ dàng
+        // Ví dụ đơn giản nếu user shop có trường shopId:
+        // const userShopId = await this.getShopIdForUser(requestingUserId); // Hàm lấy shopId của user
+        // options.where = { ...options.where, product: { shop: { id: userShopId } } };
+         if (filterShopId) { // Nếu có filter shopId rõ ràng (ví dụ từ query param)
+             options.where = { ...options.where, product: { shop: { id: filterShopId } } };
+         } else {
+             // Cần logic để lấy shopId mặc định của user đang login
+             throw new Error("Shop user must provide or have an associated shopId");
+         }
+    } else { // Admin có thể thấy hết hoặc cần logic khác
+         if (filterShopId) {
+             options.where = { ...options.where, product: { shop: { id: filterShopId } } };
+         }
+    }
+    // --- Kết thúc Logic Phân Quyền ---
+
+
+    try {
+        const items = await this.cartItemRepository.find(options);
+        this.logger.log(`[findPaidItemsByStatus] Found ${items.length} items for user ${requestingUserId}.`);
+        return items;
+    } catch (error) {
+        this.logger.error(`[findPaidItemsByStatus] Error fetching items for user ${requestingUserId}`, error.stack);
+        throw new InternalServerErrorException('Could not fetch paid items by status');
+    }
+}
+*/

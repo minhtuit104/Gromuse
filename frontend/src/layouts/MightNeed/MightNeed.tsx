@@ -3,6 +3,7 @@ import IconArrowRight from "../../assets/images/icons/ic_ arrow-right.svg";
 import MightNeedItem from "./MightNeedItem/MightNeedItem";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getTopSellingProducts } from "../../Service/ProductService";
 
 interface Product {
   id: number;
@@ -31,29 +32,30 @@ function MightNeed() {
     const fetchTopSellingProducts = async () => {
       try {
         setLoading(true);
-        console.log("Đang gọi API lấy sản phẩm bán chạy...");
+        setError(null); // Reset lỗi
+        console.log("Đang gọi API lấy sản phẩm bán chạy (MightNeed)...");
 
-        // Gọi API trực tiếp với URL đầy đủ để debug
-        const response = await fetch(
-          "http://localhost:3000/api/products/most-sold/10"
-        );
-        const data = await response.json();
-        console.log("Dữ liệu API nhận được:", data);
+        // Gọi hàm từ service, ví dụ lấy 10 sản phẩm
+        const topProducts = await getTopSellingProducts(10);
+        console.log("Dữ liệu API nhận được (MightNeed):", topProducts);
 
-        // Kiểm tra và xử lý dữ liệu
-        if (Array.isArray(data) && data.length > 0) {
-          setProducts(data);
-          console.log("Đã cập nhật state với dữ liệu sản phẩm:", data);
-        } else if (data && Array.isArray(data.data) && data.data.length > 0) {
-          setProducts(data.data);
-          console.log("Đã cập nhật state với data.data:", data.data);
+        // Service đã xử lý response, nên topProducts là mảng
+        if (Array.isArray(topProducts)) {
+          setProducts(topProducts);
+          console.log(
+            "Đã cập nhật state với dữ liệu sản phẩm (MightNeed):",
+            topProducts
+          );
         } else {
-          console.log("Không tìm thấy dữ liệu sản phẩm hợp lệ trong response");
+          // Trường hợp service trả về không phải mảng (ít khả năng xảy ra nếu service đúng)
+          console.log("Dữ liệu trả về từ service không phải mảng (MightNeed)");
           setError("Không có sản phẩm");
+          setProducts([]); // Đảm bảo state là mảng rỗng
         }
       } catch (err) {
-        console.error("Lỗi khi lấy sản phẩm bán chạy:", err);
+        console.error("Lỗi khi lấy sản phẩm bán chạy (MightNeed):", err);
         setError("Không thể tải dữ liệu sản phẩm");
+        setProducts([]); // Đảm bảo state là mảng rỗng khi lỗi
       } finally {
         setLoading(false);
       }

@@ -26,7 +26,7 @@ import { CartItemModule } from './modules/cart_item/cartItem.module';
     TypeOrmModule.forRoot({
       database: 'web_gromuse',
       username: 'root',
-      password: 'luangoc0204',
+      password: '12345',
       port: 3306,
       host: 'localhost',
       type: 'mysql',
@@ -53,7 +53,7 @@ import { CartItemModule } from './modules/cart_item/cartItem.module';
     CartModule,
     DetailModule,
     PaymentModule,
-    CartItemModule
+    CartItemModule,
   ],
   controllers: [AppController],
   providers: [AppService],

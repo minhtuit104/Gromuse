@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "emitDeclarationOnly": true
   },
-  "include": ["src"]
+  "include": ["src", "../backend/src/typeorm/entities/**/*"]
 }

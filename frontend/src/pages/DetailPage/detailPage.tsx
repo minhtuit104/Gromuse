@@ -14,7 +14,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import iconStar from "../../assets/images/icons/ic_star_fill.svg";
 import ImgRate from "../../assets/images/imagePNG/beef 1.png";
 import { jwtDecode } from "jwt-decode";
-
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 interface DecodedToken {
   idAccount: number;
   idUser: number;
@@ -39,13 +40,11 @@ export interface Product {
   img: string;
   images: string[];
   active: boolean;
-  // Shop object có thể có hoặc không từ API product
   shop?: { id: number; name?: string; avatar?: string };
 }
 
-// Interface cho Shop (dùng cho state)
 export interface Shop {
-  id: number; // ID là number
+  id: number;
   avatar: string;
   name: string;
 }
@@ -54,7 +53,7 @@ const DetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
-  const [shop, setShop] = useState<Shop | null>(null); // State cho shop
+  const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mainImage, setMainImage] = useState<string>("");
@@ -87,57 +86,45 @@ const DetailPage = () => {
         } else if (productData.img) {
           setMainImage(productData.img);
         } else {
-          setMainImage(Img1); // Ảnh mặc định
+          setMainImage(Img1);
         }
 
-        // --- START: SỬA LOGIC XỬ LÝ SHOP ---
-        // Kiểm tra xem API product có trả về thông tin shop không
         if (productData.shop && productData.shop.id) {
-          // Nếu có, cố gắng fetch chi tiết shop (API này có thể vẫn lỗi 404 nếu backend chưa có)
           try {
             const shopResponse = await fetch(
-              `http://localhost:3000/api/shops/${productData.shop.id}` // API lấy chi tiết shop
+              `http://localhost:3000/api/shops/${productData.shop.id}`
             );
             if (shopResponse.ok) {
               const shopData = await shopResponse.json();
-              setShop(shopData); // Dùng dữ liệu chi tiết nếu fetch thành công
+              setShop(shopData);
             } else {
-              // Nếu fetch chi tiết lỗi (ví dụ 404), dùng thông tin shop có sẵn từ productData
               console.warn(
                 `Could not fetch shop details for ID: ${productData.shop.id}, using info from product.`
               );
               setShop({
-                id: productData.shop.id, // ID là number
+                id: productData.shop.id,
                 name: productData.shop.name || "Store",
                 avatar: productData.shop.avatar || DefaultAvatar,
               });
             }
           } catch (shopError) {
-            // Nếu có lỗi mạng khi fetch shop, dùng thông tin từ productData
             console.error(
               "Error fetching shop data, using info from product:",
               shopError
             );
             setShop({
-              id: productData.shop.id, // ID là number
+              id: productData.shop.id,
               name: productData.shop.name || "Store",
               avatar: productData.shop.avatar || DefaultAvatar,
             });
           }
         } else {
-          // Nếu API product KHÔNG trả về thông tin shop
-          // *** Bỏ console.warn ở đây ***
-          // console.warn(
-          //   "Product data does not contain shop information, using default shop."
-          // );
-          // Sử dụng thông tin shop mặc định như bạn muốn
           setShop({
-            id: 0, // ID mặc định (number)
-            name: "Gromuse Store", // Tên shop mặc định
-            avatar: DefaultAvatar, // Avatar mặc định
+            id: 0,
+            name: "Gromuse Store",
+            avatar: DefaultAvatar,
           });
         }
-        // --- END: SỬA LOGIC XỬ LÝ SHOP ---
       } catch (error) {
         console.error("Error fetching product data:", error);
         setError(
@@ -158,7 +145,6 @@ const DetailPage = () => {
     }
   }, [id]);
 
-  // --- Hàm lấy idUser từ token (giữ nguyên) ---
   const getUserIdFromToken = (): number | null => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -190,117 +176,10 @@ const DetailPage = () => {
     }
   };
 
-  // Hàm xử lý click ảnh (giữ nguyên)
   const handleImageClick = (imageUrl: string) => {
     setMainImage(imageUrl);
   };
 
-  // Hàm xử lý Mua ngay (giữ nguyên logic lấy userId)
-  const handleBuyNow = async () => {
-    if (!product?.id) {
-      alert("Invalid product!");
-      return;
-    }
-    const userId = getUserIdFromToken();
-    if (userId === null) {
-      alert("Bạn cần đăng nhập để thực hiện chức năng này.");
-      return;
-    }
-    try {
-      const response = await fetch("http://localhost:3000/cart/buy-now", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: quantity,
-          userId: userId, // Sử dụng userId từ token
-        }),
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Buy Now API Error:", errorText);
-        throw new Error(
-          `HTTP Error! Status: ${response.status} - ${errorText}`
-        );
-      }
-      const data = await response.json();
-      if (data && data.cartId && data.success) {
-        localStorage.setItem("buyNowCartId", data.cartId.toString());
-        localStorage.removeItem("currentCartId");
-        localStorage.setItem("isBuyNow", "true");
-        alert("Đang chuyển đến trang thanh toán!");
-        navigate("/payment");
-      } else {
-        console.error("Buy Now response data invalid:", data);
-        throw new Error("Phản hồi từ server không hợp lệ sau khi mua ngay.");
-      }
-    } catch (error) {
-      console.error("Lỗi khi thực hiện mua ngay:", error);
-      alert(
-        `Lỗi khi mua ngay: ${
-          error instanceof Error ? error.message : "Lỗi không xác định"
-        }`
-      );
-    }
-  };
-
-  // Hàm xử lý Thêm vào giỏ (giữ nguyên logic lấy userId)
-  const handleAddToCart = async () => {
-    if (!product?.id) {
-      alert("Invalid product!");
-      return;
-    }
-    const userId = getUserIdFromToken();
-    if (userId === null) {
-      alert("Bạn cần đăng nhập để thực hiện chức năng này.");
-      return;
-    }
-    try {
-      const response = await fetch("http://localhost:3000/cart-items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          idProduct: product.id,
-          quantity: quantity,
-        }),
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Add To Cart API Error:", errorText);
-        throw new Error(
-          `Lỗi HTTP! Trạng thái: ${response.status} - ${errorText}`
-        );
-      }
-      const data = await response.json(); // data là đối tượng CartItem
-      // *** SỬA LẠI ĐIỀU KIỆN VÀ CÁCH LẤY ID ***
-      if (data && data.cart && data.cart.id) {
-        // Kiểm tra data.cart và data.cart.id
-        localStorage.setItem("currentCartId", data.cart.id.toString()); // <<< LẤY ĐÚNG CART ID
-        localStorage.removeItem("buyNowCartId");
-        localStorage.removeItem("isBuyNow");
-        localStorage.setItem("cartUpdated", "true");
-        alert("Đã thêm vào giỏ hàng!");
-        navigate("/payment");
-      } else {
-        console.error(
-          "Add to cart response data invalid or missing cart ID:",
-          data
-        ); // Log lỗi rõ hơn
-        throw new Error(
-          "Phản hồi từ server không hợp lệ sau khi thêm vào giỏ."
-        );
-      }
-    } catch (error) {
-      console.error("Lỗi khi thêm vào giỏ hàng:", error);
-      alert(
-        `Lỗi khi thêm vào giỏ: ${
-          error instanceof Error ? error.message : "Lỗi không xác định"
-        }`
-      );
-    }
-  };
-
-  // Hàm định dạng mô tả (giữ nguyên)
   const formatDescription = (description: string | undefined) => {
     if (!description) return "Chưa có mô tả chi tiết cho sản phẩm này.";
     try {
@@ -316,7 +195,149 @@ const DetailPage = () => {
     }
   };
 
-  // Phần render JSX (giữ nguyên cấu trúc, chỉ cập nhật cách hiển thị shop)
+  const addItemToCartAPI = async (
+    userId: number,
+    productId: number,
+    quantity: number
+  ): Promise<{ cartId: number | null; error?: string }> => {
+    try {
+      const response = await fetch("http://localhost:3000/cart-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, quantity, userId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: response.statusText }));
+        console.error("Add/Buy API Error Response:", errorData);
+        return {
+          cartId: null,
+          error: `Lỗi HTTP ${response.status}: ${
+            errorData.message || response.statusText
+          }`,
+        };
+      }
+
+      const addedItemData = await response.json();
+      console.log("Add/Buy API Success Response:", addedItemData);
+
+      if (addedItemData && addedItemData.cart && addedItemData.cart.id) {
+        return { cartId: addedItemData.cart.id };
+      } else {
+        console.error(
+          "Add/Buy API response invalid or missing cartId:",
+          addedItemData
+        );
+        return {
+          cartId: null,
+          error: "Phản hồi từ server không hợp lệ (thiếu cartId).",
+        };
+      }
+    } catch (error) {
+      console.error("Lỗi gọi API thêm vào giỏ:", error);
+      return {
+        cartId: null,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Lỗi mạng hoặc không xác định.",
+      };
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!product?.id) {
+      alert("Sản phẩm không hợp lệ!");
+      return;
+    }
+    const userId = getUserIdFromToken();
+    if (userId === null) {
+      alert("Bạn cần đăng nhập để thực hiện chức năng này.");
+      navigate("/login");
+      return;
+    }
+
+    console.log(
+      `[handleAddToCart] Adding productId: ${product.id}, quantity: ${quantity} to cart for userId: ${userId}`
+    );
+    const toastId = toast.loading("Đang thêm vào giỏ hàng...");
+
+    const result = await addItemToCartAPI(userId, product.id, quantity);
+
+    if (result.cartId) {
+      toast.update(toastId, {
+        render: "Đã thêm sản phẩm vào giỏ hàng!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+      localStorage.setItem("cartUpdated", "true");
+
+      localStorage.setItem("currentCartId", result.cartId.toString());
+      localStorage.removeItem("buyNowCartId");
+      localStorage.removeItem("isBuyNow");
+
+      setTimeout(() => {
+        navigate("/payment");
+      }, 1500);
+    } else {
+      toast.update(toastId, {
+        render: `Lỗi thêm vào giỏ: ${result.error || "Lỗi không xác định"}`,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!product?.id) {
+      alert("Sản phẩm không hợp lệ!");
+      return;
+    }
+    const userId = getUserIdFromToken();
+    if (userId === null) {
+      alert("Bạn cần đăng nhập để thực hiện chức năng này.");
+      navigate("/login");
+      return;
+    }
+
+    console.log(
+      `[handleBuyNow] Adding productId: ${product.id}, quantity: ${quantity} for userId: ${userId} and navigating`
+    );
+    const toastId = toast.loading("Đang chuẩn bị thanh toán...");
+
+    const result = await addItemToCartAPI(userId, product.id, quantity);
+
+    if (result.cartId) {
+      localStorage.setItem("currentCartId", result.cartId.toString());
+      localStorage.removeItem("buyNowCartId");
+      localStorage.removeItem("isBuyNow");
+
+      toast.update(toastId, {
+        render: "Đang chuyển đến trang thanh toán...",
+        type: "success",
+        isLoading: false,
+        autoClose: 1500,
+      });
+
+      // Chuyển hướng
+      setTimeout(() => {
+        navigate("/payment");
+      }, 1500);
+    } else {
+      // Xử lý lỗi
+      toast.update(toastId, {
+        render: `Lỗi Mua ngay: ${result.error || "Lỗi không xác định"}`,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
   if (loading) return <div className="loading-spinner">Đang tải...</div>;
   if (error)
     return <div className="error-message">Lỗi tải sản phẩm: {error}</div>;
@@ -407,7 +428,6 @@ const DetailPage = () => {
           </div>
         </div>
         <div className="line1"></div>
-        {/* --- START: HIỂN THỊ THÔNG TIN SHOP TỪ STATE --- */}
         <div className="detail-product-nameshop">
           <div className="detail-avatar">
             <img
@@ -419,11 +439,9 @@ const DetailPage = () => {
           <div className="detail-name">
             <img src={shopIcon} alt="shop" className="ic_32" />
             <span>{shop?.name || "Shop Name"}</span>{" "}
-            {/* Lấy tên từ state shop */}
           </div>
         </div>
 
-        {/* ... Phần mô tả, đánh giá ... */}
         <div className="detail-product-description">
           <h2>Description</h2>
           <div className="description-list">
@@ -483,6 +501,17 @@ const DetailPage = () => {
           </div>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 };

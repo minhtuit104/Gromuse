@@ -11,6 +11,8 @@ import {
   HttpException,
   ParseIntPipe,
   Logger,
+  Query,
+  ParseArrayPipe,
 } from '@nestjs/common';
 import { CartItemService } from './cartItem.service';
 import { AddToCartDto } from '../cart/dtos/add-to-cart.dto';
@@ -216,9 +218,10 @@ export class CartItemController {
     );
   }
 
-  @Put('cart/:cartId/product/:productId/order-status')
+  @Put(':cartItemId/order-status')
   @ApiOperation({
-    summary: 'Cập nhật trạng thái của một mục đơn hàng đã thanh toán',
+    summary:
+      'Cập nhật trạng thái của một mục đơn hàng đã thanh toán bằng CartItemID',
   })
   @ApiResponse({ status: 200, description: 'Cập nhật trạng thái thành công' })
   @ApiResponse({
@@ -230,27 +233,58 @@ export class CartItemController {
     description: 'Mục đơn hàng không tồn tại (hoặc chưa thanh toán)',
   })
   async updateOrderStatus(
-    @Param('cartId', ParseIntPipe) cartId: number,
-    @Param('productId', ParseIntPipe) productId: number,
-    @Body() updateOrderStatusDto: UpdateOrderStatusDto, // Sử dụng DTO mới
+    @Param('cartItemId', ParseIntPipe) cartItemId: number, // *** DÙNG cartItemId ***
+    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+    // @Req() req // Nếu cần kiểm tra quyền sở hữu trước khi cập nhật
   ) {
     this.logger.log(
-      `[PUT /cart-items/cart/:cartId/product/:productId/order-status] cartId=${cartId}, productId=${productId}, status=${updateOrderStatusDto.status}, reason=${updateOrderStatusDto.cancelReason}`,
+      `[PUT /cart-items/:cartItemId/order-status] cartItemId=${cartItemId}, status=${updateOrderStatusDto.status}, reason=${updateOrderStatusDto.cancelReason}`,
     );
+    // const loggedInUserId = req.user?.idUser; // Ví dụ lấy user id
+    // const userRole = req.user?.role; // Ví dụ lấy role
+
+    // Gọi service function đã sửa đổi
     return this.cartItemService.updateItemOrderStatus(
-      cartId,
-      productId,
+      cartItemId, // *** TRUYỀN cartItemId ***
       updateOrderStatusDto.status,
       updateOrderStatusDto.cancelReason,
+      // loggedInUserId, // Truyền thêm nếu cần kiểm tra quyền
+      // userRole
     );
   }
 
-  // Có thể thêm endpoint DELETE /cart-items/:itemId để xóa theo ID của CartItem nếu cần
-  // @Delete(':itemId')
-  // @ApiOperation({ summary: 'Xóa một mục cụ thể khỏi giỏ hàng bằng ID của nó' })
-  // async deleteItemById(@Param('itemId', ParseIntPipe) itemId: number) {
-  //     // Cần thêm logic vào CartItemService để xóa theo itemId
-  //     // await this.cartItemService.deleteItemById(itemId);
-  //     // return { message: `Item with ID ${itemId} deleted.` };
-  // }
+  @Get('paid/by-status')
+  // @UseGuards(JwtAuthGuard) // Bảo vệ endpoint này
+  @ApiOperation({
+    summary: 'Lấy danh sách các mục đơn hàng đã thanh toán theo trạng thái',
+  })
+  @ApiResponse({ status: 200, description: 'Danh sách các mục đơn hàng' })
+  async getPaidItemsByStatus(
+    // @Req() req, // Lấy thông tin user đã login nếu dùng Guard
+    @Query('statuses', new ParseArrayPipe({ items: String, separator: ',' }))
+    statuses: OrderStatus[],
+    // Thêm các query param khác nếu cần lọc theo shopId hoặc userId cụ thể
+    // @Query('userId') userId?: number,
+    // @Query('shopId') shopId?: number,
+  ) {
+    this.logger.log(
+      `[GET /cart-items/paid/by-status] Request for statuses: ${statuses}`,
+    );
+    // const loggedInUserId = req.user?.idUser; // Lấy userId từ token (ví dụ)
+    // const userRole = req.user?.role; // Lấy role từ token (ví dụ)
+
+    // // Logic xác thực và phân quyền:
+    // // - Nếu là user, chỉ lấy đơn hàng của user đó.
+    // // - Nếu là shop, chỉ lấy đơn hàng thuộc shop đó.
+    // // Cần implement logic này trong service dựa trên loggedInUserId và userRole
+    // if (!loggedInUserId) {
+    //   throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+    // }
+
+    // Gọi service function mới
+    // return this.cartItemService.findPaidItemsByStatus(loggedInUserId, userRole, statuses /*, shopId */);
+    // ---- Bỏ comment và implement logic xác thực/phân quyền ----
+    // ---- Ví dụ tạm thời không có xác thực ----
+    return this.cartItemService.findPaidItemsByStatusTemp(statuses);
+  }
 }

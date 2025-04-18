@@ -9,11 +9,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cart } from '../../typeorm/entities/Cart';
-import { CreateCartDto } from './dtos/create-cart.dto';
 import { Product } from '../../typeorm/entities/Product';
 import { AddToCartDto } from './dtos/add-to-cart.dto';
-import { OrderStatus } from '../../typeorm/entities/CartItem';
 import { CreateCartDto } from './dtos/cart.dto';
+import { CartItemService } from '../cart_item/cartItem.service';
 
 interface ProductUpdateInfo {
   id: number;
@@ -30,6 +29,7 @@ export class CartService {
     // Không cần CartItemRepository và ProductRepository ở đây nữa (trừ khi cần cho logic Cart đặc biệt)
     @InjectRepository(Product) // Vẫn cần để kiểm tra product tồn tại trong createBuyNowCart
     private productRepository: Repository<Product>,
+    private cartItemService: CartItemService,
   ) {}
   async create(createCartDto: CreateCartDto): Promise<Cart> {
     const cart = this.cartRepository.create(createCartDto);
@@ -165,5 +165,15 @@ export class CartService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async addToCart(addToCartDto: AddToCartDto) {
+    const cart = await this.getOrCreateUserCart(addToCartDto.userId);
+    const cartItem = await this.cartItemService.addBuyNowItem(
+      cart.id,
+      addToCartDto.productId,
+      addToCartDto.quantity,
+    );
+    return cartItem;
   }
 }

@@ -15,7 +15,10 @@ import ModalVoucher from "./modalVourcher";
 import UpdateAddressModal from "./modalUpdateAddress";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { confirmPaymentAndUpdateBackend } from "../../Service/OrderService";
+import {
+  confirmPaymentAndUpdateBackend,
+  synchronizeOrdersWithBackend,
+} from "../../Service/OrderService";
 import { updateUserProfile } from "../../Service/UserService";
 
 export const PaymentPage = () => {
@@ -437,7 +440,6 @@ export const PaymentPage = () => {
         }))
       );
 
-      // Gọi hàm cập nhật trạng thái isPaid và số lượng sold
       const updateAndSyncSuccess = await confirmPaymentAndUpdateBackend(
         cartIdValue,
         paidItems
@@ -452,6 +454,20 @@ export const PaymentPage = () => {
       } else {
         console.log("[PaymentPage] confirmPaymentAndUpdateBackend successful.");
         toast.success("Đặt hàng và cập nhật trạng thái thành công!");
+      }
+
+      console.log("[PaymentPage] Calling synchronizeOrdersWithBackend...");
+      const syncSuccess = await synchronizeOrdersWithBackend();
+
+      if (syncSuccess) {
+        console.log("[PaymentPage] synchronizeOrdersWithBackend successful.");
+        toast.success("Đặt hàng và đồng bộ dữ liệu thành công!");
+      } else {
+        console.error("[PaymentPage] synchronizeOrdersWithBackend failed.");
+        // If sync fails after successful payment & backend update, warn the user
+        toast.warn(
+          "Đặt hàng thành công nhưng đồng bộ dữ liệu cục bộ thất bại. Vui lòng kiểm tra lại trang thái đơn hàng sau."
+        );
       }
 
       setIsPaymentComplete(true); // Đánh dấu thanh toán hoàn tất

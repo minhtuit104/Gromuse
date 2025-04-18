@@ -292,11 +292,11 @@ export class PaymentService {
     for (const voucher of vouchers) {
       let discount = 0;
       if (voucher.type === VoucherType.DISCOUNT) {
-        discount = (subtotal * voucher.maxDiscountValue) / 100; // Giả sử maxDiscountValue là phần trăm
+        discount = (subtotal * voucher.maxDiscountValue) / 100;
       } else if (voucher.type === VoucherType.FREE_SHIP) {
-        discount = Math.min(voucher.maxDiscountValue, deliveryFee); // Giảm phí vận chuyển tối đa bằng maxDiscountValue
+        discount = Math.min(voucher.maxDiscountValue, deliveryFee);
       }
-      totalDiscount += Math.min(discount, voucher.maxDiscountValue); // Giới hạn bởi maxDiscountValue
+      totalDiscount += Math.min(discount, voucher.maxDiscountValue);
     }
     return totalDiscount;
   }

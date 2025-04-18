@@ -1,28 +1,67 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import HeaderDashboard from "../../../pages/DashboardPage/Header/HeaderDashboard";
 import { useNavigate } from "react-router-dom";
 import "./OrderHistory.css";
 import ImgProductDefault from "../../../assets/images/imagePNG/banana 1.png";
 import IconArrowRight from "../../../assets/images/icons/ic_ arrow-right.svg";
 import {
-  getOrderHistoryFromLocalStorage,
   OrderData,
+  OrderStatus,
+  fetchOrdersByStatus,
 } from "../../../Service/OrderService";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const OrderHistory = () => {
   const navigate = useNavigate();
   // Sử dụng getOrderHistoryFromLocalStorage thay vì lọc ở component
   const [historyOrders, setHistoryOrders] = useState<OrderData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // State cho phân trang
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [ordersPerPage] = useState<number>(10); // Số đơn hàng mỗi trang
 
-  useEffect(() => {
-    // Lấy danh sách lịch sử đơn hàng đã hoàn thành từ localStorage
-    const completedOrders = getOrderHistoryFromLocalStorage();
-    setHistoryOrders(completedOrders);
+  const loadHistoryOrders = useCallback(async () => {
+    setIsLoading(true);
+    console.log("[OrderHistory] Loading COMPLETE orders from API...");
+    try {
+      // Fetch các đơn hàng có trạng thái COMPLETE
+      const completed = await fetchOrdersByStatus([OrderStatus.COMPLETE]);
+      setHistoryOrders(completed); // Cập nhật state
+      console.log(
+        `[OrderHistory] Loaded ${completed.length} completed orders.`
+      );
+    } catch (error) {
+      console.error("[OrderHistory] Error loading completed orders:", error);
+      toast.error("Lỗi khi tải lịch sử đơn hàng."); // Thông báo lỗi
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    console.log("[OrderHistory] Component mounted. Initial load...");
+    loadHistoryOrders();
+  }, [loadHistoryOrders]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log(
+        "[OrderHistory] Window focused, reloading completed orders..."
+      );
+      loadHistoryOrders(); // Gọi lại hàm fetch
+    };
+    window.addEventListener("focus", handleFocus);
+    console.log("[OrderHistory] Added focus event listener.");
+
+    // Cleanup function
+    return () => {
+      console.log("[OrderHistory] Component unmounting.");
+      window.removeEventListener("focus", handleFocus); // Remove focus listener
+      console.log("[OrderHistory] Removed focus event listener.");
+    };
+  }, [loadHistoryOrders]);
 
   // Tính toán số trang và đơn hàng hiện tại
   const totalPages = Math.ceil(historyOrders.length / ordersPerPage);
@@ -32,6 +71,12 @@ const OrderHistory = () => {
     indexOfFirstOrder,
     indexOfLastOrder
   );
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   // Hàm chuyển hướng đến các tab
   const handleOrdersClick = () => {
@@ -69,7 +114,7 @@ const OrderHistory = () => {
             Orders
           </div>
           <div className="vertical_line">|</div>
-          <div className="tab active">History</div>
+          <div className="tab active">History ({historyOrders.length})</div>
           <div className="vertical_line">|</div>
           <div className="tab inactive" onClick={handleCancelledClick}>
             Cancelled
@@ -77,11 +122,20 @@ const OrderHistory = () => {
         </div>
 
         <div className="order-list-history">
-          {historyOrders.length === 0 ? (
+          {/* Hiển thị loading */}
+          {isLoading && (
+            <div className="loading-indicator">Đang tải lịch sử...</div>
+          )}
+
+          {/* Hiển thị khi không có đơn hàng */}
+          {!isLoading && historyOrders.length === 0 && (
             <div className="no-orders">
               <p>Chưa có đơn hàng nào trong lịch sử.</p>
             </div>
-          ) : (
+          )}
+
+          {/* Hiển thị danh sách đơn hàng */}
+          {!isLoading && historyOrders.length > 0 && (
             <>
               {currentOrders.map((order, index) => (
                 <React.Fragment key={order.orderId}>

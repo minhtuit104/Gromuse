@@ -22,17 +22,17 @@ import { PaymentStatus } from '../../typeorm/entities/Payment';
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
-  // @Post()
-  // @ApiOperation({ summary: 'Tạo đơn thanh toán mới' })
-  // @ApiResponse({ status: 201, description: 'Tạo đơn thanh toán thành công' })
-  // async create(@Body() createPaymentDto: CreatePaymentDto) {
-  //   const payment = await this.paymentService.create(createPaymentDto);
-  //   return {
-  //     statusCode: HttpStatus.CREATED,
-  //     message: 'Payment created successfully',
-  //     data: payment,
-  //   };
-  // }
+  @Post()
+  @ApiOperation({ summary: 'Tạo đơn thanh toán mới' })
+  @ApiResponse({ status: 201, description: 'Tạo đơn thanh toán thành công' })
+  async create(@Body() createPaymentDto: CreatePaymentDto) {
+    const payment = await this.paymentService.create(createPaymentDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Payment created successfully',
+      data: payment,
+    };
+  }
 
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách đơn thanh toán' })

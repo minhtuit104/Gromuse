@@ -5,15 +5,11 @@ import { Payment } from './Payment';
 export enum VoucherType {
   FREE_SHIP = 'Free Ship',
   DISCOUNT = 'Discount',
-  PROMO = 'Promo',
-  SPECIAL = 'Special',
-  NEW_CUSTOMER = 'New Customer',
-  BIRTHDAY = 'Birthday',
 }
 
 @Entity('vouchers')
 export class Voucher {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn({ type: 'int' })
   id: number;
 
   @Column({ type: 'enum', enum: VoucherType })
