@@ -104,7 +104,7 @@ img.main-product-image {
 
 .product-option-item {
   width: 130px;
-  height: 150px;
+  height: 130px;
   background-color: rgba(239, 239, 239, 0.3);
   border-radius: 20px;
   display: flex;
@@ -114,8 +114,8 @@ img.main-product-image {
 }
 
 .product-option-item img {
-  width: 130px;
-  height: 130px;
+  width: 100px;
+  height: 100px;
   object-fit: cover;
 }
 
@@ -334,6 +334,79 @@ img.main-product-image {
 }
 
 .product-option-item.active {
-  border: 3px solid var(--green400); /* màu viền cho ảnh đang được chọn */
+  border: 3px solid var(--green400);
   box-shadow: 0 0 5px rgba(95, 196, 99, 0.537);
+}
+
+.rating-detail {
+  width: 100%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.rating-title-detail {
+  color: var(--green900);
+  font-weight: 700;
+  font-size: 32px;
+}
+
+.rating-score-detail {
+  color: var(--orange500);
+  font-size: 28px;
+}
+
+img.ic_24.rating-icon {
+  margin-bottom: 4px;
+}
+
+.reviews-list-detail {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.review-item-detail {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-header-detail {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.reviewer-name-detail {
+  color: var(--white950);
+  font-weight: 600;
+  font-size: 24px;
+}
+
+p.review-text-detail {
+  width: 100%;
+  color: var(--white800);
+  font-weight: 400;
+  font-size: 24px;
+}
+
+img.ImgRate {
+  border: 1px solid var(--green900);
+  border-radius: 16px;
+  width: 90px;
+  height: 90px;
+}
+
+.rating-line {
+  width: 70%;
+  height: 1px;
+  background-color: var(--white200);
+  margin-left: 200px;
 }

@@ -1,0 +1,218 @@
+@import url(../../../assets/css/styles.css);
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.order_container {
+  display: flex;
+  width: 100%;
+  height: auto;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--white100);
+}
+
+.order_history {
+  width: 100%;
+  display: flex;
+  height: auto;
+  padding: 20px;
+  gap: 20px;
+  flex-direction: column;
+}
+
+/* Tab Navigation */
+.tabs {
+  display: flex;
+  justify-content: space-between;
+  box-shadow: 0 0px 5px 1px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  background-color: var(--white50);
+}
+
+.tab {
+  padding: 15px;
+  width: 33.33%;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.tab.active {
+  font-size: 24px;
+  color: var(--mint800);
+}
+
+.tab.inactive {
+  font-size: 24px;
+  color: var(--white400);
+}
+
+.vertical_line {
+  height: 55px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: var(--white300);
+}
+
+.order-list-cancel {
+  background-color: var(--white50);
+  border-radius: 16px;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  align-items: center;
+}
+
+.order-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Product Section */
+.product-image {
+  width: 60px;
+  height: 60px;
+  background-color: var(--white50);
+  border: 1px solid var(--green900);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.product-info {
+  width: 200px;
+}
+
+img.ic_20.arrow_right {
+  margin-right: 20px;
+}
+
+.product-name-shop {
+  color: var(--green900);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.product-quantity {
+  color: var(--orange400);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+/* Arrow Symbol */
+.arrow {
+  margin: 0 15px;
+}
+
+/* Customer Info */
+.customer-info {
+  width: 400px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.customer-name {
+  color: var(--green900);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.customer-address {
+  color: var(--white600);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+/* Price Info */
+.price-info-cancel {
+  width: 100px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.old-price {
+  color: var(--white400);
+  text-decoration: line-through;
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.new-price {
+  color: var(--red500);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+/* Lý do hủy đơn hàng */
+.cancel-reason {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.reason-label {
+  color: var(--red500);
+  font-weight: 700;
+  font-size: 18px;
+  margin-right: 10px;
+}
+
+.reason-text {
+  color: var(--white600);
+  font-weight: 600;
+  font-size: 18px;
+  font-style: italic;
+}
+
+.order-card-line {
+  width: 100%;
+  height: 2px;
+  background-color: var(--white300);
+}
+
+/* CSS cho phân trang */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  gap: 5px;
+}
+
+.pagination-button {
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.pagination-button:hover:not(.disabled):not(.active) {
+  background-color: #f1f1f1;
+}
+
+.pagination-button.active {
+  background-color: #4caf50;
+  color: white;
+  border-color: #4caf50;
+}
+
+.pagination-button.disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}

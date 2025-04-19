@@ -3,19 +3,18 @@ import "./paymentPage.css";
 import IconLocation from "../../assets/images/icons/ic_location.svg";
 import IconEdit from "../../assets/images/icons/ic_ edit.svg";
 import ImgMap from "../../assets/images/imagePNG/city_map_vector.png";
-
-interface Address {
-  name: string;
-  phone: string;
-  address: string;
-}
+import { AddressDto } from "../../dtos/address.dto";
 
 interface AddressPaymentProps {
-  address: Address;
+  address: AddressDto | null;
   onEdit: () => void;
 }
 
 const AddressPayment: React.FC<AddressPaymentProps> = ({ address, onEdit }) => {
+  const displayName = address?.name || "Đang tải...";
+  const displayPhone = address?.phone || "...";
+  const displayAddress = address?.address || "...";
+
   return (
     <div className="payment_left_location">
       <div className="payment_left_location_top">
@@ -37,11 +36,11 @@ const AddressPayment: React.FC<AddressPaymentProps> = ({ address, onEdit }) => {
         </div>
         <div className="payment_left_location_bottom_information">
           <h2 className="payment_left_location_bottom_information_name">
-            {address?.name}
+            {displayName}
           </h2>
           <div className="payment_left_location_bottom_information_address">
-            <span>Phone: {address?.phone}</span>
-            <span>Address: {address?.address}</span>
+            <span>Phone: {displayPhone}</span>
+            <span>Address: {displayAddress}</span>
           </div>
         </div>
       </div>

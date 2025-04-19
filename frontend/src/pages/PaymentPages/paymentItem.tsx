@@ -11,7 +11,7 @@ export interface Product {
   title: string;
   weight: number;
   price: number;
-  amount: number;
+  quantity: number;
   created_at: string;
   isPaid: boolean;
 }
@@ -28,7 +28,7 @@ export interface Shop {
 interface PaymentItemProps {
   item: Shop;
   isExpandable: boolean;
-  onUpdateAmount: (id: string, amount: number) => void;
+  onUpdateAmount: (id: string, quantity: number) => void;
   index: number;
   isSecondShop?: boolean;
 }
@@ -110,7 +110,7 @@ export const PaymentItem = ({
                     : ImgDetailLays
                 }
                 alt={product.name}
-                className="product-image"
+                className="product-image-payment"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
@@ -128,7 +128,7 @@ export const PaymentItem = ({
               </div>
               <div className="custom-counter-wrapper">
                 <Counter
-                  initialCount={product.amount || 1}
+                  initialCount={product.quantity || 1}
                   onChange={(newCount) =>
                     handleCountChange(product.id, newCount)
                   }

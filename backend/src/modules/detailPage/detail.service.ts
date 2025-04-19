@@ -23,7 +23,6 @@ export class DetailService {
     const product = await this.productRepository.save({
       name: createDetailDto.name,
       price: createDetailDto.price,
-      amount: 1,
       weight: 100, // Giả định
       tag: '🏷️ Default Tag',
       category: { name: createDetailDto.categories[0] || 'Default' },

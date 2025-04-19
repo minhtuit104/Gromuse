@@ -13,11 +13,33 @@ function Header() {
   const goToPaymentPage = () => {
     navigate("/payment");
   };
+
+  const gotoHome = () => {
+    navigate("/");
+  };
+
+  const handleLogout = () => {
+    // 1. Xóa token khỏi localStorage
+    localStorage.removeItem("token");
+
+    localStorage.removeItem("currentCartId");
+    localStorage.removeItem("buyNowCartId");
+    localStorage.removeItem("isBuyNow");
+    localStorage.removeItem("cartUpdated");
+    localStorage.removeItem("lastPaidCartId");
+
+    navigate("/login"); // Hoặc '/login-shop'
+
+    console.log("User logged out.");
+  };
+
   return (
     <div className="header">
       <div className="header-left">
         <img src={IconList} alt="icon-list" className="ic_40" />
-        <span>Gromuse</span>
+        <span className="name_app" onClick={gotoHome}>
+          Gromuse
+        </span>
       </div>
       <div className="header-middle">
         <input
@@ -28,18 +50,27 @@ function Header() {
       </div>
       <div className="header-right">
         <div className="header-right-notification">
-          <img src={IconNotification} alt="icon-cart" className="ic_16" />
+          <img
+            src={IconNotification}
+            alt="icon-notification"
+            className="ic_16"
+          />
           <span className="quantity">21</span>
         </div>
         <div className="header-right-message">
-          <img src={IconMessage} alt="icon-cart" className="ic_16" />
+          <img src={IconMessage} alt="icon-message" className="ic_16" />
           <span className="quantity">53</span>
         </div>
         <div className="header-right-cart" onClick={goToPaymentPage}>
           <img src={IconCart} alt="icon-cart" className="ic_24" />
           <span className="quantity">53</span>
         </div>
-        <div className="header-right-avatar">
+        <div
+          className="header-right-avatar"
+          onClick={handleLogout}
+          style={{ cursor: "pointer" }}
+          title="Logout"
+        >
           <img src={ImgAvatar} alt="img-avatar" />
         </div>
       </div>

@@ -1,10 +1,12 @@
 import axios from "./axios";
 
 const loginApi = async (identifier: string, password: string) => {
-  return await axios.post("/api/v1/auth/login", {
+  const res = await axios.post("/api/v1/auth/login", {
     identifier,
     password,
   });
+  console.log("resspon API:===", res);
+  return res;
 };
 
 const registerApi = (
@@ -19,6 +21,25 @@ const registerApi = (
     phoneNumber,
     password,
   });
+};
+
+const registerApiShop = async (
+  name: string,
+  email: string,
+  phoneNumber: string,
+  password: string,
+  address: string
+) => {
+  const res = await axios.post("/api/v1/auth/register", {
+    name,
+    email,
+    phoneNumber,
+    password,
+    address,
+    role: 2,
+  });
+  console.log("API dang ki: ", res);
+  return res;
 };
 
 const fectchUserName = async (idUser: number) => {
@@ -82,9 +103,11 @@ const updateAvatar = async (imageUrl: string) => {
 };
 
 const updateUserProfile = async (updateData: {
-  name: string;
-  email: string;
-  birthday: string;
+  name?: string;
+  email?: string;
+  birthday?: string;
+  phoneNumber?: string;
+  address?: string;
 }) => {
   try {
     const token = localStorage.getItem("token");
@@ -98,8 +121,8 @@ const updateUserProfile = async (updateData: {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-    console.log("API response ===", response);
-    return response.data;
+    console.log("API response update profile ===", response);
+    return response;
   } catch (error) {
     console.error("Error updating user profile:", error);
     throw error;
@@ -109,10 +132,9 @@ const updateUserProfile = async (updateData: {
 export {
   loginApi,
   registerApi,
+  registerApiShop,
   fectchUserName,
   fetchAllUser,
   updateAvatar,
   updateUserProfile,
-  // fetchProducts,
-  // addToCart,
 };

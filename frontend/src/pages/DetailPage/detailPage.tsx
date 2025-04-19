@@ -10,22 +10,37 @@ import IconClock from "../../assets/images/icons/ic_ clock.svg";
 import IconCart from "../../assets/images/icons/ic_cart.svg";
 import IconSold from "../../assets/images/icons/ic_ flame.svg";
 import shopIcon from "../../assets/images/icons/ic_ shop.svg";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import iconStar from "../../assets/images/icons/ic_star_fill.svg";
+import ImgRate from "../../assets/images/imagePNG/beef 1.png";
+import { jwtDecode } from "jwt-decode";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+interface DecodedToken {
+  idAccount: number;
+  idUser: number;
+  email: string;
+  phoneNumber: string;
+  role: number;
+  iat: number;
+  exp: number;
+}
 
 export interface Product {
   id: number;
   name: string;
   price: number;
-  amount: number;
   discount: number;
   weight: number;
   tag: string;
+  sold: number;
   category: { id: number; name: string };
   backgroundColor: string;
   description: string;
   img: string;
   images: string[];
   active: boolean;
+  shop?: { id: number; name?: string; avatar?: string };
 }
 
 export interface Shop {
@@ -36,6 +51,7 @@ export interface Shop {
 
 const DetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,113 +62,188 @@ const DetailPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const productResponse = await fetch(
-          `http://localhost:3000/api/products/${id}`
+          `http://localhost:3000/api/products/${id}` // API lấy sản phẩm
         );
-        const productData = await productResponse.json();
+
         if (!productResponse.ok) {
-          throw new Error("Failed to fetch product data");
+          if (productResponse.status === 404) {
+            throw new Error("Product not found.");
+          }
+          throw new Error(
+            `Unable to load product information (${productResponse.status})`
+          );
         }
+
+        const productData = await productResponse.json();
         setProduct(productData);
 
+        // Cập nhật ảnh chính
         if (productData.images && productData.images.length > 0) {
           setMainImage(productData.images[0]);
         } else if (productData.img) {
           setMainImage(productData.img);
+        } else {
+          setMainImage(Img1);
         }
 
-        // Fetch shop data từ API dựa vào shopId từ product
         if (productData.shop && productData.shop.id) {
-          const shopResponse = await fetch(
-            `http://localhost:3000/api/shops/${productData.shop.id}`
-          );
-          if (shopResponse.ok) {
-            const shopData = await shopResponse.json();
-            setShop(shopData);
-          } else {
-            // Fallback nếu không lấy được thông tin shop
+          try {
+            const shopResponse = await fetch(
+              `http://localhost:3000/api/shops/${productData.shop.id}`
+            );
+            if (shopResponse.ok) {
+              const shopData = await shopResponse.json();
+              setShop(shopData);
+            } else {
+              console.warn(
+                `Could not fetch shop details for ID: ${productData.shop.id}, using info from product.`
+              );
+              setShop({
+                id: productData.shop.id,
+                name: productData.shop.name || "Store",
+                avatar: productData.shop.avatar || DefaultAvatar,
+              });
+            }
+          } catch (shopError) {
+            console.error(
+              "Error fetching shop data, using info from product:",
+              shopError
+            );
             setShop({
               id: productData.shop.id,
-              name: "Cửa hàng",
-              avatar: DefaultAvatar,
+              name: productData.shop.name || "Store",
+              avatar: productData.shop.avatar || DefaultAvatar,
             });
           }
         } else {
           setShop({
-            id: 1,
-            name: "Lay's Việt Nam",
+            id: 0,
+            name: "Gromuse Store",
             avatar: DefaultAvatar,
           });
         }
       } catch (error) {
+        console.error("Error fetching product data:", error);
         setError(
-          error instanceof Error ? error.message : "An unknown error occurred"
+          error instanceof Error ? error.message : "An undefined error occurred"
         );
+        setProduct(null);
+        setShop(null);
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
+    if (id && !isNaN(parseInt(id))) {
       fetchData();
+    } else {
+      setError("Invalid Product ID.");
+      setLoading(false);
     }
   }, [id]);
+
+  const getUserIdFromToken = (): number | null => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Không tìm thấy token trong localStorage.");
+      return null;
+    }
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      const currentTime = Date.now() / 1000;
+      if (decoded.exp < currentTime) {
+        console.error("Token đã hết hạn.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("currentCartId");
+        localStorage.removeItem("buyNowCartId");
+        localStorage.removeItem("isBuyNow");
+        localStorage.removeItem("cartUpdated");
+        return null;
+      }
+      if (typeof decoded.idUser !== "number") {
+        console.error("Token payload không chứa idUser hợp lệ.");
+        localStorage.removeItem("token");
+        return null;
+      }
+      return decoded.idUser;
+    } catch (error) {
+      console.error("Lỗi giải mã token:", error);
+      localStorage.removeItem("token");
+      return null;
+    }
+  };
 
   const handleImageClick = (imageUrl: string) => {
     setMainImage(imageUrl);
   };
 
-  const handleBuyNow = async () => {
-    if (!product?.id) {
-      alert("Sản phẩm không hợp lệ!");
-      return;
-    }
-
-    if (!shop?.id) {
-      alert("Thông tin cửa hàng không hợp lệ!");
-      return;
-    }
-
+  const formatDescription = (description: string | undefined) => {
+    if (!description) return "Chưa có mô tả chi tiết cho sản phẩm này.";
     try {
-      // Tạo một cart mới chỉ chứa sản phẩm hiện tại
-      const response = await fetch("http://localhost:3000/cart/buy-now", {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(description, "text/html");
+      return doc.body.textContent?.replace(/\s+/g, " ").trim() || "";
+    } catch (e) {
+      console.error("Error parsing description HTML:", e);
+      return description
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+  };
+
+  const addItemToCartAPI = async (
+    userId: number,
+    productId: number,
+    quantity: number
+  ): Promise<{ cartId: number | null; error?: string }> => {
+    try {
+      const response = await fetch("http://localhost:3000/cart-items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: quantity,
-          shopId: shop.id,
-        }),
-        credentials: "include",
+        body: JSON.stringify({ productId, quantity, userId }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          `HTTP error! status: ${response.status}${
-            errorData ? ` - ${JSON.stringify(errorData)}` : ""
-          }`
-        );
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: response.statusText }));
+        console.error("Add/Buy API Error Response:", errorData);
+        return {
+          cartId: null,
+          error: `Lỗi HTTP ${response.status}: ${
+            errorData.message || response.statusText
+          }`,
+        };
       }
 
-      const data = await response.json();
+      const addedItemData = await response.json();
+      console.log("Add/Buy API Success Response:", addedItemData);
 
-      if (data && data.cartId) {
-        // Lưu cartId từ response
-        localStorage.setItem("cartId", data.cartId.toString());
-        localStorage.setItem("isBuyNow", "true"); // Thêm flag để phân biệt
-
-        // Chuyển đến trang thanh toán
-        window.location.href = "/payment";
+      if (addedItemData && addedItemData.cart && addedItemData.cart.id) {
+        return { cartId: addedItemData.cart.id };
       } else {
-        throw new Error("API không trả về ID giỏ hàng hợp lệ.");
+        console.error(
+          "Add/Buy API response invalid or missing cartId:",
+          addedItemData
+        );
+        return {
+          cartId: null,
+          error: "Phản hồi từ server không hợp lệ (thiếu cartId).",
+        };
       }
     } catch (error) {
-      console.error("Error buying now:", error);
-      alert(
-        "Có lỗi khi mua ngay: " +
-          (error instanceof Error ? error.message : "Vui lòng thử lại!")
-      );
+      console.error("Lỗi gọi API thêm vào giỏ:", error);
+      return {
+        cartId: null,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Lỗi mạng hoặc không xác định.",
+      };
     }
   };
 
@@ -161,98 +252,115 @@ const DetailPage = () => {
       alert("Sản phẩm không hợp lệ!");
       return;
     }
-
-    if (!shop?.id) {
-      alert("Thông tin cửa hàng không hợp lệ!");
+    const userId = getUserIdFromToken();
+    if (userId === null) {
+      alert("Bạn cần đăng nhập để thực hiện chức năng này.");
+      navigate("/login");
       return;
     }
 
-    try {
-      // Kiểm tra xem đã có giỏ hàng chưa
-      let cartId = 0; // Giá trị mặc định
-      const existingCartId = localStorage.getItem("cartId");
+    console.log(
+      `[handleAddToCart] Adding productId: ${product.id}, quantity: ${quantity} to cart for userId: ${userId}`
+    );
+    const toastId = toast.loading("Đang thêm vào giỏ hàng...");
 
-      if (existingCartId && !isNaN(parseInt(existingCartId))) {
-        cartId = parseInt(existingCartId);
-      }
+    const result = await addItemToCartAPI(userId, product.id, quantity);
 
-      // Thêm sản phẩm vào giỏ hàng
-      const response = await fetch("http://localhost:3000/cart/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: quantity,
-          shopId: shop.id,
-          cartId: cartId,
-        }),
+    if (result.cartId) {
+      toast.update(toastId, {
+        render: "Đã thêm sản phẩm vào giỏ hàng!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
       });
+      localStorage.setItem("cartUpdated", "true");
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          `HTTP error! status: ${response.status}${
-            errorData ? ` - ${JSON.stringify(errorData)}` : ""
-          }`
-        );
-      }
+      localStorage.setItem("currentCartId", result.cartId.toString());
+      localStorage.removeItem("buyNowCartId");
+      localStorage.removeItem("isBuyNow");
 
-      const data = await response.json();
-
-      // Lưu cartId từ response
-      if (data) {
-        let newCartId = null;
-
-        if (data.id) {
-          newCartId = data.id;
-        } else if (data.cartId) {
-          newCartId = data.cartId;
-        } else if (data.cart && data.cart.id) {
-          newCartId = data.cart.id;
-        }
-
-        if (newCartId) {
-          localStorage.setItem("cartId", newCartId.toString());
-          localStorage.setItem("cartUpdated", "true");
-
-          // Thông báo thành công
-          alert("Đã thêm vào giỏ hàng!");
-
-          // Chuyển đến trang thanh toán
-          window.location.href = "/payment";
-        } else {
-          throw new Error("API không trả về ID giỏ hàng hợp lệ.");
-        }
-      } else {
-        throw new Error("API không trả về dữ liệu hợp lệ.");
-      }
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      alert(
-        "Có lỗi khi thêm vào giỏ hàng: " +
-          (error instanceof Error ? error.message : "Vui lòng thử lại!")
-      );
+      setTimeout(() => {
+        navigate("/payment");
+      }, 1500);
+    } else {
+      toast.update(toastId, {
+        render: `Lỗi thêm vào giỏ: ${result.error || "Lỗi không xác định"}`,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
     }
   };
 
-  if (loading) return <div>Đang tải...</div>;
-  if (!product) return <div>Sản phẩm không tồn tại hoặc đang tải...</div>;
-  if (error) return <div>Error: {error}</div>;
+  const handleBuyNow = async () => {
+    if (!product?.id) {
+      alert("Sản phẩm không hợp lệ!");
+      return;
+    }
+    const userId = getUserIdFromToken();
+    if (userId === null) {
+      alert("Bạn cần đăng nhập để thực hiện chức năng này.");
+      navigate("/login");
+      return;
+    }
+
+    console.log(
+      `[handleBuyNow] Adding productId: ${product.id}, quantity: ${quantity} for userId: ${userId} and navigating`
+    );
+    const toastId = toast.loading("Đang chuẩn bị thanh toán...");
+
+    const result = await addItemToCartAPI(userId, product.id, quantity);
+
+    if (result.cartId) {
+      localStorage.setItem("currentCartId", result.cartId.toString());
+      localStorage.removeItem("buyNowCartId");
+      localStorage.removeItem("isBuyNow");
+
+      toast.update(toastId, {
+        render: "Đang chuyển đến trang thanh toán...",
+        type: "success",
+        isLoading: false,
+        autoClose: 1500,
+      });
+
+      // Chuyển hướng
+      setTimeout(() => {
+        navigate("/payment");
+      }, 1500);
+    } else {
+      // Xử lý lỗi
+      toast.update(toastId, {
+        render: `Lỗi Mua ngay: ${result.error || "Lỗi không xác định"}`,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
+  if (loading) return <div className="loading-spinner">Đang tải...</div>;
+  if (error)
+    return <div className="error-message">Lỗi tải sản phẩm: {error}</div>;
+  if (!product)
+    return <div className="error-message">Không tìm thấy sản phẩm.</div>;
 
   return (
     <div className="detail-page">
       <Header />
       <div className="detail-product-page">
         <div className="detail-product-information">
+          {/* ... Phần hiển thị ảnh sản phẩm ... */}
           <div className="detail-product">
             <div className="detail-product-image">
               <div className="detail-product-image-parent">
-                <div className="sale">
-                  <p>{product.discount || 0}%</p>
-                  <span>Discount</span>
-                </div>
+                {product.discount > 0 && (
+                  <div className="sale">
+                    <p>{product.discount}%</p>
+                    <span>Discount</span>
+                  </div>
+                )}
                 <img
-                  src={mainImage || product.img || Img1}
+                  src={mainImage}
                   alt={product.name}
                   className="main-product-image"
                   onError={(e) => (e.currentTarget.src = Img1)}
@@ -261,26 +369,27 @@ const DetailPage = () => {
               <div className="detail-product-image-options">
                 {(product.images && product.images.length > 0
                   ? product.images
-                  : product.img
-                  ? [product.img]
-                  : []
-                ).map((image, index) => (
-                  <div
-                    className={`product-option-item ${
-                      mainImage === image ? "active" : ""
-                    }`}
-                    key={`image-${index}`}
-                    onClick={() => handleImageClick(image)}
-                  >
-                    <img
-                      src={image}
-                      alt={`detail-option-${index}`}
-                      onError={(e) => (e.currentTarget.src = Img1)}
-                    />
-                  </div>
-                ))}
+                  : [product.img]
+                )
+                  .filter((imgUrl) => imgUrl)
+                  .map((image, index) => (
+                    <div
+                      className={`product-option-item ${
+                        mainImage === image ? "active" : ""
+                      }`}
+                      key={`image-${index}`}
+                      onClick={() => handleImageClick(image)}
+                    >
+                      <img
+                        src={image}
+                        alt={`detail-option-${index}`}
+                        onError={(e) => (e.currentTarget.src = Img1)}
+                      />
+                    </div>
+                  ))}
               </div>
             </div>
+            {/* ... Phần thông tin sản phẩm, nút bấm ... */}
             <div className="detail-product-info">
               <div className="detail-product-info-time">
                 <img src={IconClock} alt="time" className="ic_28" />
@@ -288,7 +397,7 @@ const DetailPage = () => {
               </div>
               <div className="detail-product-info-content">
                 <span className="name">{product.name}</span>
-                <span className="price">{product.price} $</span>
+                <span className="price">{product.price.toFixed(2)} $</span>
               </div>
               <span className="line"></span>
               <Counter
@@ -307,12 +416,13 @@ const DetailPage = () => {
               <div className="detail-product-info-footer">
                 <div className="sold">
                   <img src={IconSold} alt="sold" className="ic_28" />
-                  <p>{product.amount || 0} sold in last 35 hours</p>
+                  <p>{product.sold || 0} sold</p>
                 </div>
-                <p className="categories">
-                  Categories:
-                  {product.category && <span> {product.category.name}</span>}
-                </p>
+                {product.category && (
+                  <p className="categories">
+                    Category: <span> {product.category.name}</span>
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -328,28 +438,80 @@ const DetailPage = () => {
           </div>
           <div className="detail-name">
             <img src={shopIcon} alt="shop" className="ic_32" />
-            <span>{shop?.name || "Shop Name"}</span>
+            <span>{shop?.name || "Shop Name"}</span>{" "}
           </div>
         </div>
+
         <div className="detail-product-description">
           <h2>Description</h2>
           <div className="description-list">
-            <p>{product.description || "No description available"}</p>
+            <p style={{ whiteSpace: "pre-wrap" }}>
+              {formatDescription(product.description)}
+            </p>
             <ul>
-              <li>Weight: {product.weight}g</li>
-              <li>Tag: {product.tag}</li>
-              {product.active ? <li>In stock</li> : <li>Out of stock</li>}
+              {product.weight > 0 && <li>Weight: {product.weight}g</li>}
+              {product.tag && <li>Tag: {product.tag}</li>}
             </ul>
           </div>
           <div className="ad-section">
             <img
               src={ImgDescription}
-              alt="Cười với Lays Tết này"
+              alt="Smile with Lays this Tet"
               className="ad-image"
             />
           </div>
         </div>
+        <span className="line"></span>
+        <div className="rating-detail">
+          <h2 className="rating-title-detail">Rate</h2>
+          <span className="rating-score-detail">4.7</span>
+          <img src={iconStar} alt="iconStar" className="ic_24 rating-icon" />
+        </div>
+        <div className="reviews-list-detail">
+          <div className="review-item-detail">
+            <div className="review-header-detail">
+              <span className="reviewer-name-detail">ntluan</span>
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+            </div>
+            <p className="review-text-detail">
+              Sản phẩm cũng được không đến nỗi nào, tuyệt cà là vời, hình ảnh
+              như thực tế
+            </p>
+            <img src={ImgRate} alt="ImgRate" className="ImgRate" />
+          </div>
+          <span className="rating-line"></span>
+          <div className="review-item-detail">
+            <div className="review-header-detail">
+              <span className="reviewer-name-detail">ntluan</span>
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+              <img src={iconStar} alt="iconStar" className="ic_24" />
+            </div>
+            <p className="review-text-detail">
+              Sản phẩm cũng được không đến nỗi nào, tuyệt cà là vời, hình ảnh
+              như thực tế
+            </p>
+            <img src={ImgRate} alt="ImgRate" className="ImgRate" />
+          </div>
+        </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 };

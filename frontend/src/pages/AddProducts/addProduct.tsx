@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./addProduct.css";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import Header from "../../layouts/Header/Header";
+import HeaderDashboard from "../../pages/DashboardPage/Header/HeaderDashboard";
 import ImgAddImg from "../../assets/images/icons/ic_add_image.svg";
 import ImgColor from "../../assets/images/icons/ic_color.svg";
 import IcEye from "../../assets/images/icons/ic_eye.svg";
@@ -31,7 +31,6 @@ interface Product {
   backgroundColor?: string;
   active?: boolean;
   category?: { id: string; name: string };
-  amount?: number;
   discount?: number;
   startDate?: string;
   endDate?: string;
@@ -41,7 +40,6 @@ interface Product {
 interface FormValues {
   name: string;
   price: string;
-  amount: string;
   discount: string;
   weight: string;
   startDate: string;
@@ -69,7 +67,6 @@ const AddProduct = () => {
     initialValues: {
       name: "",
       price: "",
-      amount: "",
       discount: "",
       weight: "",
       startDate: "",
@@ -84,7 +81,6 @@ const AddProduct = () => {
     validationSchema: Yup.object({
       name: Yup.string().required("Name is required"),
       price: Yup.number().required("Price is required"),
-      amount: Yup.number().required("Amount is required"),
       weight: Yup.number().required("Weight is required"),
       category: Yup.string().required("Category is required"),
     }),
@@ -115,7 +111,6 @@ const AddProduct = () => {
         ...values,
         weight: parseInt(values.weight, 10),
         price: parseFloat(values.price),
-        amount: parseInt(values.amount, 10),
         discount: parseInt(values.discount || "0", 10),
         startDate: values.startDate
           ? moment(values.startDate).toISOString()
@@ -210,7 +205,6 @@ const AddProduct = () => {
       formik.setValues({
         name: product.name,
         price: product.price.toString(),
-        amount: product.amount.toString(),
         discount: product.discount?.toString() || "",
         weight: product.weight.toString(),
         startDate: product.startDate
@@ -442,7 +436,6 @@ const AddProduct = () => {
     tag: formik.values.tag || "Eco-Friendly",
     weight: parseInt(formik.values.weight || "0", 10),
     price: parseFloat(formik.values.price || "0"),
-    amount: parseInt(formik.values.amount || "0", 10),
     discount: parseInt(formik.values.discount || "0", 10),
     backgroundColor: formik.values.backgroundColor || "#FFFFFF",
     active: formik.values.active || true,
@@ -502,7 +495,7 @@ const AddProduct = () => {
     if (field === "name") {
       const lettersOnly = value.replace(/[^a-zA-Z\u00C0-\u1EF9\s]/g, "");
       formik.setFieldValue(field, lettersOnly);
-    } else if (["price", "amount", "discount"].includes(field)) {
+    } else if (["price", "discount"].includes(field)) {
       const numbersOnly = value.replace(/[^0-9]/g, "");
       formik.setFieldValue(field, numbersOnly);
     } else {
@@ -561,7 +554,7 @@ const AddProduct = () => {
 
   return (
     <div className="add-product">
-      <Header />
+      <HeaderDashboard />
       <div className="add-product-container">
         <h1 className="add-product-header">
           {isEditMode ? "Edit Product" : "Add New Product"}
@@ -606,19 +599,6 @@ const AddProduct = () => {
 
             {/* Amount and Weight */}
             <div className="form-group-row">
-              <TextInput
-                label="Amount"
-                required
-                placeholder="Enter amount"
-                value={formik.values.amount}
-                onChange={(value) => formik.setFieldValue("amount", value)}
-                onBlur={formik.handleBlur}
-                error={
-                  formik.touched.amount && formik.errors.amount
-                    ? formik.errors.amount
-                    : undefined
-                }
-              />
               <TextInput
                 label="Weight (g)"
                 required

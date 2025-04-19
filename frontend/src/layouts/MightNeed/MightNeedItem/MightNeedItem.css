@@ -37,3 +37,13 @@
   font-size: 32px;
   color: var(--green800);
 }
+
+.might-need-item-component {
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.might-need-item-component:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}

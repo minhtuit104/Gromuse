@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Put,
   Param,
+  Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Product } from '../../typeorm/entities/Product';
@@ -33,7 +34,7 @@ export class ProductsController {
   @Post()
   async create(@Body() productData: Partial<Product>): Promise<Product> {
     try {
-      const requiredFields = ['name', 'price', 'amount', 'weight'];
+      const requiredFields = ['name', 'price', 'weight'];
       const missingFields = requiredFields.filter(
         (field) => !productData[field],
       );
@@ -48,7 +49,6 @@ export class ProductsController {
       const normalizedData = {
         ...productData,
         price: parseFloat(productData.price as any),
-        amount: parseInt(productData.amount as any, 10),
         weight: parseInt(productData.weight as any, 10),
         discount: productData.discount
           ? parseInt(productData.discount as any, 10)
@@ -105,9 +105,6 @@ export class ProductsController {
         price: productData.price
           ? parseFloat(productData.price as any)
           : existingProduct.price,
-        amount: productData.amount
-          ? parseInt(productData.amount as any, 10)
-          : existingProduct.amount,
         weight: productData.weight
           ? parseInt(productData.weight as any, 10)
           : existingProduct.weight,

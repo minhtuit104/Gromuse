@@ -39,48 +39,24 @@ const DetailProduct = () => {
     const fetchTopProduct = async () => {
       try {
         setLoading(true);
-        console.log("Bắt đầu gọi API lấy sản phẩm bán chạy nhất");
+        setError(null); // Reset lỗi trước khi fetch
+        console.log("Bắt đầu gọi API lấy sản phẩm bán chạy nhất (limit=1)");
 
-        // Gọi API với limit = 1 để lấy sản phẩm bán chạy nhất
-        const response = await getTopSellingProducts(1);
-        console.log("Dữ liệu API trả về:", response);
+        // Gọi hàm từ ProductService
+        const productsArray = await getTopSellingProducts(1);
+        console.log(
+          "Dữ liệu API trả về (đã xử lý bởi service):",
+          productsArray
+        );
 
-        // Kiểm tra cấu trúc dữ liệu trả về
-        if (response) {
-          // Kiểm tra nếu response là một mảng
-          if (Array.isArray(response) && response.length > 0) {
-            setTopProduct(response[0]);
-            console.log("Sản phẩm bán chạy nhất (từ mảng):", response[0]);
-          }
-          // Kiểm tra nếu response có thuộc tính data là một mảng
-          else if (
-            response.data &&
-            Array.isArray(response.data) &&
-            response.data.length > 0
-          ) {
-            setTopProduct(response.data[0]);
-            console.log(
-              "Sản phẩm bán chạy nhất (từ response.data):",
-              response.data[0]
-            );
-          }
-          // Kiểm tra nếu response là một đối tượng sản phẩm trực tiếp
-          else if (response.data?.id) {
-            setTopProduct(response.data);
-            console.log(
-              "Sản phẩm bán chạy nhất (đối tượng trực tiếp):",
-              response.data
-            );
-          } else {
-            setError("Không tìm thấy sản phẩm nào");
-            console.log(
-              "Không nhận dạng được cấu trúc dữ liệu trả về:",
-              response
-            );
-          }
+        // API nên trả về một mảng, lấy phần tử đầu tiên
+        if (Array.isArray(productsArray) && productsArray.length > 0) {
+          setTopProduct(productsArray[0]);
+          console.log("Sản phẩm bán chạy nhất:", productsArray[0]);
         } else {
-          setError("Không nhận được dữ liệu từ API");
-          console.log("Response rỗng hoặc undefined");
+          setError("Không tìm thấy sản phẩm bán chạy nhất.");
+          console.log("API không trả về sản phẩm nào.");
+          setTopProduct(null); // Đảm bảo state là null nếu không có sản phẩm
         }
       } catch (err) {
         console.error("Lỗi khi tải sản phẩm bán chạy nhất:", err);
@@ -89,6 +65,7 @@ const DetailProduct = () => {
             err instanceof Error ? err.message : "Vui lòng thử lại sau"
           }`
         );
+        setTopProduct(null); // Đảm bảo state là null khi có lỗi
       } finally {
         setLoading(false);
       }
@@ -120,25 +97,32 @@ const DetailProduct = () => {
     return `http://localhost:3000/${imagePath}`;
   };
 
-  // Hàm xử lý description để loại bỏ thẻ <p> và </p>
-  const formatDescription = (description: string | undefined) => {
-    if (!description) return "Chưa có mô tả chi tiết cho sản phẩm này.";
-
-    return description
-      .replace(/^<p>|<\/p>$/g, "") // Loại bỏ <p> ở đầu và </p> ở cuối
+  const formatDescription = (description: string | undefined): string => {
+    if (!description) {
+      return "Chưa có mô tả chi tiết cho sản phẩm này.";
+    }
+    const cleanedDescription = description
+      .replace(/<\/?p>|<\/?strong>/g, "")
+      .replace(/\s+/g, " ")
       .trim();
+
+    return cleanedDescription;
   };
 
   if (loading) {
-    return <div className="loading">Đang tải sản phẩm...</div>;
+    return <div className="loading">Đang tải sản phẩm nổi bật...</div>;
   }
 
   if (error && !topProduct) {
     return <div className="error">{error}</div>;
   }
 
+  if (!topProduct && !error) {
+    return <div className="empty">Không có sản phẩm nổi bật nào.</div>;
+  }
+
   if (!topProduct) {
-    return <div className="empty">Không có sản phẩm nào</div>;
+    return null;
   }
 
   return (
@@ -228,7 +212,7 @@ const DetailProduct = () => {
           <div className="detail-home-product-info-footer">
             <div className="sold-home">
               <img src={IconSold} alt="sold" className="ic_28" />
-              <p>{topProduct.sold || 0} sold in last 35 hours</p>
+              <p>{topProduct.sold || 0} sold</p>
             </div>
             <p className="categories-home">
               Categories: {topProduct.category?.name || "Chưa phân loại"}

@@ -19,6 +19,7 @@ import { Cart } from './typeorm/entities/Cart';
 import { PaymentModule } from './modules/payment/payment.module';
 import { Payment } from './typeorm/entities/Payment';
 import { Voucher } from './typeorm/entities/Voucher';
+import { CartItemModule } from './modules/cart_item/cartItem.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { Voucher } from './typeorm/entities/Voucher';
     CartModule,
     DetailModule,
     PaymentModule,
+    CartItemModule,
   ],
   controllers: [AppController],
   providers: [AppService],

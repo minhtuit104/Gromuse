@@ -318,6 +318,91 @@ const SignUpLogInForm: React.FC = () => {
             </button>
           </form>
         </div>
+        {/* Register Form ---------------------------------------------*/}
+        <div className="form-box register">
+          <form action="##" onSubmit={handleRegister} className="formLoginUser">
+            <h1>Registration</h1>
+            <div className="input-box">
+              <input
+                type="text"
+                name="name"
+                placeholder="Username"
+                value={formData.name}
+                onChange={handleRegisterChange}
+              />
+              <img src={IconUser} alt="user" className="ic_20 icon-user-pass" />
+              {errors.name && (
+                <div className="error-message">
+                  <img src={IconError} alt="error" className="ic-error" />
+                  {errors.name}
+                </div>
+              )}
+            </div>
+            <div className="input-box">
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleRegisterChange}
+              />
+              <img
+                src={IconEmail}
+                alt="user"
+                className="ic_20 icon-user-pass"
+              />
+              {errors.email && (
+                <div className="error-message">
+                  <img src={IconError} alt="error" className="ic-error" />
+                  {errors.email}
+                </div>
+              )}
+            </div>
+            <div className="input-box">
+              <input
+                type="phonenumber"
+                name="phoneNumber"
+                placeholder="Phone number"
+                value={formData.phoneNumber}
+                onChange={handleRegisterChange}
+              />
+              <img
+                src={IconPhone}
+                alt="user"
+                className="ic_20 icon-user-pass"
+              />
+              {errors.phoneNumber && (
+                <div className="error-message">
+                  <img src={IconError} alt="error" className="ic-error" />
+                  {errors.phoneNumber}
+                </div>
+              )}
+            </div>
+            <div className="input-box">
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleRegisterChange}
+              />
+              <img
+                src={IconLockpass}
+                alt="user"
+                className="ic_20 icon-user-pass"
+              />
+              {errors.password && (
+                <div className="error-message">
+                  <img src={IconError} alt="error" className="ic-error" />
+                  {errors.password}
+                </div>
+              )}
+            </div>
+            <button type="submit" className="btn">
+              Register
+            </button>
+          </form>
+        </div>
 
         {/* Toggle Panel */}
         <div className="toggle-box">

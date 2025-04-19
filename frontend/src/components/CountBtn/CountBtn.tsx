@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./CountBtn.css";
 import IcMinus from "../../assets/images/icons/ic_ minus.svg";
 import IcAdd from "../../assets/images/icons/ic_add.svg";
@@ -17,25 +17,37 @@ const Counter: React.FC<CounterProps> = ({
   allowZero = false,
 }) => {
   const [count, setCount] = useState(initialCount);
+  const prevInitialCountRef = useRef(initialCount);
 
+  // Cập nhật count khi initialCount từ props thay đổi
   useEffect(() => {
-    if (onChange) {
-      onChange(count);
+    if (prevInitialCountRef.current !== initialCount) {
+      setCount(initialCount);
+      prevInitialCountRef.current = initialCount;
     }
-  }, [count, onChange]);
+  }, [initialCount]);
 
   const handleDecrement = () => {
     if (allowZero) {
-      setCount((prevCount) => Math.max(0, prevCount - 1));
+      setCount((prevCount) => {
+        onChange && onChange(prevCount - 1); // Call onChange callback if provided
+        return Math.max(0, prevCount - 1);
+      });
     } else {
       if (count > 1) {
-        setCount(count - 1);
+        setCount((prevCount) => {
+          onChange && onChange(prevCount - 1); // Call onChange callback if provided
+          return prevCount - 1;
+        });
       }
     }
   };
 
   const handleIncrement = () => {
-    setCount(count + 1);
+    setCount((prevCount) => {
+      onChange && onChange(prevCount + 1); // Call onChange callback if provided
+      return prevCount + 1;
+    });
   };
 
   return (

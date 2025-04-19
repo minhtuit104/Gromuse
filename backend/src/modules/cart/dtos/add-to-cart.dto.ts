@@ -1,36 +1,31 @@
-import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsBoolean,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  Min,
-} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class AddToCartDto {
-  @ApiProperty({ example: 1 })
-  @IsNotEmpty()
-  @IsNumber()
+  @ApiProperty({ example: 1, description: 'ID của sản phẩm cần thêm' })
+  @IsNotEmpty({ message: 'productId không được để trống' })
+  @IsNumber({}, { message: 'productId phải là một số' })
   productId: number;
 
-  @ApiProperty({ example: 1 })
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(1)
+  @ApiProperty({ example: 1, description: 'Số lượng sản phẩm cần thêm' })
+  @IsNotEmpty({ message: 'quantity không được để trống' })
+  @IsNumber({}, { message: 'quantity phải là một số' })
+  @Min(1, { message: 'Số lượng phải lớn hơn hoặc bằng 1' })
   quantity: number;
 
-  @ApiProperty({ example: 1, required: false })
-  @IsNumber()
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'ID của giỏ hàng (nếu là giỏ hàng ẩn danh đã có)',
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'cartId phải là một số (nếu được cung cấp)' })
   cartId?: number;
 
-  @ApiProperty({ description: 'Trạng thái thanh toán' })
-  @IsBoolean()
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'ID của người dùng (nếu thêm vào giỏ hàng của user)',
+  })
   @IsOptional()
-  isPaid?: boolean = false;
-}
-
-export class UpdateCartItemDto {
-  @IsNumber()
-  @Min(1)
-  quantity: number;
+  @IsNumber({}, { message: 'userId phải là một số (nếu được cung cấp)' })
+  userId?: number;
 }

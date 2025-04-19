@@ -1,16 +1,13 @@
+// src/typeorm/entities/Payment.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
+  OneToMany,
   ManyToMany,
   JoinTable,
-  OneToMany,
-  OneToOne,
 } from 'typeorm';
-import { Address } from './Address';
 import { Voucher } from './Voucher';
-import { Shop } from './Shop';
 import { CartItem } from './CartItem';
 
 export enum PaymentMethod {
@@ -53,12 +50,6 @@ export class Payment {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total: number;
 
-  @OneToMany(() => Shop, (shop) => shop.payment)
-  shops: Shop[];
-
-  @OneToMany(() => CartItem, (cartItem) => cartItem.payment)
-  cartItems: CartItem[];
-
   @Column({
     type: 'enum',
     enum: PaymentStatus,
@@ -66,19 +57,19 @@ export class Payment {
   })
   status: PaymentStatus;
 
+  @OneToMany(() => CartItem, (cartItem) => cartItem.payment)
+  cartItems: CartItem[];
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', nullable: true })
   deletedAt: Date;
 
-  @ManyToOne(() => Address, (address) => address.payments)
-  address: Address;
-
-  @ManyToMany(() => Voucher, (voucher) => voucher.payments)
+  @ManyToMany(() => Voucher)
   @JoinTable()
   vouchers: Voucher[];
 }

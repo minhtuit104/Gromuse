@@ -1,106 +1,141 @@
-// src/modules/cart/cart.controller.ts
 import {
   Controller,
   Post,
   Body,
   Get,
   Param,
-  Patch,
-  Put,
   HttpStatus,
   HttpException,
+  UseGuards, // Giữ lại nếu cần xác thực
+  Logger,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
-import { AddToCartDto } from './dtos/add-to-cart.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { UpdateCartItemsStatusDto } from './dtos/update-cart-items-status';
-import { CreateCartDto } from './dtos/create-cart.dto';
+import { CreateCartDto } from './dtos/cart.dto';
+import { AddToCartDto } from './dtos/add-to-cart.dto';
+// import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard'; // Giữ lại nếu dùng
+import { CartItemService } from '../cart_item/cartItem.service';
 
 @ApiTags('cart')
-@Controller('cart') // Thay đổi từ 'api/cart' thành 'cart' để khớp với frontend
+@Controller('cart')
 export class CartController {
-  constructor(private readonly cartService: CartService) {}
+  private readonly logger = new Logger(CartController.name);
 
-  // Endpoint hiện có: Thêm sản phẩm vào giỏ hàng
+  constructor(
+    private readonly cartService: CartService,
+    private readonly cartItemService: CartItemService,
+  ) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Tạo cart mới' })
+  @ApiResponse({ status: 201, description: 'Tạo cart thành công' })
+  async create(@Body() createCartItemDto: CreateCartDto) {
+    const payment = await this.cartService.create(createCartItemDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Payment created successfully',
+      data: payment,
+    };
+  }
+
   @Post('add')
+  // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Thêm sản phẩm vào giỏ hàng' })
   @ApiResponse({
     status: 201,
     description: 'Sản phẩm đã được thêm vào giỏ hàng',
   })
   async addToCart(@Body() addToCartDto: AddToCartDto) {
+    if (!addToCartDto.userId) {
+      throw new HttpException(
+        'userId is required in the request body',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     return this.cartService.addToCart(addToCartDto);
   }
 
-  // Endpoint hiện có: Lấy danh sách sản phẩm trong giỏ hàng
-  @Get(':id')
-  @ApiOperation({ summary: 'Lấy danh sách sản phẩm trong giỏ hàng' })
+  // Endpoint để lấy hoặc tạo giỏ hàng cho user (ví dụ)
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Lấy hoặc tạo giỏ hàng cho người dùng' })
   @ApiResponse({
     status: 200,
-    description: 'Danh sách sản phẩm trong giỏ hàng',
+    description: 'Thông tin giỏ hàng của người dùng',
   })
-  async getCartItems(@Param('id') cartId: string) {
-    return this.cartService.getCartItems(+cartId);
-  }
-
-  // Endpoint mới: Cập nhật số lượng sản phẩm trong giỏ hàng
-  @Patch(':cartId/items/:productId')
-  @ApiOperation({ summary: 'Cập nhật số lượng sản phẩm trong giỏ hàng' })
-  @ApiResponse({
-    status: 200,
-    description: 'Số lượng sản phẩm đã được cập nhật',
-  })
-  async updateCartItemQuantity(
-    @Param('cartId') cartId: string,
-    @Param('productId') productId: string,
-    @Body('quantity') quantity: number,
-  ) {
-    return this.cartService.updateCartItemQuantity(
-      +cartId,
-      +productId,
-      quantity,
-    );
-  }
-
-  // Endpoint cập nhật trạng thái CartItem và số lượng Product
-  @Put(':cartId/update-cart-items-status')
-  @ApiOperation({
-    summary:
-      'Cập nhật trạng thái thanh toán của CartItem và cập nhật số lượng sản phẩm',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Cập nhật trạng thái CartItem và số lượng Product thành công',
-  })
-  async updateCartItemsStatus(
-    @Param('cartId') cartId: string,
-    @Body() updateDto: UpdateCartItemsStatusDto,
-  ) {
-    return this.cartService.updateCartItemsStatus(
-      +cartId,
-      updateDto.isPaid,
-      updateDto.products,
-    );
+  // @UseGuards(JwtAuthGuard) // Bảo vệ nếu cần
+  async getUserCart(@Param('userId') userId: string /*, @Req() req */) {
+    // // Nếu dùng Guard, có thể lấy userId từ req.user
+    // const userIdFromToken = req.user?.idUser;
+    // if (!userIdFromToken || +userId !== userIdFromToken) {
+    //     throw new HttpException('Unauthorized access to cart', HttpStatus.FORBIDDEN);
+    // }
+    this.logger.log(`[GET /cart/user/:userId] Request for userId: ${userId}`);
+    if (isNaN(+userId)) {
+      throw new HttpException('Invalid userId', HttpStatus.BAD_REQUEST);
+    }
+    return this.cartService.getOrCreateUserCart(+userId);
   }
 
   @Post('/buy-now')
-  @ApiOperation({ summary: 'Tạo giỏ hàng để mua ngay' })
+  // @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Tạo giỏ hàng và thêm sản phẩm để mua ngay' })
+  @ApiResponse({
+    status: 201,
+    description: 'Đã tạo giỏ hàng và thêm sản phẩm mua ngay',
+    schema: { example: { success: true, cartId: 1, cartItemId: 5 } },
+  })
   async createBuyNowCart(@Body() createCartDto: CreateCartDto) {
+    this.logger.log(
+      `[POST /cart/buy-now] Received DTO: ${JSON.stringify(createCartDto)}`,
+    );
     try {
-      const cart = await this.cartService.createBuyNowCart(createCartDto);
+      if (!createCartDto.idUser) {
+        throw new HttpException('idUser is required', HttpStatus.BAD_REQUEST);
+      }
+      if (isNaN(createCartDto.productId) || createCartDto.productId <= 0) {
+        throw new HttpException('Invalid productId', HttpStatus.BAD_REQUEST);
+      }
+      if (isNaN(createCartDto.quantity) || createCartDto.quantity <= 0) {
+        throw new HttpException('Invalid quantity', HttpStatus.BAD_REQUEST);
+      }
+
+      const cart = await this.cartService.createBuyNowCart(
+        createCartDto.idUser,
+        createCartDto.productId,
+      );
+      this.logger.log(`[POST /cart/buy-now] Cart created with ID: ${cart.id}`);
+
+      const cartItem = await this.cartItemService.addBuyNowItem(
+        cart.id,
+        createCartDto.productId,
+        createCartDto.quantity,
+      );
+      this.logger.log(
+        `[POST /cart/buy-now] CartItem added with ID: ${cartItem.id}`,
+      );
+
       return {
         success: true,
         cartId: cart.id,
-        message: 'Đã tạo giỏ hàng để mua ngay',
+        cartItemId: cartItem.id, // Trả về ID của item vừa thêm
+        message: 'Đã tạo giỏ hàng và thêm sản phẩm để mua ngay',
       };
     } catch (error) {
+      this.logger.error(
+        `[POST /cart/buy-now] Error: ${error.message}`,
+        error.stack,
+      );
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         {
-          status: HttpStatus.BAD_REQUEST,
-          error: 'Lỗi khi tạo giỏ hàng',
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Lỗi khi tạo giỏ hàng mua ngay',
           message: error.message,
         },
-        HttpStatus.BAD_REQUEST,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

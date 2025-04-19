@@ -1,0 +1,21 @@
+@import url(../../../../assets/css/styles.css);
+
+.revenue_container {
+    width: 59%;
+    background-color: var(--white50);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.revenue_container h3 {
+    padding: 20px 10px 10px 10px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--green800);
+}
+
+.revenue_content {
+    width: 100%;
+}

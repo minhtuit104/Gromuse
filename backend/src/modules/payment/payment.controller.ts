@@ -14,7 +14,6 @@ import {
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dtos/create-payment.dto';
 import { ApplyVoucherDto, UpdatePaymentDto } from './dtos/update-payment.dto';
-import { UpdateProductAmountDto } from './dtos/update-product-amount.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaymentStatus } from '../../typeorm/entities/Payment';
 
@@ -81,19 +80,6 @@ export class PaymentController {
     return this.paymentService.applyVoucher(applyVoucherDto.code);
   }
 
-  @Post('update-product-amount')
-  @ApiOperation({ summary: 'Cập nhật số lượng sản phẩm' })
-  @ApiResponse({
-    status: 200,
-    description: 'Cập nhật số lượng sản phẩm thành công',
-  })
-  updateProductAmount(@Body() updateProductAmountDto: UpdateProductAmountDto) {
-    return this.paymentService.updateProductAmount(
-      updateProductAmountDto.productId,
-      updateProductAmountDto.amount,
-    );
-  }
-
   @Post(':id/cancel')
   @ApiOperation({ summary: 'Hủy đơn thanh toán' })
   @ApiResponse({ status: 200, description: 'Hủy đơn thanh toán thành công' })
@@ -128,13 +114,18 @@ export class PaymentController {
   @Post('create')
   @ApiOperation({ summary: 'Tạo đơn thanh toán trực tiếp' })
   async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
+    console.log('Received request to /payment/create:', createPaymentDto);
     const payment =
       await this.paymentService.createDirectPayment(createPaymentDto);
+    console.log('Payment record created:', payment);
 
     // Cập nhật paymentId cho các CartItem
     await this.paymentService.updateCartItemsWithPayment(
       createPaymentDto.cartId,
       payment.id,
+    );
+    console.log(
+      `Associated cart items from cart ${createPaymentDto.cartId} with payment ${payment.id}`,
     );
 
     return {

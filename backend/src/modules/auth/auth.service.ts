@@ -16,15 +16,17 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(createUserDto: CreateUserDto) {
+  async register(createUserDto: CreateUserDto, role: number = 1) {
     //kiểm tra xem idUser đã tồn tại hay chưa
     const findUserByEmail = await this.userRepository.findOne({
       where: { email: createUserDto.email },
     });
-
+    const findUserByPhone = await this.userRepository.findOne({
+      where: { phoneNumber: createUserDto.phoneNumber },
+    });
     //kiểm tra
-    if (findUserByEmail) {
-      throw new HttpException('Email đã tồn tại', 400);
+    if (findUserByEmail || findUserByPhone) {
+      throw new HttpException('Email hoặc số điện thoại đã tồn tại', 400);
     } else {
       //tạo ra một đối tượng user
       const newUser: CreateUserDto = {
@@ -37,7 +39,6 @@ export class AuthService {
         address: createUserDto.address,
         sex: createUserDto.sex,
       };
-
       //khởi tạo newInstance
       const newUserInstance = await this.userRepository.save(newUser);
 
@@ -47,7 +48,9 @@ export class AuthService {
         phoneNumber: createUserDto.phoneNumber,
         password: createUserDto.password,
         refreshToken: '',
+        role: createUserDto.role || role,
       });
+
       return await this.accountReponsetory.save(newAccount);
     }
   }
@@ -98,6 +101,6 @@ export class AuthService {
 
     const { password, ...userData } = findUserByEmail;
 
-    return { data: { ...userData, access_token } };
+    return { ...userData, access_token };
   }
 }

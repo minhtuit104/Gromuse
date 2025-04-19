@@ -1,3 +1,4 @@
+// src/modules/payment/dtos/shop.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
@@ -12,7 +13,7 @@ import { Type } from 'class-transformer';
 import { ProductDto } from './product.dto';
 
 export class ShopDto {
-  @ApiProperty({ example: 1, description: 'ID của cửa hàng' })
+  @ApiProperty({ example: 1, description: 'ID (number) của cửa hàng' }) // *** Sửa example ***
   @IsNotEmpty()
   @IsNumber()
   id: number;
@@ -42,13 +43,15 @@ export class ShopDto {
   @ApiProperty({
     example: true,
     description: 'Hiển thị icon sản phẩm hay không',
+    required: false,
   })
+  @IsOptional()
   @IsBoolean()
-  productIcons: boolean;
+  productIcons?: boolean;
 
   @ApiProperty({
     type: [ProductDto],
-    description: 'Danh sách sản phẩm của cửa hàng',
+    description: 'Danh sách sản phẩm của cửa hàng trong đơn hàng này',
   })
   @IsArray()
   @ValidateNested({ each: true })

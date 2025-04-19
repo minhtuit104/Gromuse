@@ -26,7 +26,6 @@ instance.interceptors.request.use(
   }
 );
 
-// // Xử lý response - chỉ giữ lại một interceptor
 instance.interceptors.response.use(
   function (response) {
     // Trả về trực tiếp data từ response

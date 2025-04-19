@@ -1,17 +1,18 @@
-// src/modules/cart/cart.service.ts
 import {
   Injectable,
   NotFoundException,
   HttpException,
   HttpStatus,
+  Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cart } from '../../typeorm/entities/Cart';
-import { CartItem } from '../../typeorm/entities/CartItem';
 import { Product } from '../../typeorm/entities/Product';
 import { AddToCartDto } from './dtos/add-to-cart.dto';
-import { CreateCartDto } from './dtos/create-cart.dto';
+import { CreateCartDto } from './dtos/cart.dto';
+import { CartItemService } from '../cart_item/cartItem.service';
 
 interface ProductUpdateInfo {
   id: number;
@@ -20,237 +21,159 @@ interface ProductUpdateInfo {
 
 @Injectable()
 export class CartService {
+  private readonly logger = new Logger(CartService.name);
+
   constructor(
     @InjectRepository(Cart)
     private cartRepository: Repository<Cart>,
-    @InjectRepository(CartItem)
-    private cartItemRepository: Repository<CartItem>,
-    @InjectRepository(Product)
+    // Không cần CartItemRepository và ProductRepository ở đây nữa (trừ khi cần cho logic Cart đặc biệt)
+    @InjectRepository(Product) // Vẫn cần để kiểm tra product tồn tại trong createBuyNowCart
     private productRepository: Repository<Product>,
+    private cartItemService: CartItemService,
   ) {}
+  async create(createCartDto: CreateCartDto): Promise<Cart> {
+    const cart = this.cartRepository.create(createCartDto);
+    try {
+      const savedCart = await this.cartRepository.save(cart);
+      console.log('Payment saved successfully:', savedCart);
+
+      return savedCart;
+    } catch (saveError) {
+      console.error('Error saving payment:', saveError);
+      // Có thể log chi tiết lỗi hơn
+      if (saveError.driverError) {
+        console.error('Driver Error:', saveError.driverError);
+      }
+      throw new InternalServerErrorException('Could not save payment.');
+    }
+  }
+  async getOrCreateUserCart(userId: number): Promise<Cart> {
+    this.logger.log(
+      `[getOrCreateUserCart] Finding or creating cart for userId: ${userId}`,
+    );
+    let cart = await this.cartRepository.findOne({
+      where: { idUser: userId },
+    });
+
+    if (!cart) {
+      this.logger.log(
+        `[getOrCreateUserCart] No existing cart found for userId: ${userId}. Creating new cart.`,
+      );
+      cart = this.cartRepository.create({ idUser: userId });
+      try {
+        await this.cartRepository.save(cart);
+        this.logger.log(
+          `[getOrCreateUserCart] New cart created with ID: ${cart.id} for userId: ${userId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `[getOrCreateUserCart] Error saving new cart for userId: ${userId}`,
+          error.stack,
+        );
+        throw new HttpException(
+          'Could not create cart',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    } else {
+      this.logger.log(
+        `[getOrCreateUserCart] Found existing cart with ID: ${cart.id} for userId: ${userId}`,
+      );
+    }
+    return cart;
+  }
 
   async getOrCreateCart(cartId?: number): Promise<Cart> {
-    let cart: Cart;
+    this.logger.log(
+      `[getOrCreateCart] Finding or creating cart with cartId: ${cartId}`,
+    );
+    let cart: Cart | null = null; // Khởi tạo là null
     if (cartId) {
       cart = await this.cartRepository.findOne({
         where: { id: cartId },
-        relations: ['cartItems', 'cartItems.product', 'cartItems.product.shop'],
+        // Không cần load relations items
       });
-    }
-    if (!cart) {
-      cart = this.cartRepository.create();
-      await this.cartRepository.save(cart);
-    }
-    return cart;
-  }
-
-  async addToCart(dto: AddToCartDto): Promise<Cart> {
-    const cart = await this.getOrCreateCart(dto.cartId);
-    const product = await this.productRepository.findOne({
-      where: { id: dto.productId },
-      relations: ['shop'],
-    });
-
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${dto.productId} not found`);
-    }
-
-    let cartItem = await this.cartItemRepository.findOne({
-      where: {
-        cart: { id: cart.id },
-        product: { id: dto.productId },
-        isPaid: false,
-      },
-      relations: ['product', 'product.shop'],
-    });
-
-    if (cartItem) {
-      cartItem.quantity += dto.quantity;
-      if (dto.quantity > 0) {
-        cartItem.isPaid = false;
-      }
-    } else {
-      cartItem = this.cartItemRepository.create({
-        quantity: dto.quantity,
-        cart,
-        product,
-        isPaid: false,
-      });
-    }
-
-    await this.cartItemRepository.save(cartItem);
-    return this.getFullCartInfo(cart.id);
-  }
-
-  async getFullCartInfo(cartId: number): Promise<Cart> {
-    const cart = await this.cartRepository.findOne({
-      where: { id: cartId },
-      relations: ['cartItems', 'cartItems.product', 'cartItems.product.shop'],
-    });
-
-    if (!cart) {
-      throw new NotFoundException(`Cart with ID ${cartId} not found`);
-    }
-
-    return cart;
-  }
-
-  async getCartItems(cartId: number): Promise<CartItem[]> {
-    const cart = await this.cartRepository.findOne({
-      where: { id: cartId },
-      relations: ['cartItems', 'cartItems.product', 'cartItems.product.shop'],
-    });
-
-    if (!cart) {
-      throw new NotFoundException(`Cart with ID ${cartId} not found`);
-    }
-
-    return cart.cartItems || [];
-  }
-
-  async updateCartItemQuantity(
-    cartId: number,
-    productId: number,
-    quantity: number,
-  ): Promise<CartItem> {
-    const cartItem = await this.cartItemRepository.findOne({
-      where: { cart: { id: cartId }, product: { id: productId } },
-      relations: ['product', 'product.shop'],
-    });
-
-    if (!cartItem) {
-      throw new NotFoundException(`Cart item not found`);
-    }
-
-    cartItem.quantity = quantity;
-    return this.cartItemRepository.save(cartItem);
-  }
-
-  async clearCart(cartId: number): Promise<void> {
-    const cart = await this.cartRepository.findOne({
-      where: { id: cartId },
-    });
-
-    if (!cart) {
-      throw new NotFoundException(`Cart with ID ${cartId} not found`);
-    }
-
-    await this.cartItemRepository.delete({ cart: { id: cartId } });
-  }
-
-  async updateCartItemsStatus(
-    cartId: number,
-    isPaid: boolean,
-    products: ProductUpdateInfo[],
-  ) {
-    try {
-      const cartItems = await this.cartItemRepository.find({
-        where: { cart: { id: cartId } },
-        relations: ['product'],
-      });
-
-      for (const cartItem of cartItems) {
-        const matchedProduct = products.find(
-          (p) => p.id === cartItem.product.id,
+      if (cart) {
+        this.logger.log(
+          `[getOrCreateCart] Found existing cart with ID: ${cartId}`,
         );
-
-        if (matchedProduct) {
-          cartItem.isPaid = isPaid;
-          await this.cartItemRepository.save(cartItem);
-        }
+        return cart; // Trả về cart tìm thấy
+      } else {
+        this.logger.warn(
+          `[getOrCreateCart] Cart with ID ${cartId} not found. Creating new cart.`,
+        );
       }
+    }
 
-      // Phần cập nhật số lượng sản phẩm giữ nguyên
-      const updatedProducts = [];
-      for (const productInfo of products) {
-        const product = await this.productRepository.findOne({
-          where: { id: productInfo.id },
-        });
-
-        if (product) {
-          // Chỉ cập nhật số lượng khi thanh toán thành công
-          if (isPaid) {
-            product.sold = (product.sold || 0) + productInfo.quantity;
-
-            if (product.amount < productInfo.quantity) {
-              throw new HttpException(
-                `Sản phẩm ${product.name} không đủ số lượng. Hiện có: ${product.amount}, yêu cầu: ${productInfo.quantity}`,
-                HttpStatus.BAD_REQUEST,
-              );
-            }
-
-            product.amount -= productInfo.quantity;
-            await this.productRepository.save(product);
-            updatedProducts.push(product);
-          }
-        }
-      }
-
-      return {
-        success: true,
-        message: isPaid
-          ? 'Cập nhật trạng thái CartItem và số lượng Product thành công'
-          : 'Cập nhật trạng thái CartItem chưa thanh toán',
-        updatedProducts: updatedProducts.length,
-      };
+    // Nếu không có cartId hoặc không tìm thấy cart với cartId đã cho
+    this.logger.log(
+      `[getOrCreateCart] No existing cart found or no cartId provided. Creating new cart.`,
+    );
+    cart = this.cartRepository.create(); // Tạo cart mới (không có userId)
+    try {
+      await this.cartRepository.save(cart);
+      this.logger.log(`[getOrCreateCart] New cart created with ID: ${cart.id}`);
+      return cart; // Trả về cart mới tạo
     } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof HttpException
-      ) {
-        throw error;
-      }
-
+      this.logger.error(`[getOrCreateCart] Error saving new cart`, error.stack);
       throw new HttpException(
-        `Không thể cập nhật trạng thái CartItem và số lượng Product: ${error.message}`,
+        'Could not create cart',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  // Trong cart.service.ts
-  async createBuyNowCart(createCartDto: CreateCartDto) {
+  // Hàm tạo cart cho "Mua ngay" - Chỉ tạo Cart, không thêm Item
+  async createBuyNowCart(
+    userId: number | null,
+    productId: number,
+  ): Promise<Cart> {
+    this.logger.log(
+      `[createBuyNowCart] Creating buy now cart for userId: ${userId || 'guest'}, productId: ${productId}`,
+    );
+
+    // 1. Kiểm tra sản phẩm tồn tại (vẫn cần thiết)
+    const product = await this.productRepository.findOne({
+      where: { id: productId },
+    });
+    if (!product) {
+      this.logger.warn(
+        `[createBuyNowCart] Product with ID ${productId} not found.`,
+      );
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    // 2. Tạo cart mới
+    const cart = this.cartRepository.create({
+      idUser: userId, // Gán userId hoặc null
+    });
+
     try {
-      // Kiểm tra sản phẩm
-      const product = await this.productRepository.findOne({
-        where: { id: createCartDto.productId },
-        relations: ['shop'],
-      });
-
-      if (!product) {
-        throw new NotFoundException(
-          `Product with ID ${createCartDto.productId} not found`,
-        );
-      }
-
-      // Kiểm tra số lượng sản phẩm
-      if (product.amount < createCartDto.quantity) {
-        throw new HttpException(
-          `Sản phẩm ${product.name} không đủ số lượng. Hiện có: ${product.amount}, yêu cầu: ${createCartDto.quantity}`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Tạo cart mới
-      const cart = this.cartRepository.create();
       await this.cartRepository.save(cart);
-
-      // Tạo CartItem tạm thời với trạng thái chưa thanh toán
-      const cartItem = this.cartItemRepository.create({
-        cart,
-        product,
-        quantity: createCartDto.quantity,
-        isPaid: false,
-        shop: product.shop,
-      });
-      await this.cartItemRepository.save(cartItem);
-
+      this.logger.log(
+        `[createBuyNowCart] Created new cart with ID: ${cart.id} for userId: ${userId || 'guest'}`,
+      );
+      // Chỉ trả về đối tượng Cart đã tạo (chứa ID)
       return cart;
     } catch (error) {
+      this.logger.error(
+        `[createBuyNowCart] Error saving new cart`,
+        error.stack,
+      );
       throw new HttpException(
-        `Lỗi khi tạo giỏ hàng mua ngay: ${error.message}`,
+        'Could not create buy now cart',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async addToCart(addToCartDto: AddToCartDto) {
+    const cart = await this.getOrCreateUserCart(addToCartDto.userId);
+    const cartItem = await this.cartItemService.addBuyNowItem(
+      cart.id,
+      addToCartDto.productId,
+      addToCartDto.quantity,
+    );
+    return cartItem;
   }
 }

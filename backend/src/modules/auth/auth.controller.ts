@@ -19,10 +19,15 @@ export class AuthController {
   @Post('/register')
   async create(@Body() createUserDto: CreateUserDto, @Response() res) {
     try {
+      const role =
+        createUserDto.role && [1, 2].includes(createUserDto.role)
+          ? createUserDto.role
+          : 1;
       //lấy kết quả trả về từ service
-      await this.authService.register(createUserDto);
-      return res.status(201).json({
+      const result = await this.authService.register(createUserDto, role);
+      return res.status(HttpStatus.CREATED).json({
         status: 201,
+        data: result,
         message: 'Register success!',
       });
     } catch (error) {
@@ -30,18 +35,19 @@ export class AuthController {
         status: 400,
         message: error,
       });
+      // throw new HttpException('Login failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   @Post('/login')
   async login(@Body() loginDto: LoginDto, @Response() res) {
     try {
-      const loginResponse = await this.authService.login(loginDto);
+      const data = await this.authService.login(loginDto);
 
-      return res.status(200).json({
-        status: 200,
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
         message: 'Login success!',
-        data: loginResponse,
+        data,
       });
     } catch (error) {
       return res.status(400).json({

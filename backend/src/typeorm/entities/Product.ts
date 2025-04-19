@@ -22,9 +22,6 @@ export class Product {
   @Column('float')
   price: number;
 
-  @Column()
-  amount: number;
-
   @Column({ default: 0 })
   sold: number;
 
