@@ -6,6 +6,7 @@ import IconCancel from "../../assets/images/icons/ic_ close.svg";
 import IconStar from "../../assets/images/icons/ic_star.svg";
 import IconCart from "../../assets/images/icons/ic_cart.svg";
 import IconSend from "../../assets/images/icons/ic_ send.svg";
+import IconView from "../../assets/images/icons/ic_eye.svg";
 import { useNavigate } from "react-router-dom";
 import {
   OrderData,
@@ -444,11 +445,7 @@ const CompletedTab: React.FC<OrderTabProps> = ({ orders }) => {
       ) : (
         <>
           {currentOrders.map((order) => (
-            <OrderItem
-              key={order.orderId}
-              order={order}
-              showRateButton={true} // Chỉ hiển thị nút Rate
-            />
+            <OrderItem key={order.orderId} order={order} />
           ))}
           {/* Thanh phân trang (giữ nguyên) */}
           {totalPages > 1 && (
@@ -587,7 +584,7 @@ const CancelledTab: React.FC<OrderTabProps> = ({ orders }) => {
 interface OrderItemProps {
   order: OrderData;
   showCancelButton?: boolean;
-  showRateButton?: boolean;
+  // showRateButton?: boolean;
   showBuyAgainButton?: boolean;
   onCancelOrder?: (orderId: string) => void;
   expanded?: boolean;
@@ -596,7 +593,7 @@ interface OrderItemProps {
 const OrderItem: React.FC<OrderItemProps> = ({
   order,
   showCancelButton,
-  showRateButton,
+  // showRateButton,
   showBuyAgainButton,
   onCancelOrder,
   expanded,
@@ -644,7 +641,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
           productId: Number(productId),
           quantity,
           userId,
-        }), // Đảm bảo productId là number
+        }),
       });
 
       if (!response.ok) {
@@ -694,7 +691,22 @@ const OrderItem: React.FC<OrderItemProps> = ({
   };
 
   const handleRateClick = () => {
-    navigate("/rating_product");
+    navigate("/rating_product", {
+      state: {
+        cartItemId: order.cartItemId,
+        productId: order.product.id,
+        productName: order.product.name,
+        productImg: order.product.img,
+        weight: order.product.weight,
+        quantity: order.product.quantity,
+        price: currentPrice,
+      },
+    });
+  };
+
+  const handleViewRateClick = () => {
+    // Chuyển hướng đến trang chi tiết sản phẩm với ID tương ứng
+    navigate(`/product/${order.product.id}`);
   };
 
   const handleBuyAgainClick = async () => {
@@ -743,7 +755,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
       // Chuyển hướng đến trang thanh toán
       setTimeout(() => {
         navigate("/payment");
-      }, 500); // Chờ 0.5s
+      }, 1500);
     } else {
       // Xử lý lỗi
       toast.update(toastId, {
@@ -756,7 +768,6 @@ const OrderItem: React.FC<OrderItemProps> = ({
   };
 
   return (
-    // Phần JSX của OrderItem giữ nguyên cấu trúc, chỉ thay đổi cách gọi hàm onClick
     <div className={`order-item-status ${expanded ? "expanded" : ""}`}>
       <div className="item-content-status">
         <div className="product-image-status">
@@ -772,6 +783,9 @@ const OrderItem: React.FC<OrderItemProps> = ({
         </div>
         <div className="product-info-status">
           <div className="product-title-status">{order.product.name}</div>
+          {order.product.weight > 0 && (
+            <div className="product-weight-status">{order.product.weight}g</div>
+          )}
           <div className="product-quantity-status">
             x{order.product.quantity}
           </div>
@@ -780,12 +794,13 @@ const OrderItem: React.FC<OrderItemProps> = ({
           {/* Chỉ hiển thị giá gốc nếu là tab ToReceive */}
           {showCancelButton && (
             <div className="original-price-status">
-              ${originalPrice.toFixed(0)}
+              ${originalPrice.toFixed(2)}
             </div>
           )}
-          <div className="current-price-status">${currentPrice.toFixed(0)}</div>
+          <div className="current-price-status">${currentPrice.toFixed(2)}</div>
         </div>
       </div>
+      {/* Phần hiển thị các nút hành động */}
       <div className="item-actions-status">
         {showCancelButton && (
           <button className="cancel-button-status" onClick={handleCancelClick}>
@@ -795,14 +810,32 @@ const OrderItem: React.FC<OrderItemProps> = ({
             Cancel
           </button>
         )}
-        {showRateButton && (
-          <button className="rate-button-status" onClick={handleRateClick}>
-            <span className="star-icon-status">
-              <img src={IconStar} alt="IconStar" className="ic_20" />
-            </span>
-            Rate
-          </button>
+
+        {order.orderStatus === OrderStatus.COMPLETE && (
+          <>
+            {!order.isRated && (
+              <button className="rate-button-status" onClick={handleRateClick}>
+                <span className="star-icon-status">
+                  <img src={IconStar} alt="IconStar" className="ic_20" />
+                </span>
+                Rate
+              </button>
+            )}
+            {order.isRated && (
+              <button
+                className="view-rate-button-status"
+                onClick={handleViewRateClick}
+              >
+                <span className="view-icon-status">
+                  <img src={IconView} alt="View Rate" className="ic_20" />
+                </span>
+                View Rate
+              </button>
+            )}
+          </>
         )}
+
+        {/* Nút Buy Again: Hiển thị nếu showBuyAgainButton là true */}
         {showBuyAgainButton && (
           <button
             className="buy-again-button-status"

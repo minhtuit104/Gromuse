@@ -26,8 +26,7 @@ export class CartService {
   constructor(
     @InjectRepository(Cart)
     private cartRepository: Repository<Cart>,
-    // Không cần CartItemRepository và ProductRepository ở đây nữa (trừ khi cần cho logic Cart đặc biệt)
-    @InjectRepository(Product) // Vẫn cần để kiểm tra product tồn tại trong createBuyNowCart
+    @InjectRepository(Product)
     private productRepository: Repository<Product>,
     private cartItemService: CartItemService,
   ) {}
@@ -118,50 +117,6 @@ export class CartService {
       this.logger.error(`[getOrCreateCart] Error saving new cart`, error.stack);
       throw new HttpException(
         'Could not create cart',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  // Hàm tạo cart cho "Mua ngay" - Chỉ tạo Cart, không thêm Item
-  async createBuyNowCart(
-    userId: number | null,
-    productId: number,
-  ): Promise<Cart> {
-    this.logger.log(
-      `[createBuyNowCart] Creating buy now cart for userId: ${userId || 'guest'}, productId: ${productId}`,
-    );
-
-    // 1. Kiểm tra sản phẩm tồn tại (vẫn cần thiết)
-    const product = await this.productRepository.findOne({
-      where: { id: productId },
-    });
-    if (!product) {
-      this.logger.warn(
-        `[createBuyNowCart] Product with ID ${productId} not found.`,
-      );
-      throw new NotFoundException(`Product with ID ${productId} not found`);
-    }
-
-    // 2. Tạo cart mới
-    const cart = this.cartRepository.create({
-      idUser: userId, // Gán userId hoặc null
-    });
-
-    try {
-      await this.cartRepository.save(cart);
-      this.logger.log(
-        `[createBuyNowCart] Created new cart with ID: ${cart.id} for userId: ${userId || 'guest'}`,
-      );
-      // Chỉ trả về đối tượng Cart đã tạo (chứa ID)
-      return cart;
-    } catch (error) {
-      this.logger.error(
-        `[createBuyNowCart] Error saving new cart`,
-        error.stack,
-      );
-      throw new HttpException(
-        'Could not create buy now cart',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

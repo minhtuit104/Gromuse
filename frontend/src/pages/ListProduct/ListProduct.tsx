@@ -27,7 +27,6 @@ interface Product {
 }
 
 const ListProduct: React.FC = () => {
-  // Sử dụng state để lưu trữ dữ liệu sản phẩm
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,9 +202,8 @@ const ListProduct: React.FC = () => {
     );
   }
 
-  // Tạo mảng chứa các sản phẩm được chia thành các nhóm để hiển thị
   const productGroups = [];
-  const productsArray = currentProducts || []; // Sử dụng currentProducts thay vì products
+  const productsArray = currentProducts || [];
   for (let i = 0; i < productsArray.length; i += 2) {
     productGroups.push(productsArray.slice(i, i + 2));
   }
@@ -260,13 +258,11 @@ const ListProduct: React.FC = () => {
         ) : (
           <>
             <div className="products-grid">
-              {productGroups.map((group, index) => (
-                <div key={`group-${index}`} className="product-card-list">
-                  {group.map((product) => (
-                    <ProductItem key={product.id} product={product} />
-                  ))}
-                </div>
-              ))}
+              <div className="product-card-list">
+                {productsArray.map((product) => (
+                  <ProductItem key={product.id} product={product} />
+                ))}
+              </div>
             </div>
 
             {/* Hiển thị phân trang chỉ khi có nhiều hơn 1 trang */}

@@ -141,43 +141,35 @@ export class CartItemController {
     return this.cartItemService.getCartItemsByCartId(cartId);
   }
 
-  // PATCH /cart-items/cart/:cartId/product/:productId - Cập nhật số lượng item
-  @Patch('cart/:cartId/product/:productId')
+  // @Patch('cart/:cartId/product/:productId')
+  @Patch(':cartItemId')
   @ApiOperation({
-    summary: 'Cập nhật số lượng sản phẩm trong giỏ hàng (chưa thanh toán)',
+    summary: 'Cập nhật số lượng của một mục trong giỏ hàng bằng CartItem ID',
   })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Số lượng đã được cập nhật (trả về item) hoặc item đã bị xóa (trả về null)',
-  })
+  @ApiResponse({ status: 200, description: 'Số lượng đã được cập nhật' })
   @ApiResponse({
     status: 404,
-    description:
-      'Giỏ hàng hoặc sản phẩm trong giỏ không tồn tại (hoặc đã thanh toán)',
+    description: 'Mục giỏ hàng không tồn tại (hoặc đã thanh toán)',
   })
-  async updateCartItemQuantity(
-    @Param('cartId', ParseIntPipe) cartId: number,
-    @Param('productId', ParseIntPipe) productId: number,
-    @Body() updateQuantityDto: UpdateQuantityDto, // Sử dụng DTO mới
+  async updateCartItemQuantityById(
+    // <<< Đổi tên hàm cho rõ ràng
+    @Param('cartItemId', ParseIntPipe) cartItemId: number, // <<< Nhận cartItemId
+    @Body() updateQuantityDto: UpdateQuantityDto,
   ) {
     this.logger.log(
-      `[PATCH /cart-items/cart/:cartId/product/:productId] cartId=${cartId}, productId=${productId}, quantity=${updateQuantityDto.quantity}`,
+      `[PATCH /cart-items/:cartItemId] cartItemId=${cartItemId}, quantity=${updateQuantityDto.quantity}`,
     );
+    // Gọi service với cartItemId
     const result = await this.cartItemService.updateItemQuantity(
-      cartId,
-      productId,
+      cartItemId,
       updateQuantityDto.quantity,
     );
-    // Nếu result là null (item bị xóa), trả về 204 No Content hoặc 200 OK với body rỗng/thông báo
     if (result === null) {
-      // throw new HttpException('Item removed', HttpStatus.OK); // Hoặc trả về status 204
-      return { message: 'Item removed successfully' }; // Trả về 200 với message
+      return { message: 'Item removed successfully' };
     }
-    return result; // Trả về item đã cập nhật
+    return result;
   }
 
-  // DELETE /cart-items/cart/:cartId - Xóa tất cả item chưa thanh toán khỏi giỏ hàng
   @Delete('cart/:cartId')
   @ApiOperation({
     summary: 'Xóa tất cả sản phẩm chưa thanh toán khỏi giỏ hàng',
@@ -209,12 +201,12 @@ export class CartItemController {
     @Body() updateDto: UpdateCartItemsStatusDto,
   ) {
     this.logger.log(
-      `[PUT /cart-items/cart/:cartId/status] cartId=${cartId}, isPaid=${updateDto.isPaid}, products=${JSON.stringify(updateDto.products)}`,
+      `[PUT /cart-items/cart/:cartId/status] cartId=${cartId}, isPaid=${updateDto.isPaid}, cartItemIds=${JSON.stringify(updateDto.cartItemIds)}`,
     );
     return this.cartItemService.updateItemsStatus(
       cartId,
       updateDto.isPaid,
-      updateDto.products,
+      updateDto.cartItemIds,
     );
   }
 

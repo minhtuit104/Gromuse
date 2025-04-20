@@ -1,24 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsArray, ValidateNested, IsNumber } from 'class-validator';
-import { Type } from 'class-transformer';
-
-export class PaidProductIdentifierDto {
-  @ApiProperty({ description: 'ID của sản phẩm đã được thanh toán' })
-  @IsNumber()
-  id: number;
-}
+import {
+  IsBoolean,
+  IsArray,
+  ValidateNested,
+  IsNumber,
+  ArrayNotEmpty,
+} from 'class-validator';
 
 export class UpdateCartItemsStatusDto {
-  @ApiProperty({ description: 'Trạng thái thanh toán mới của các CartItem' })
+  @ApiProperty({ example: true, description: 'Trạng thái thanh toán mới' })
   @IsBoolean()
   isPaid: boolean;
 
   @ApiProperty({
-    description: 'Danh sách ID các sản phẩm cần cập nhật trạng thái',
-    type: [PaidProductIdentifierDto],
+    example: [15, 16],
+    description: 'Mảng các ID của CartItem cần cập nhật trạng thái',
+    type: [Number],
   })
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PaidProductIdentifierDto)
-  products: PaidProductIdentifierDto[];
+  @ArrayNotEmpty()
+  @IsNumber({}, { each: true })
+  cartItemIds: number[];
 }

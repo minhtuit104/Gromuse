@@ -300,3 +300,25 @@
   color: #ccc;
   cursor: not-allowed;
 }
+
+.view-rate-button-status {
+  background-color: var(--orange500);
+  color: var(--white50);
+  border: none;
+  border-radius: 20px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.view-icon-status {
+  margin-right: 3px;
+  margin-top: 3px;
+}
+
+.view-icon-status img {
+  filter: brightness(0) invert(1);
+}

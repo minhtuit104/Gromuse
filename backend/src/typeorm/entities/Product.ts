@@ -1,4 +1,3 @@
-// src/typeorm/entities/Product.ts
 import {
   Entity,
   Column,
@@ -6,10 +5,14 @@ import {
   OneToMany,
   ManyToOne,
   JoinColumn,
+  UpdateDateColumn,
+  CreateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { CartItem } from './CartItem';
 import { Category } from './Category';
 import { Shop } from './Shop';
+import { Rating } from './Rating';
 
 @Entity()
 export class Product {
@@ -65,12 +68,24 @@ export class Product {
   @ManyToOne(() => Shop, (shop) => shop.products)
   shop: Shop;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @OneToMany(() => Rating, (rating) => rating.product)
+  ratings: Rating[];
+
+  @Column({
+    type: 'float',
+    precision: 2,
+    scale: 1,
+    default: 0.0,
+    comment: 'Average Rating',
+  })
+  averageRating: number;
+
+  @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  deletedAt: Date;
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 }

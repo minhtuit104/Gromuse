@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import "./detailProduct.css";
-// Giữ lại các ảnh mặc định để sử dụng trong trường hợp không có dữ liệu
 import Img1 from "../../assets/images/imagePNG/lays_1 1.png";
 import Img2 from "../../assets/images/imagePNG/lays_2.png";
 import Img3 from "../../assets/images/imagePNG/lays_3.png";
@@ -34,6 +33,23 @@ const DetailProduct = () => {
   const [topProduct, setTopProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState<string>("");
+
+  // useEffect để cập nhật thời gian mỗi giây
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const seconds = String(now.getSeconds()).padStart(2, "0");
+      setCurrentTime(`${hours} : ${minutes} : ${seconds}`);
+    };
+
+    updateClock();
+    const timerId = setInterval(updateClock, 1000);
+
+    return () => clearInterval(timerId);
+  }, []);
 
   useEffect(() => {
     const fetchTopProduct = async () => {
@@ -185,7 +201,7 @@ const DetailProduct = () => {
         <div className="detail-home-product-info">
           <div className="detail-home-product-info-time">
             <img src={IconClock} alt="time" className="ic_28" />
-            <span>18 : 00 : 25</span>
+            <span>{currentTime || "Loading..."}</span>{" "}
           </div>
 
           <div className="detail-home-product-info-content">
