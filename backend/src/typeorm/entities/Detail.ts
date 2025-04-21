@@ -24,7 +24,7 @@ export class Detail {
   @Column('int')
   discount: number;
 
-  @Column('simple-array') // Lưu mảng dưới dạng chuỗi phân tách bằng dấu phẩy
+  @Column('simple-array')
   images: string[];
 
   @Column('int')
@@ -36,7 +36,7 @@ export class Detail {
   @Column('simple-array')
   categories: string[];
 
-  @Column('json') // Lưu object description dưới dạng JSON
+  @Column('json')
   description: {
     text: string;
     variants: string[];

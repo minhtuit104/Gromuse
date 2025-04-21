@@ -77,66 +77,66 @@ export class CartController {
     return this.cartService.getOrCreateUserCart(+userId);
   }
 
-  @Post('/buy-now')
-  // @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Tạo giỏ hàng và thêm sản phẩm để mua ngay' })
-  @ApiResponse({
-    status: 201,
-    description: 'Đã tạo giỏ hàng và thêm sản phẩm mua ngay',
-    schema: { example: { success: true, cartId: 1, cartItemId: 5 } },
-  })
-  async createBuyNowCart(@Body() createCartDto: CreateCartDto) {
-    this.logger.log(
-      `[POST /cart/buy-now] Received DTO: ${JSON.stringify(createCartDto)}`,
-    );
-    try {
-      if (!createCartDto.idUser) {
-        throw new HttpException('idUser is required', HttpStatus.BAD_REQUEST);
-      }
-      if (isNaN(createCartDto.productId) || createCartDto.productId <= 0) {
-        throw new HttpException('Invalid productId', HttpStatus.BAD_REQUEST);
-      }
-      if (isNaN(createCartDto.quantity) || createCartDto.quantity <= 0) {
-        throw new HttpException('Invalid quantity', HttpStatus.BAD_REQUEST);
-      }
+  // @Post('/buy-now')
+  // // @UseGuards(JwtAuthGuard)
+  // @ApiOperation({ summary: 'Tạo giỏ hàng và thêm sản phẩm để mua ngay' })
+  // @ApiResponse({
+  //   status: 201,
+  //   description: 'Đã tạo giỏ hàng và thêm sản phẩm mua ngay',
+  //   schema: { example: { success: true, cartId: 1, cartItemId: 5 } },
+  // })
+  // async createBuyNowCart(@Body() createCartDto: CreateCartDto) {
+  //   this.logger.log(
+  //     `[POST /cart/buy-now] Received DTO: ${JSON.stringify(createCartDto)}`,
+  //   );
+  //   try {
+  //     if (!createCartDto.idUser) {
+  //       throw new HttpException('idUser is required', HttpStatus.BAD_REQUEST);
+  //     }
+  //     if (isNaN(createCartDto.productId) || createCartDto.productId <= 0) {
+  //       throw new HttpException('Invalid productId', HttpStatus.BAD_REQUEST);
+  //     }
+  //     if (isNaN(createCartDto.quantity) || createCartDto.quantity <= 0) {
+  //       throw new HttpException('Invalid quantity', HttpStatus.BAD_REQUEST);
+  //     }
 
-      const cart = await this.cartService.createBuyNowCart(
-        createCartDto.idUser,
-        createCartDto.productId,
-      );
-      this.logger.log(`[POST /cart/buy-now] Cart created with ID: ${cart.id}`);
+  //     const cart = await this.cartService.createBuyNowCart(
+  //       createCartDto.idUser,
+  //       createCartDto.productId,
+  //     );
+  //     this.logger.log(`[POST /cart/buy-now] Cart created with ID: ${cart.id}`);
 
-      const cartItem = await this.cartItemService.addBuyNowItem(
-        cart.id,
-        createCartDto.productId,
-        createCartDto.quantity,
-      );
-      this.logger.log(
-        `[POST /cart/buy-now] CartItem added with ID: ${cartItem.id}`,
-      );
+  //     const cartItem = await this.cartItemService.addBuyNowItem(
+  //       cart.id,
+  //       createCartDto.productId,
+  //       createCartDto.quantity,
+  //     );
+  //     this.logger.log(
+  //       `[POST /cart/buy-now] CartItem added with ID: ${cartItem.id}`,
+  //     );
 
-      return {
-        success: true,
-        cartId: cart.id,
-        cartItemId: cartItem.id, // Trả về ID của item vừa thêm
-        message: 'Đã tạo giỏ hàng và thêm sản phẩm để mua ngay',
-      };
-    } catch (error) {
-      this.logger.error(
-        `[POST /cart/buy-now] Error: ${error.message}`,
-        error.stack,
-      );
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        {
-          status: HttpStatus.INTERNAL_SERVER_ERROR,
-          error: 'Lỗi khi tạo giỏ hàng mua ngay',
-          message: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
+  //     return {
+  //       success: true,
+  //       cartId: cart.id,
+  //       cartItemId: cartItem.id, // Trả về ID của item vừa thêm
+  //       message: 'Đã tạo giỏ hàng và thêm sản phẩm để mua ngay',
+  //     };
+  //   } catch (error) {
+  //     this.logger.error(
+  //       `[POST /cart/buy-now] Error: ${error.message}`,
+  //       error.stack,
+  //     );
+  //     if (error instanceof HttpException) {
+  //       throw error;
+  //     }
+  //     throw new HttpException(
+  //       {
+  //         status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //         error: 'Lỗi khi tạo giỏ hàng mua ngay',
+  //         message: error.message,
+  //       },
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //     );
+  //   }
+  // }
 }

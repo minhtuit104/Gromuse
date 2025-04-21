@@ -5,6 +5,7 @@ import { fectchUserName } from "../../Service/UserService";
 import { AddressDto } from "../../dtos/address.dto";
 import DefaultAvatar from "../../assets/images/imagePNG/Avatar.png";
 import Img1 from "../../assets/images/imagePNG/lays_1 1.png";
+import { confirmPaymentAndUpdateBackend } from "../../Service/OrderService";
 
 interface DecodedToken {
   idAccount: number;
@@ -15,7 +16,6 @@ interface DecodedToken {
   iat: number;
   exp: number;
 }
-// ------------------------------------------------------
 
 export interface Voucher {
   id: string | number;
@@ -23,6 +23,18 @@ export interface Voucher {
   code: string;
   description: string;
   remaining: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  img: string;
+  title: string;
+  weight: number;
+  price: number;
+  quantity: number;
+  created_at: string;
+  isPaid: boolean;
 }
 
 const usePayment = () => {
@@ -50,8 +62,7 @@ const usePayment = () => {
       // Kiểm tra token hết hạn
       if (decoded.exp < currentTime) {
         console.error("[usePayment] Token expired.");
-        localStorage.removeItem("token"); // Xóa token hết hạn
-        // Xóa các thông tin liên quan khác
+        localStorage.removeItem("token");
         localStorage.removeItem("currentCartId");
         localStorage.removeItem("buyNowCartId");
         return null;
@@ -126,42 +137,40 @@ const usePayment = () => {
     setError(null);
     setData([]);
 
-    // Lấy cartId từ localStorage (ưu tiên buyNow)
-    const buyNowCartId = localStorage.getItem("buyNowCartId");
-    const currentCartId = localStorage.getItem("currentCartId");
-    const cartIdToFetch = buyNowCartId || currentCartId;
+    const buyNowCartItemIdStr = localStorage.getItem("buyNowCartItemId");
+    const buyNowCartItemId = buyNowCartItemIdStr
+      ? parseInt(buyNowCartItemIdStr, 10)
+      : null;
+    // Xóa ngay sau khi đọc
+    if (buyNowCartItemIdStr) {
+      localStorage.removeItem("buyNowCartItemId");
+      console.log(
+        `[usePayment] Detected Buy Now flow for cartItemId: ${buyNowCartItemId}`
+      );
+    }
+
+    // Luôn lấy cartId hiện tại của user
+    const cartIdToFetch = localStorage.getItem("currentCartId");
 
     console.log(`[usePayment] Fetching cart data for cartId: ${cartIdToFetch}`);
 
     if (!cartIdToFetch) {
-      // Không cần báo lỗi nếu không có cartId, có thể là trạng thái bình thường
-      console.log("[usePayment] No valid cartId found to fetch cart data.");
-      setData([]); // Đảm bảo data là mảng rỗng
-      setLoading(false); // Kết thúc loading
-      return; // Dừng thực thi
+      console.log("[usePayment] No valid currentCartId found.");
+      setData([]);
+      setLoading(false);
+      return;
     }
 
+    // Lưu lại cartId đang dùng cho thanh toán
     localStorage.setItem("cartId", cartIdToFetch);
-    localStorage.setItem("currentCartId", cartIdToFetch);
 
     try {
-      console.log(
-        `[usePayment] Chuẩn bị tải giỏ hàng với ID: ${cartIdToFetch}`
-      );
-      // Gọi API lấy chi tiết giỏ hàng
       const response = await fetch(
         `http://localhost:3000/cart-items/cart/${cartIdToFetch}`
       );
-
-      console.log(
-        `[usePayment] Trạng thái phản hồi API giỏ hàng: ${response.status}`
-      );
       if (!response.ok) {
-        if (response.status === 404) {
-          setError("Không tìm thấy giỏ hàng.");
-        } else {
-          setError(`Lỗi API lấy giỏ hàng: ${response.status}`);
-        }
+        if (response.status === 404) setError("Không tìm thấy giỏ hàng.");
+        else setError(`Lỗi API lấy giỏ hàng: ${response.status}`);
         throw new Error(`API thất bại: ${response.status}`);
       }
 
@@ -171,14 +180,30 @@ const usePayment = () => {
         setData([]);
         console.log("[usePayment] Cart is empty or has no items.");
       } else {
+        let itemsToDisplay = cartData;
+
+        if (buyNowCartItemId !== null) {
+          itemsToDisplay = cartData.filter(
+            (item) => item?.id === buyNowCartItemId
+          ); // Lọc theo CartItem ID
+          if (itemsToDisplay.length === 0) {
+            console.warn(
+              `[usePayment] Buy Now item (cartItemId: ${buyNowCartItemId}) not found in fetched cart data. Displaying empty.`
+            );
+          } else {
+            console.log(
+              `[usePayment] Filtering cart data for Buy Now item: cartItemId ${buyNowCartItemId}`
+            );
+          }
+        }
+
+        // Xử lý itemsToDisplay (đã được lọc hoặc là toàn bộ giỏ hàng)
         const shopsMap: Record<string, Shop> = {};
-        cartData.forEach((item: any) => {
-          // Kiểm tra dữ liệu item và product
+        itemsToDisplay.forEach((item: any) => {
           if (!item || !item.product || !item.product.id) {
             console.warn("[usePayment] Skipping invalid CartItem:", item);
-            return; // Bỏ qua item không hợp lệ
+            return;
           }
-
           const shopInfo = item.product.shop || {};
           const shopId = shopInfo.id?.toString() || "1";
           const shopName = shopInfo.name || "Lay's Viet Nam";
@@ -197,26 +222,24 @@ const usePayment = () => {
 
           const productData = item.product;
           shopsMap[shopId].products.push({
-            id: productData.id.toString(), // Đảm bảo ID là string
+            id: item.id.toString(), // <<< SỬA: Sử dụng CartItem ID làm ID duy nhất trong list thanh toán
             name: productData.name || "Sản phẩm",
-            img: productData.img || Img1, // Ảnh mặc định
-            title: productData.name || "Sản phẩm", // title có thể giống name
+            img: productData.img || Img1,
+            title: productData.name || "Sản phẩm",
             weight: Number(productData.weight) || 0,
             price: Number(productData.price) || 0,
             quantity: Number(item.quantity) || 1,
-            isPaid: !!item.isPaid, // Chuyển đổi sang boolean
-            created_at: productData.createdAt || new Date().toISOString(), // Ngày mặc định
+            isPaid: !!item.isPaid,
+            created_at: productData.createdAt || new Date().toISOString(),
           });
         });
 
-        const shopsArray = Object.values(shopsMap); // Chuyển map thành mảng
-        setData(shopsArray); // Cập nhật state data
-        setError(null); // Xóa lỗi nếu thành công
+        const shopsArray = Object.values(shopsMap);
+        setData(shopsArray);
+        setError(null);
       }
     } catch (error: any) {
-      // Xử lý lỗi khi fetch cart data
       console.error("[usePayment] Error in fetchCartData:", error);
-      // Tránh ghi đè lỗi API cụ thể (404) bằng lỗi chung
       if (!error.message?.includes("API thất bại")) {
         setError(
           error instanceof Error
@@ -268,48 +291,30 @@ const usePayment = () => {
   }, [fetchCartData, fetchUserData]);
 
   const updateProductQuantity = useCallback(
-    async (productId: string, newQuantity: number) => {
+    async (cartItemId: string, newQuantity: number) => {
       cancelOngoingRequest();
       if (!navigator.onLine) {
         console.error("[usePayment] No network connection.");
         return false;
       }
 
-      const buyNowCartId = localStorage.getItem("buyNowCartId");
-      const currentCartId = localStorage.getItem("currentCartId");
-      const cartIdToUpdate = buyNowCartId || currentCartId;
-
-      if (!cartIdToUpdate) {
-        console.error(
-          "[usePayment] Cannot update quantity: No valid cartId found."
-        );
-        return false;
-      }
-
-      // Bỏ logic buyAgain nếu không dùng
-
       fetchControllerRef.current = new AbortController();
       const controller = fetchControllerRef.current;
       const timeoutId = setTimeout(() => {
         console.warn("[usePayment] Update quantity request timed out.");
         controller.abort();
-      }, 5000); // 5 giây timeout
+      }, 5000);
 
       try {
-        const response = await fetch(
-          `http://localhost:3000/cart-items/cart/${cartIdToUpdate}/product/${productId}`, // Đổi URL
-          {
-            method: "PATCH", // Giữ nguyên PATCH
-            headers: { "Content-Type": "application/json" },
-            // *** ĐẢM BẢO BODY ĐÚNG ***
-            body: JSON.stringify({ quantity: newQuantity }), // Gửi đúng DTO { quantity: number }
-            signal: controller.signal,
-            // credentials: "include",
-          }
-        );
-        console.log("response", response);
+        const endpoint = `http://localhost:3000/cart-items/${cartItemId}`;
+        const response = await fetch(endpoint, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quantity: newQuantity }),
+          signal: controller.signal,
+        });
 
-        clearTimeout(timeoutId); // Xóa timeout nếu request hoàn thành
+        clearTimeout(timeoutId);
         if (!response.ok) {
           const errorText = await response.text();
           console.error(
@@ -318,44 +323,31 @@ const usePayment = () => {
           );
           return false;
         }
-        // Xử lý response thành công (có thể trả về item đã cập nhật hoặc chỉ message)
         const result = await response.json();
         console.log(
-          `[usePayment] Quantity updated successfully for product ${productId} in cart ${cartIdToUpdate}. Response:`,
+          `[usePayment] Quantity updated successfully for cartItemId ${cartItemId}. Response:`,
           result
         );
-
-        // Nếu backend trả về message "Item removed successfully"
         if (result && result.message === "Item removed successfully") {
-          console.log(
-            `[usePayment] Product ${productId} removed from cart ${cartIdToUpdate}.`
-          );
-          // Không cần toast ở đây, UI sẽ tự cập nhật khi fetch lại
+          console.log(`[usePayment] CartItem ${cartItemId} removed.`);
         }
-
-        // Trigger fetch lại cart data để cập nhật UI
-        fetchCartData();
-        return true; // Trả về true nếu thành công
+        fetchCartData(); // Fetch lại để cập nhật UI
+        return true;
       } catch (error: any) {
-        clearTimeout(timeoutId); // Đảm bảo timeout được xóa nếu có lỗi khác
-        if (error.name === "AbortError") {
+        clearTimeout(timeoutId);
+        if (error.name === "AbortError")
           console.log("[usePayment] Update quantity request was aborted.");
-          // Không cần toast lỗi nếu là do người dùng hủy hoặc timeout
-        } else {
+        else
           console.error("[usePayment] Fetch error updating quantity:", error);
-        }
-        return false; // Trả về false nếu có lỗi
+        return false;
       } finally {
-        // Đảm bảo controller được reset sau khi request kết thúc (thành công, lỗi, hoặc hủy)
-        if (fetchControllerRef.current === controller) {
+        if (fetchControllerRef.current === controller)
           fetchControllerRef.current = null;
-        }
       }
     },
-    [fetchCartData] // Dependencies rỗng vì logic lấy cartId đã ở trong hàm
+    [fetchCartData]
   );
 
-  // Hàm hủy request đang chạy
   const cancelOngoingRequest = () => {
     if (fetchControllerRef.current) {
       console.log("[usePayment] Cancelling ongoing request...");
@@ -370,6 +362,19 @@ const usePayment = () => {
       cancelOngoingRequest();
     };
   }, []);
+
+  const handleSuccessfulPayment = async (
+    cartId: number,
+    paidCartItemIds: number[]
+  ): Promise<boolean> => {
+    // Gọi hàm confirmPaymentAndUpdateBackend từ OrderService
+    const success = await confirmPaymentAndUpdateBackend(
+      cartId,
+      paidCartItemIds
+    );
+    // Không cần gọi synchronizeOrdersWithBackend ở đây nữa, có thể gọi ở component cha nếu cần
+    return success; // Trả về true/false
+  };
   return {
     data,
     setData,
@@ -382,6 +387,7 @@ const usePayment = () => {
     handleUpdatePrice: updateProductQuantity,
     refetchCart: fetchCartData,
     refetchUser: fetchUserData,
+    handleSuccessfulPayment,
   };
 };
 

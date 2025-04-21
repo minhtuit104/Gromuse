@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { Payment } from '../../typeorm/entities/Payment';
-import { Address } from '../../typeorm/entities/Address';
 import { Voucher } from '../../typeorm/entities/Voucher';
 import { Product } from '../../typeorm/entities/Product';
 import { Shop } from '../../typeorm/entities/Shop';
@@ -12,15 +11,7 @@ import { CartItem } from '../../typeorm/entities/CartItem';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Payment,
-      Address,
-      Voucher,
-      Product,
-      Shop,
-      Cart,
-      CartItem,
-    ]),
+    TypeOrmModule.forFeature([Payment, Voucher, Product, Shop, Cart, CartItem]),
   ],
   controllers: [PaymentController],
   providers: [PaymentService],

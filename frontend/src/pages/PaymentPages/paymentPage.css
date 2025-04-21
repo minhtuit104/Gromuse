@@ -871,3 +871,12 @@
 .voucher-input-container {
   width: 100%;
 }
+
+.empty-cart-message {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}

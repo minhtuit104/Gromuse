@@ -15,7 +15,6 @@ import { CartItem, OrderStatus } from '../../typeorm/entities/CartItem';
 import { Product } from '../../typeorm/entities/Product';
 import { CartService } from '../cart/cart.service';
 import { AddToCartDto } from '../cart/dtos/add-to-cart.dto';
-import { PaidProductIdentifierDto } from '../cart/dtos/update-cart-items-status';
 
 @Injectable()
 export class CartItemService {
@@ -98,11 +97,9 @@ export class CartItemService {
       this.logger.log(
         `[addItemToCart] Successfully saved CartItem with ID: ${savedItem.id} for cart ID: ${cart.id}`,
       );
-      // Trả về CartItem đã lưu (có thể kèm relations nếu cần)
-      // Load lại để đảm bảo có đủ relations
       return await this.cartItemRepository.findOne({
         where: { id: savedItem.id },
-        relations: ['product', 'cart'], // Load các relations cần thiết
+        relations: ['product', 'cart'],
       });
     } catch (error) {
       this.logger.error(
@@ -225,34 +222,31 @@ export class CartItemService {
   }
 
   async updateItemQuantity(
-    cartId: number,
-    productId: number,
+    cartItemId: number,
     quantity: number,
   ): Promise<CartItem | null> {
-    // Trả về null nếu item bị xóa
     this.logger.log(
-      `[updateItemQuantity] Updating cartId: ${cartId}, productId: ${productId} to quantity: ${quantity}`,
+      `[updateItemQuantity] Updating cartItemId: ${cartItemId} to quantity: ${quantity}`,
     );
 
-    // Tìm CartItem chưa thanh toán
+    // Tìm CartItem bằng ID và chưa thanh toán
     const cartItem = await this.cartItemRepository.findOne({
       where: {
-        cart: { id: cartId },
-        product: { id: productId },
-        isPaid: false, // Chỉ cập nhật item chưa thanh toán
+        id: cartItemId,
+        isPaid: false,
       },
-      relations: ['product', 'cart'], // Load relations nếu cần trả về
+      relations: ['product', 'cart'],
     });
 
     if (!cartItem) {
       this.logger.warn(
-        `[updateItemQuantity] Unpaid CartItem not found for cartId: ${cartId}, productId: ${productId}.`,
+        `[updateItemQuantity] Unpaid CartItem not found for cartItemId: ${cartItemId}.`,
       );
       throw new NotFoundException(`Unpaid cart item not found`);
     }
 
+    // Logic xóa hoặc cập nhật giữ nguyên
     if (quantity <= 0) {
-      // Xóa CartItem nếu số lượng <= 0
       this.logger.log(
         `[updateItemQuantity] Quantity is ${quantity}. Removing CartItem ID: ${cartItem.id}`,
       );
@@ -261,7 +255,7 @@ export class CartItemService {
         this.logger.log(
           `[updateItemQuantity] Successfully removed CartItem ID: ${cartItem.id}`,
         );
-        return null; // Trả về null để báo hiệu item đã bị xóa
+        return null;
       } catch (error) {
         this.logger.error(
           `[updateItemQuantity] Error removing CartItem ID: ${cartItem.id}`,
@@ -273,7 +267,6 @@ export class CartItemService {
         );
       }
     } else {
-      // Cập nhật số lượng
       this.logger.log(
         `[updateItemQuantity] Updating quantity for CartItem ID: ${cartItem.id} to ${quantity}`,
       );
@@ -283,7 +276,7 @@ export class CartItemService {
         this.logger.log(
           `[updateItemQuantity] Successfully updated CartItem ID: ${savedItem.id}`,
         );
-        return savedItem; // Trả về item đã cập nhật
+        return savedItem;
       } catch (error) {
         this.logger.error(
           `[updateItemQuantity] Error updating CartItem ID: ${cartItem.id}`,
@@ -336,93 +329,120 @@ export class CartItemService {
   async updateItemsStatus(
     cartId: number,
     isPaid: boolean,
-    products: PaidProductIdentifierDto[],
-  ) {
+    cartItemIds: number[], // <<< Nhận mảng cartItemIds
+  ): Promise<{ success: boolean; message: string; updatedCount: number }> {
+    // <<< Sửa kiểu trả về nếu cần
     this.logger.log(
-      `[updateItemsStatus] Updating status for cartId: ${cartId}, isPaid: ${isPaid}, products: ${JSON.stringify(products)}`,
+      `[updateItemsStatus] Updating status for cartId: ${cartId}, isPaid: ${isPaid}, cartItemIds: ${JSON.stringify(cartItemIds)}`,
     );
     try {
-      const productIds = products.map((p) => p.id);
-      if (productIds.length === 0) {
+      if (!cartItemIds || cartItemIds.length === 0) {
         this.logger.warn(
-          `[updateItemsStatus] No product IDs provided for cartId: ${cartId}.`,
+          `[updateItemsStatus] No cartItem IDs provided for cartId: ${cartId}.`,
         );
         return {
           success: true,
-          message: 'Không có sản phẩm nào được chỉ định để cập nhật.',
-          updatedProductsCount: 0,
-          details: [],
+          message: 'Không có mục nào được chỉ định để cập nhật.',
+          updatedCount: 0,
         };
       }
 
+      // Tìm các CartItem dựa trên cartId và mảng cartItemIds
       const cartItems = await this.cartItemRepository.find({
         where: {
           cart: { id: cartId },
-          product: { id: In(productIds) },
+          id: In(cartItemIds), // <<< Lọc theo mảng cartItemIds
         },
+        relations: ['product'], // Load product để cập nhật 'sold' nếu cần
       });
 
       this.logger.log(
-        `[updateItemsStatus] Found ${cartItems.length} CartItems matching product IDs to potentially update.`,
+        `[updateItemsStatus] Found ${cartItems.length} CartItems matching provided IDs to potentially update.`,
       );
 
       if (cartItems.length === 0) {
         this.logger.warn(
-          `[updateItemsStatus] No matching CartItems found in cart ${cartId} for the provided product IDs.`,
+          `[updateItemsStatus] No matching CartItems found in cart ${cartId} for the provided cartItem IDs.`,
         );
+        // Không nên báo lỗi ở đây vì có thể frontend gửi ID không khớp
         return {
-          success: false,
-          message: `Không tìm thấy sản phẩm phù hợp trong giỏ hàng ${cartId}.`,
-          updatedProductsCount: 0,
-          details: [],
+          success: true, // Vẫn coi là thành công vì không có gì để update
+          message: `Không tìm thấy mục phù hợp trong giỏ hàng ${cartId} để cập nhật.`,
+          updatedCount: 0,
         };
       }
 
       const itemsToSave: CartItem[] = [];
+      const productsToUpdateSold: { id: number; quantity: number }[] = [];
 
       for (const cartItem of cartItems) {
-        const matchedProductInfo = products.find(
-          (p) => p.id === cartItem.productId,
+        const wasAlreadyPaid = cartItem.isPaid;
+        this.logger.log(
+          `[updateItemsStatus] Processing CartItem ID: ${cartItem.id}. Current isPaid: ${wasAlreadyPaid}. Setting isPaid to: ${isPaid}`,
         );
 
-        if (matchedProductInfo) {
-          const wasAlreadyPaid = cartItem.isPaid;
-          this.logger.log(
-            `[updateItemsStatus] Processing CartItem ID: ${cartItem.id} (productId: ${cartItem.productId}). Current isPaid: ${wasAlreadyPaid}. Setting isPaid to: ${isPaid}`,
-          );
-
-          if (cartItem.isPaid !== isPaid) {
-            cartItem.isPaid = isPaid;
-            if (isPaid) {
-              cartItem.status = OrderStatus.TO_RECEIVE;
-            } else {
-              cartItem.status = null;
-              cartItem.cancelReason = null;
-            }
-            itemsToSave.push(cartItem);
-          } else if (isPaid && cartItem.status !== OrderStatus.TO_RECEIVE) {
+        // Chỉ cập nhật nếu trạng thái isPaid thay đổi hoặc nếu đang set isPaid=true
+        if (cartItem.isPaid !== isPaid || isPaid) {
+          cartItem.isPaid = isPaid;
+          if (isPaid) {
+            // Nếu đánh dấu là đã thanh toán, đặt trạng thái là TO_RECEIVE
             cartItem.status = OrderStatus.TO_RECEIVE;
-            itemsToSave.push(cartItem);
+            // Nếu trước đó chưa thanh toán, thêm vào danh sách cần cập nhật 'sold'
+            if (!wasAlreadyPaid && cartItem.product) {
+              productsToUpdateSold.push({
+                id: cartItem.productId,
+                quantity: cartItem.quantity,
+              });
+            }
+          } else {
+            // Nếu đánh dấu là chưa thanh toán (trường hợp hiếm), reset status
+            cartItem.status = null;
+            cartItem.cancelReason = null;
+            // Cân nhắc giảm 'sold' nếu cần logic hoàn tiền/hủy sau thanh toán
           }
-        } else {
-          this.logger.warn(
-            `[updateItemsStatus] No matching product info found in DTO for CartItem ID: ${cartItem.id} (productId: ${cartItem.productId})`,
-          );
+          itemsToSave.push(cartItem);
         }
       }
 
+      let savedCount = 0;
       if (itemsToSave.length > 0) {
-        await this.cartItemRepository.save(itemsToSave);
+        const savedItems = await this.cartItemRepository.save(itemsToSave);
+        savedCount = savedItems.length;
         this.logger.log(
-          `[updateItemsStatus] Saved ${itemsToSave.length} CartItems.`,
+          `[updateItemsStatus] Saved ${savedCount} CartItems with new status.`,
+        );
+
+        // Cập nhật số lượng bán sau khi lưu CartItem thành công
+        if (productsToUpdateSold.length > 0) {
+          this.logger.log(
+            `[updateItemsStatus] Updating sold count for ${productsToUpdateSold.length} products.`,
+          );
+          const updateSoldPromises = productsToUpdateSold.map((p) =>
+            this.productRepository.increment({ id: p.id }, 'sold', p.quantity),
+          );
+          try {
+            await Promise.all(updateSoldPromises);
+            this.logger.log(
+              `[updateItemsStatus] Successfully updated sold counts.`,
+            );
+          } catch (soldError) {
+            this.logger.error(
+              `[updateItemsStatus] Error updating sold counts`,
+              soldError.stack,
+            );
+            // Không nên throw lỗi ở đây để tránh rollback toàn bộ
+          }
+        }
+      } else {
+        this.logger.log(
+          `[updateItemsStatus] No CartItems needed status update for cartId: ${cartId}.`,
         );
       }
 
       return {
         success: true,
-        message: 'Cập nhật trạng thái CartItem thành công',
-        updatedProductsCount: 0,
-        details: [],
+        message: `Cập nhật trạng thái thành công cho ${savedCount} mục.`,
+        updatedCount: savedCount,
       };
     } catch (error) {
       this.logger.error(
@@ -626,7 +646,7 @@ export class CartItemService {
         isPaid: true,
         status: In(statuses),
       },
-      relations: ['product', 'product.shop', 'cart', 'cart.user'],
+      relations: ['product', 'product.shop', 'cart', 'cart.user', 'rating'],
       order: {
         updatedAt: 'DESC',
       },
@@ -636,6 +656,9 @@ export class CartItemService {
       const items = await this.cartItemRepository.find(options);
       this.logger.log(
         `[findPaidItemsByStatusTemp] Found ${items.length} items.`,
+      );
+      items.forEach((item) =>
+        console.log(`Item ID: ${item.id}, Rating:`, item.rating),
       );
       return items;
     } catch (error) {

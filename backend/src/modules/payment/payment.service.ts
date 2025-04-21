@@ -11,7 +11,6 @@ import { Repository, MoreThan, LessThanOrEqual, In } from 'typeorm';
 import { CreatePaymentDto } from './dtos/create-payment.dto';
 import { UpdatePaymentDto } from './dtos/update-payment.dto';
 import { Payment, PaymentStatus } from '../../typeorm/entities/Payment';
-import { Address } from '../../typeorm/entities/Address';
 import { Voucher, VoucherType } from '../../typeorm/entities/Voucher';
 import { Product } from '../../typeorm/entities/Product';
 import { Shop } from '../../typeorm/entities/Shop';
@@ -23,7 +22,6 @@ export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   constructor(
     @InjectRepository(Payment) private paymentRepository: Repository<Payment>,
-    @InjectRepository(Address) private addressRepository: Repository<Address>,
     @InjectRepository(Voucher) private voucherRepository: Repository<Voucher>,
     @InjectRepository(Product) private productRepository: Repository<Product>,
     @InjectRepository(Shop) private shopRepository: Repository<Shop>,

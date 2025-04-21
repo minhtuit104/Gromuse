@@ -20,22 +20,26 @@ interface Product {
 
 const MightNeedItem = ({ product }: { product: Product }) => {
   const [isCounterActive, setIsCounterActive] = useState(false);
+  const [currentQuantity, setCurrentQuantity] = useState(1);
   const navigate = useNavigate();
 
   const handleAddClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Ngăn việc navigation khi click vào nút thêm
+    e.stopPropagation();
     setIsCounterActive(true);
+    setCurrentQuantity(1);
   };
 
   const handleCountChange = (newCount: number) => {
+    setCurrentQuantity(newCount);
     if (newCount < 1) {
       setIsCounterActive(false);
     }
   };
 
   const handleProductClick = () => {
-    // Điều hướng đến trang chi tiết với ID sản phẩm
-    navigate(`/product/${product.id}`);
+    navigate(`/product/${product.id}`, {
+      state: { quantity: currentQuantity > 0 ? currentQuantity : 1 },
+    });
   };
 
   return (
@@ -64,7 +68,7 @@ const MightNeedItem = ({ product }: { product: Product }) => {
           ) : (
             <div className="might-need-item-counter">
               <Counter
-                initialCount={1}
+                initialCount={currentQuantity}
                 onChange={handleCountChange}
                 allowZero={true}
               />

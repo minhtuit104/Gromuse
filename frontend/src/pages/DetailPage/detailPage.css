@@ -31,7 +31,7 @@
 
 .detail-product-information {
   width: 100%;
-  height: auto;
+  height: 550px;
   display: flex;
 }
 .detail-product-image {
@@ -167,7 +167,7 @@ img.main-product-image {
   color: var(--mint800);
 }
 
-.price {
+.original-price {
   font-size: 40px;
   font-weight: 800;
   color: var(--orange600);
@@ -307,6 +307,16 @@ img.main-product-image {
   gap: 15px;
 }
 
+.description-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ul-info {
+  margin-left: 45px;
+}
+
 .detail-product-description h2 {
   color: var(--white950);
   font-weight: 700;
@@ -349,7 +359,7 @@ img.main-product-image {
 .rating-title-detail {
   color: var(--green900);
   font-weight: 700;
-  font-size: 32px;
+  font-size: 25px;
 }
 
 .rating-score-detail {
@@ -409,4 +419,97 @@ img.ImgRate {
   height: 1px;
   background-color: var(--white200);
   margin-left: 200px;
+}
+
+.product-reviews-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: auto;
+  gap: 15px;
+}
+
+h2.reviews-title {
+  color: var(--green900);
+  font-weight: 700;
+  font-size: 25px;
+}
+
+span.summary-score {
+  color: var(--orange500);
+  font-weight: 700;
+  font-size: 25px;
+}
+
+span.summary-max-score {
+  color: var(--orange500);
+  font-weight: 700;
+  font-size: 25px;
+}
+
+.star-rating-display {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.author-info {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+span.author-name {
+  color: var(--white950);
+  font-weight: 600;
+  font-size: 18px;
+}
+
+p.review-text {
+  color: var(--white600);
+  font-size: 18px;
+}
+
+img.review-image-item {
+  width: 120px;
+  height: 120px;
+}
+
+.review-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.see-more-btn-rating {
+  background-color: transparent;
+  color: var(--green800);
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  display: flex;
+  align-items: flex-end;
+}
+
+.see-more-btn-rating:hover {
+  text-decoration: underline;
+}
+
+.review-separator {
+  display: block;
+  height: 1px;
+  background-color: var(--white200);
+  margin-bottom: 20px;
+}
+
+.review-item:last-child .review-separator {
+  display: none;
 }

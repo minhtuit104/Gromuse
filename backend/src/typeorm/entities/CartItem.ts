@@ -5,11 +5,13 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
+  OneToOne,
 } from 'typeorm';
 import { Product } from './Product';
 import { Shop } from './Shop';
 import { Payment } from './Payment';
 import { Cart } from './Cart';
+import { Rating } from './Rating';
 
 export enum OrderStatus {
   TO_RECEIVE = 'TO_RECEIVE',
@@ -59,6 +61,9 @@ export class CartItem {
   @ManyToOne(() => Shop, (shop) => shop.cartItems)
   @JoinColumn({ name: 'shopId' })
   shop: Shop;
+
+  @OneToOne(() => Rating, (rating) => rating.cartItem)
+  rating: Rating;
 
   @Column({ type: 'boolean', default: false })
   isPaid: boolean;

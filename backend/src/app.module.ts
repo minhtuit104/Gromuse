@@ -16,10 +16,12 @@ import { CartModule } from './modules/cart/cart.module';
 import { DetailModule } from './modules/detailPage/detail.module';
 import { Shop } from './typeorm/entities/Shop';
 import { Cart } from './typeorm/entities/Cart';
+import { Rating } from './typeorm/entities/Rating';
 import { PaymentModule } from './modules/payment/payment.module';
 import { Payment } from './typeorm/entities/Payment';
 import { Voucher } from './typeorm/entities/Voucher';
 import { CartItemModule } from './modules/cart_item/cartItem.module';
+import { RatingsModule } from './modules/rating/ratings.module';
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { CartItemModule } from './modules/cart_item/cartItem.module';
         Cart,
         Payment,
         Voucher,
+        Rating,
       ],
       synchronize: true,
     }),
@@ -54,6 +57,7 @@ import { CartItemModule } from './modules/cart_item/cartItem.module';
     DetailModule,
     PaymentModule,
     CartItemModule,
+    RatingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

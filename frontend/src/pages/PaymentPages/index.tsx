@@ -15,10 +15,6 @@ import ModalVoucher from "./modalVourcher";
 import UpdateAddressModal from "./modalUpdateAddress";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  confirmPaymentAndUpdateBackend,
-  synchronizeOrdersWithBackend,
-} from "../../Service/OrderService";
 import { updateUserProfile } from "../../Service/UserService";
 
 export const PaymentPage = () => {
@@ -44,6 +40,7 @@ export const PaymentPage = () => {
     userLoading,
     userError,
     refetchUser,
+    handleSuccessfulPayment,
   } = usePayment();
 
   // State để lưu trữ dữ liệu giỏ hàng đã xử lý để hiển thị
@@ -198,7 +195,6 @@ export const PaymentPage = () => {
     setIsUpdateAddressModalOpen(true);
   };
 
-  // *** START: CẬP NHẬT HÀM handleUpdateAddress ***
   const handleUpdateAddress = async (newAddressData: {
     name: string;
     phone: string;
@@ -241,8 +237,7 @@ export const PaymentPage = () => {
   });
 
   const handleSubmit = async () => {
-    console.log("[handleSubmit] Bắt đầu chạy...");
-    // Sử dụng cartId từ state đã được cập nhật
+    console.log("[handleSubmit] Bắt đầu xử lý thanh toán...");
     const cartIdToProcess = cartId;
     console.log("[handleSubmit] cartIdToProcess từ state:", cartIdToProcess);
 
@@ -251,101 +246,50 @@ export const PaymentPage = () => {
       console.error("[PaymentPage] Invalid or missing cartId for payment.");
       return;
     }
-    const cartIdValue = parseInt(cartIdToProcess);
+    const cartIdValue = parseInt(cartIdToProcess, 10);
     if (isNaN(cartIdValue)) {
       toast.error("Lỗi: ID giỏ hàng không hợp lệ.");
       console.error("[PaymentPage] Invalid cartId format:", cartIdToProcess);
       return;
     }
 
-    // --- Lấy thông tin địa chỉ từ state userAddress ---
-    if (!userAddress) {
+    if (
+      !userAddress ||
+      !userAddress.phone ||
+      !userAddress.name /* || !userAddress.address */
+    ) {
+      // Nếu bạn bắt buộc phải có cả địa chỉ thì bỏ comment !userAddress.address
       toast.error(
-        "Không thể lấy thông tin địa chỉ người dùng. Đang tải lại..."
+        "Thiếu thông tin người nhận (Tên, Số điện thoại). Vui lòng cập nhật."
       );
-      console.error("[PaymentPage] userAddress is null. Attempting refetch...");
-      if (refetchUser) refetchUser(); // Thử fetch lại user nếu chưa có
+      // Có thể mở modal cập nhật nếu cần
+      // handleOpenUpdateAddressModal();
       return;
     }
 
-    // const finalAddress = userAddress.address || "Chưa cung cấp";
-    // -------------------------------------------------
+    // Kiểm tra địa chỉ
+    // if (!userAddress || !userAddress.address) {
+    //   toast.error("Vui lòng cập nhật địa chỉ giao hàng.");
+    //   handleOpenUpdateAddressModal();
+    //   return;
+    // }
 
     // Kiểm tra giỏ hàng trống
     if (
       !processedData ||
       processedData.length === 0 ||
-      !processedData.some((shop) => shop.products && shop.products.length > 0)
+      !processedData.some((shop) => shop.products.length > 0)
     ) {
       toast.error("Giỏ hàng trống, không thể thanh toán.");
       console.error("[PaymentPage] Cart is empty.");
       return;
     }
 
-    setIsLoading(true); // Bắt đầu loading cho quá trình thanh toán
-    setPaymentStatus(""); // Reset trạng thái thanh toán
+    setIsLoading(true);
+    setPaymentStatus("");
 
     try {
-      const validShopsData = processedData
-        .map((shop) => {
-          // Kiểm tra shop và id của shop
-          if (!shop || typeof shop.id === "undefined" || shop.id === null) {
-            console.error(
-              "[PaymentPage] Dữ liệu shop không hợp lệ hoặc thiếu ID:",
-              shop
-            );
-            toast.error("Lỗi dữ liệu shop, không thể tiếp tục thanh toán.");
-            throw new Error("Dữ liệu shop không hợp lệ.");
-          }
-          const shopId = Number(shop.id);
-          if (isNaN(shopId) || shopId <= 0) {
-            // Backend thường yêu cầu ID > 0
-            console.error(`[PaymentPage] Shop ID không hợp lệ: ${shop.id}.`);
-            toast.error(`Shop ID không hợp lệ: ${shop.id}.`);
-            throw new Error(`Shop ID không hợp lệ: ${shop.id}.`);
-          }
-
-          // Map và kiểm tra product data
-          const validProducts = shop.products.map((product: Product) => {
-            if (
-              !product ||
-              typeof product.id === "undefined" ||
-              product.id === null
-            ) {
-              console.error(
-                "[PaymentPage] Dữ liệu sản phẩm không hợp lệ hoặc thiếu ID:",
-                product
-              );
-              throw new Error("Dữ liệu sản phẩm không hợp lệ.");
-            }
-            const productId = Number(product.id);
-            if (isNaN(productId) || productId <= 0) {
-              console.error(
-                `[PaymentPage] Product ID không hợp lệ: ${product.id}.`
-              );
-              throw new Error(`Product ID không hợp lệ: ${product.id}.`);
-            }
-          });
-
-          return {
-            id: shop.id,
-            name: shop.name || "Lay's Việt Nam", // Cần dữ liệu thật
-            avatar: shop.avatar || "../../assets/images/imagePNG/Avatar.png", // Cần dữ liệu thật
-            products: validProducts,
-          };
-        })
-        // Lọc bỏ các shop có thể trả về null nếu có lỗi (mặc dù đã throw error ở trên)
-        .filter((shop) => shop !== null);
-
-      // Nếu sau khi kiểm tra không còn shop nào hợp lệ
-      if (validShopsData.length === 0 && processedData.length > 0) {
-        console.error("[PaymentPage] Không có dữ liệu shop hợp lệ để gửi đi.");
-        toast.error("Không có dữ liệu shop hợp lệ để thanh toán.");
-        setIsLoading(false);
-        return; // Dừng lại nếu không có shop hợp lệ
-      }
-
-      // Chuẩn bị dữ liệu gửi lên API /payment/create
+      // --- BƯỚC 1: Gọi API tạo Payment record ---
       const paymentData = {
         paymentMethod: selectedPayment === 0 ? "online" : "cod",
         subtotal: calculatedValues.subtotal,
@@ -354,154 +298,117 @@ export const PaymentPage = () => {
         couponDiscount:
           calculatedValues.couponDiscount + calculatedValues.deliveryDiscount,
         total: calculatedValues.total,
-        phone: userAddress.phone,
         voucherCodes: selectedVoucher ? [selectedVoucher] : [],
         cartId: cartIdValue,
+        phone: userAddress.phone,
+        address: userAddress.address || "N/A",
+        name: userAddress.name,
       };
 
       console.log(
         "[PaymentPage] Calling API: POST /payment/create with data:",
         paymentData
       );
-      // Gọi API tạo đơn hàng
-      const response = await fetch(`http://localhost:3000/payment/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(paymentData),
-      });
+      const createPaymentResponse = await fetch(
+        `http://localhost:3000/payment/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(paymentData),
+        }
+      );
 
-      if (!response.ok) {
-        const errorResponse = await response
-          .json()
-          .catch(() => ({ message: `HTTP Error ${response.status}` }));
+      if (!createPaymentResponse.ok) {
+        const errorResponse = await createPaymentResponse.json().catch(() => ({
+          message: `HTTP Error ${createPaymentResponse.status}`,
+        }));
         console.error(
           "[PaymentPage] Payment creation API error:",
           errorResponse
         );
         throw new Error(
-          errorResponse.message || `Không thể tạo đơn hàng: ${response.status}`
+          errorResponse.message ||
+            `Không thể tạo đơn hàng: ${createPaymentResponse.status}`
         );
       }
-      const responseData = await response.json();
-      console.log("[PaymentPage] Payment creation API success:", responseData);
+      const createPaymentData = await createPaymentResponse.json();
+      console.log(
+        "[PaymentPage] Payment creation API success:",
+        createPaymentData
+      );
 
-      // Lấy paymentId từ response (đảm bảo cấu trúc response đúng)
-      const paymentId = responseData.data?.id || responseData.id; // Kiểm tra cả hai cấu trúc có thể
+      const paymentId = createPaymentData.data?.id;
       if (!paymentId) {
         throw new Error(
           "Không nhận được paymentId từ server sau khi tạo đơn hàng."
         );
       }
 
+      // --- BƯỚC 2: Gọi API xác nhận Payment (nếu cần) ---
+      // Bỏ qua nếu không cần thiết
+
+      // --- BƯỚC 3: Gọi hàm từ hook usePayment để cập nhật trạng thái CartItem ---
       console.log(
-        `[PaymentPage] Calling API: POST /payment/${paymentId}/confirm`
-      );
-      // Gọi API xác nhận thanh toán
-      const confirmResponse = await fetch(
-        `http://localhost:3000/payment/${paymentId}/confirm`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // credentials: "include",
-        }
+        `[PaymentPage] Calling handleSuccessfulPayment for cartId: ${cartIdValue}`
       );
 
-      if (!confirmResponse.ok) {
-        const confirmError = await confirmResponse
-          .json()
-          .catch(() => ({ message: `HTTP Error ${confirmResponse.status}` }));
-        console.error(
-          "[PaymentPage] Payment confirmation API error:",
-          confirmError
-        );
+      // Lấy danh sách cartItemId từ processedData (product.id là cartItemId)
+      const paidCartItemIds: number[] = processedData
+        .flatMap(
+          (shop) => shop.products.map((product) => parseInt(product.id, 10)) // product.id là cartItemId (string)
+        )
+        .filter((id) => !isNaN(id));
+
+      if (paidCartItemIds.length === 0) {
         throw new Error(
-          confirmError.message ||
-            `Không thể xác nhận thanh toán: ${confirmResponse.status}`
+          "Không có sản phẩm hợp lệ nào để đánh dấu đã thanh toán."
         );
       }
-      const confirmData = await confirmResponse.json();
-      console.log(
-        "[PaymentPage] Payment confirmation API success:",
-        confirmData
-      );
-      // Kiểm tra dữ liệu trả về từ API confirm nếu cần
-      // if (!confirmData.data) {
-      //   throw new Error(`Không nhận được dữ liệu xác nhận thanh toán`);
-      // }
 
-      console.log(
-        `[PaymentPage] Calling confirmPaymentAndUpdateBackend for cartId: ${cartIdValue}`
-      );
-      // Chuẩn bị danh sách sản phẩm đã thanh toán để cập nhật backend
-      const paidItems = processedData.flatMap((shop) =>
-        shop.products.map((product: Product) => ({
-          id: Number(product.id),
-          quantity: Number(product.quantity) || 1,
-        }))
-      );
-
-      const updateAndSyncSuccess = await confirmPaymentAndUpdateBackend(
+      // *** THAY ĐỔI: Gọi hàm từ hook usePayment ***
+      const backendUpdateSuccess = await handleSuccessfulPayment(
         cartIdValue,
-        paidItems
+        paidCartItemIds
       );
+      // *** KẾT THÚC THAY ĐỔI ***
 
-      if (!updateAndSyncSuccess) {
-        console.error("[PaymentPage] confirmPaymentAndUpdateBackend failed.");
-        // Vẫn coi là thành công nhưng cảnh báo
+      // --- BỎ: Không gọi synchronizeOrdersWithBackend ở đây nữa ---
+      // const syncSuccess = await synchronizeOrdersWithBackend();
+      // --- KẾT THÚC BỎ ---
+
+      if (!backendUpdateSuccess) {
+        console.error(
+          "[PaymentPage] handleSuccessfulPayment (backend update) failed."
+        );
         toast.warn(
           "Thanh toán thành công nhưng cập nhật trạng thái đơn hàng có lỗi."
         );
       } else {
-        console.log("[PaymentPage] confirmPaymentAndUpdateBackend successful.");
+        console.log(
+          "[PaymentPage] handleSuccessfulPayment (backend update) successful."
+        );
         toast.success("Đặt hàng và cập nhật trạng thái thành công!");
       }
 
-      console.log("[PaymentPage] Calling synchronizeOrdersWithBackend...");
-      const syncSuccess = await synchronizeOrdersWithBackend();
-
-      if (syncSuccess) {
-        console.log("[PaymentPage] synchronizeOrdersWithBackend successful.");
-        toast.success("Đặt hàng và đồng bộ dữ liệu thành công!");
-      } else {
-        console.error("[PaymentPage] synchronizeOrdersWithBackend failed.");
-        // If sync fails after successful payment & backend update, warn the user
-        toast.warn(
-          "Đặt hàng thành công nhưng đồng bộ dữ liệu cục bộ thất bại. Vui lòng kiểm tra lại trang thái đơn hàng sau."
-        );
-      }
-
-      setIsPaymentComplete(true); // Đánh dấu thanh toán hoàn tất
-      setPaymentStatus("Thanh toán thành công!"); // Cập nhật trạng thái
-
-      // Lưu trạng thái vào localStorage để xử lý chuyển hướng nếu cần
+      // --- BƯỚC 4: Xử lý sau khi thành công ---
+      setIsPaymentComplete(true);
+      setPaymentStatus("Thanh toán thành công!");
       localStorage.setItem("paymentComplete", "true");
-      localStorage.setItem("tempPaymentSuccess", "true"); // Dùng để kiểm tra khi quay lại trang
-
-      // Lưu cartId vừa thanh toán nếu cần cho trang lịch sử
       localStorage.setItem("lastPaidCartId", cartIdValue.toString());
-
-      // --- Xóa các cartId đã dùng khỏi localStorage ---
       localStorage.removeItem("currentCartId");
-      localStorage.removeItem("buyNowCartId");
-      localStorage.removeItem("cartId"); // Xóa cả key chung
-      // ---------------------------------------------
+      localStorage.removeItem("buyNowCartItemId");
+      localStorage.removeItem("cartId");
 
-      // Chuyển hướng người dùng sau một khoảng thời gian
       setTimeout(() => {
-        navigate("/", { replace: true }); // Chuyển về trang chủ
-        // Xóa cờ tạm sau khi đã chuyển hướng
-        setTimeout(() => {
-          localStorage.removeItem("tempPaymentSuccess");
-        }, 500); // Xóa sau 0.5s
-      }, 1500); // Chuyển hướng sau 1.5s
+        navigate("/", { replace: true });
+      }, 3500);
     } catch (error) {
-      // Xử lý lỗi trong quá trình thanh toán
       console.error("[PaymentPage] Error during payment process:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Vui lòng thử lại.";
       setPaymentStatus(`Có lỗi khi thanh toán! ${errorMessage}`);
       toast.error(`Lỗi thanh toán: ${errorMessage}`);
-      setIsPaymentComplete(false); // Đảm bảo trạng thái chưa hoàn tất nếu lỗi
+      setIsPaymentComplete(false);
     } finally {
       setIsLoading(false); // Kết thúc loading
     }
@@ -718,14 +625,18 @@ export const PaymentPage = () => {
 
                   {/* Nút xác nhận đơn hàng */}
                   <button
-                    type="submit" // type="submit" để kích hoạt onSubmit của Formik
+                    type="submit"
                     className="btn-confirm"
                     disabled={
                       isLoading ||
                       isPaymentComplete ||
+                      loading ||
                       userLoading ||
-                      !userAddress
-                    } // Disable khi đang load, đã hoàn tất, user đang load hoặc chưa có địa chỉ
+                      !userAddress ||
+                      !userAddress.phone ||
+                      !userAddress.name
+                      // Bỏ kiểm tra userAddress.address nếu không bắt buộc
+                    }
                   >
                     {isLoading
                       ? "Đang xử lý..."
