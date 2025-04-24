@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import "./paymentPage.css";
 import ImgDetailLays from "../../assets/images/imagePNG/Avatar.png";
 import IconUp from "../../assets/images/icons/ic_ up.svg";
+import IconTrash from "../../assets/images/icons/ic_trash.svg";
 import Counter from "../../components/CountBtn/CountBtn";
+import { Modal, Button } from "antd";
 
 export interface Product {
   id: string;
@@ -40,6 +42,8 @@ export const PaymentItem = ({
 }: PaymentItemProps) => {
   const [isItemsVisible, setIsItemsVisible] = useState(true);
   const [showAllProducts, setShowAllProducts] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const toggleItems = () => {
     setIsItemsVisible(!isItemsVisible);
@@ -51,6 +55,19 @@ export const PaymentItem = ({
 
   const handleCountChange = (productId: string, newCount: number) => {
     onUpdateAmount(productId, newCount);
+  };
+
+  const handleOpenDeleteModal = (product: Product) => {
+    setProductToDelete(product);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (productToDelete) {
+      onUpdateAmount(productToDelete.id, 0);
+      setIsDeleteModalOpen(false);
+      setProductToDelete(null);
+    }
   };
 
   const initialProductsToShow = isSecondShop ? 2 : item.products.length;
@@ -117,7 +134,7 @@ export const PaymentItem = ({
                   target.src = ImgDetailLays;
                 }}
               />
-              <div className="product-info">
+              <div className="product-info-item">
                 <h2 className="product-name">
                   {product.title || product.name}
                 </h2>
@@ -133,6 +150,12 @@ export const PaymentItem = ({
                     handleCountChange(product.id, newCount)
                   }
                 />
+              </div>
+              <div
+                className="delete-product-btn"
+                onClick={() => handleOpenDeleteModal(product)}
+              >
+                <img src={IconTrash} alt="IconTrash" className="ic_28" />
               </div>
             </div>
             {productIndex !== displayProducts.length - 1 && (
@@ -150,6 +173,44 @@ export const PaymentItem = ({
           </div>
         )}
       </div>
+
+      {/* Modal xác nhận xóa sản phẩm */}
+      {productToDelete && (
+        <Modal
+          title={
+            <>
+              <span style={{ color: "#FF424E", fontWeight: "700" }}>Clear</span>
+              {": "}
+              {productToDelete.title || productToDelete.name}
+            </>
+          }
+          open={isDeleteModalOpen}
+          onCancel={() => setIsDeleteModalOpen(false)}
+          footer={null}
+          centered
+          className="delete-product-modal"
+          destroyOnClose
+        >
+          <div className="product-card-line"></div>
+          <div className="clear-all-content">
+            <p>Do you really want to clear this item?</p>
+            <div className="clear-all-buttons">
+              <Button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="btn-back"
+              >
+                Back
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                className="btn-confirm-clear"
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

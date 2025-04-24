@@ -3,10 +3,10 @@ import "./headerDashboard.css";
 import TextInput from "../../../components/TextInput/TextInput";
 import IconMenu from "../../../assets/images/icons/ic_menu.svg";
 import IconSearch from "../../../assets/images/icons/ic_ search.svg";
-import IconNotifi from "../../../assets/images/icons/ic_notification.svg";
 import IconMess from "../../../assets/images/icons/ic_message.svg";
 import ImgAvatar from "../../../assets/images/imagePNG/Avatar.png";
 import SidebarShop from "../SideBarShop/SideBarShop";
+import NotificationDashboard from "../NotificationDashboard/NotificationDashboard";
 
 function HeaderDashboard() {
   const [search, setSearch] = useState("");
@@ -38,14 +38,7 @@ function HeaderDashboard() {
 
       <div className="header_main_right">
         <div className="header_right_left">
-          <div className="header_right_icon">
-            <img
-              src={IconNotifi}
-              alt="icon_notifi"
-              className="ic_24 icon_notifi"
-            />
-            <span className="quantity_notifi">9</span>
-          </div>
+          <NotificationDashboard />
           <div className="header_right_icon">
             <img src={IconMess} alt="icon_mess" className="ic_24 icon_mess" />
             <span className="quantity_mess">20</span>

@@ -16,6 +16,7 @@ import UpdateAddressModal from "./modalUpdateAddress";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { updateUserProfile } from "../../Service/UserService";
+import { Modal, Button } from "antd";
 
 export const PaymentPage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,9 @@ export const PaymentPage = () => {
   const [paymentStatus, setPaymentStatus] = useState("");
   const [selectedVoucher, setSelectedVoucher] = useState<string>("");
   const deliveryFee = { original: 25.0, discounted: 15.0 };
+  const [processedData, setProcessedData] = useState<Shop[]>([]);
+  const [cartId, setCartId] = useState<string | null>(null);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
 
   const {
     data,
@@ -42,11 +46,6 @@ export const PaymentPage = () => {
     refetchUser,
     handleSuccessfulPayment,
   } = usePayment();
-
-  // State để lưu trữ dữ liệu giỏ hàng đã xử lý để hiển thị
-  const [processedData, setProcessedData] = useState<Shop[]>([]);
-  // State để lưu cartId hiệu lực
-  const [cartId, setCartId] = useState<string | null>(null);
 
   // Lấy và đồng bộ cartId khi component mount
   useEffect(() => {
@@ -136,61 +135,49 @@ export const PaymentPage = () => {
     );
 
     let discount = 0;
-    let deliveryDiscount = 0; // Giảm giá phí ship riêng
+    let deliveryDiscount = 0;
     const selectedVoucherData = vouchers.find(
       (v) => v.code === selectedVoucher
     );
 
     if (selectedVoucherData) {
       if (selectedVoucherData.type === "Free Ship") {
-        // Giả sử voucher free ship giảm tối đa phí ship hiện tại
-        deliveryDiscount = deliveryFee.discounted; // Hoặc giá trị tối đa của voucher
+        deliveryDiscount = deliveryFee.discounted;
       } else if (selectedVoucherData.type === "Discount") {
-        // Giả sử voucher giảm giá theo % hoặc số tiền cố định
-        // Cần thêm logic tính discount dựa trên thông tin chi tiết của voucher
-        discount = 10; // Ví dụ giảm 10$
+        discount = 10;
       }
     }
 
-    // Phí ship cuối cùng sau khi áp dụng voucher free ship
     const finalDeliveryFee = Math.max(
       0,
       deliveryFee.discounted - deliveryDiscount
     );
-    // Tổng tiền cuối cùng
     const newTotal = newSubtotal + finalDeliveryFee - discount;
 
     return {
       subtotal: newSubtotal,
-      couponDiscount: discount, // Giảm giá từ voucher discount
-      deliveryDiscount: deliveryDiscount, // Giảm giá phí ship
-      finalDeliveryFee: finalDeliveryFee, // Phí ship cuối cùng
-      total: Math.max(newTotal, 0), // Tổng tiền không âm
+      couponDiscount: discount,
+      deliveryDiscount: deliveryDiscount,
+      finalDeliveryFee: finalDeliveryFee,
+      total: Math.max(newTotal, 0),
     };
   }, [processedData, selectedVoucher, vouchers, deliveryFee]);
 
-  // Xử lý khi thanh toán thành công hoặc quay lại từ trang khác
   useEffect(() => {
     const paymentSuccessful = localStorage.getItem("paymentSuccessful");
-    const isBuyNow = localStorage.getItem("isBuyNow"); // Kiểm tra nếu là luồng buy now
+    const isBuyNow = localStorage.getItem("isBuyNow");
 
     if (isBuyNow === "true") {
-      // Xóa đánh dấu buy now sau khi đã vào trang payment
       localStorage.removeItem("isBuyNow");
     }
 
     if (paymentSuccessful === "true") {
       localStorage.removeItem("paymentSuccessful");
-      // Có thể chuyển hướng đến trang lịch sử đơn hàng thay vì trang chủ
-      // navigate("/order-history");
-      // navigate("/"); // Tạm thời về trang chủ
+      navigate("/"); // Tạm thời về trang chủ
       return;
     }
-
-    // Logic kiểm tra cartUpdated đã chuyển vào usePayment
   }, [navigate]);
 
-  // Mở modal cập nhật địa chỉ
   const handleOpenUpdateAddressModal = () => {
     setIsUpdateAddressModalOpen(true);
   };
@@ -200,40 +187,46 @@ export const PaymentPage = () => {
     phone: string;
     address: string;
   }) => {
-    setIsUpdateAddressModalOpen(false); // Đóng modal
-    setIsLoading(true); // Hiển thị loading (có thể dùng state loading riêng)
     try {
-      // Chuẩn bị dữ liệu gửi lên API
+      setIsLoading(true);
+
       const updateData = {
         name: newAddressData.name,
         phoneNumber: newAddressData.phone,
         address: newAddressData.address,
-        // Không cần gửi email, birthday nếu không thay đổi
       };
-
-      // Gọi API cập nhật profile từ UserService
-      await updateUserProfile(updateData);
-
-      toast.success("Cập nhật địa chỉ thành công!");
-
-      // Gọi hàm refetchUser từ hook usePayment để lấy dữ liệu mới nhất
-      if (refetchUser) {
-        refetchUser(); // Fetch lại thông tin user để cập nhật UI
+      console.log("Sending update to backend:", updateData);
+      const backendResponse = await updateUserProfile(updateData);
+      if (backendResponse?.status === "success") {
+        setIsUpdateAddressModalOpen(false);
+        toast.success(
+          backendResponse.message || "Cập nhật địa chỉ thành công!"
+        );
+        if (refetchUser) {
+          console.log("Calling refetchUser after successful update...");
+          await refetchUser();
+          console.log("refetchUser completed.");
+        } else {
+          console.warn("refetchUser function is not available.");
+        }
+      } else {
+        console.error("Unexpected backend response format:", backendResponse);
+        const message =
+          backendResponse?.message || "Phản hồi từ server không hợp lệ.";
+        toast.error(`Cập nhật địa chỉ thất bại: ${message}`);
       }
     } catch (error) {
-      console.error("Lỗi cập nhật địa chỉ:", error);
-      toast.error(
-        "Lỗi cập nhật địa chỉ: " +
-          (error instanceof Error ? error.message : "Vui lòng thử lại")
-      );
+      console.error("Error updating address:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Lỗi không xác định";
+      toast.error(`Cập nhật địa chỉ thất bại: ${errorMessage}`);
     } finally {
-      setIsLoading(false); // Tắt loading
+      setIsLoading(false);
     }
   };
 
-  // Schema validation cho voucher (nếu cần)
   const schema = yup.object().shape({
-    vourcher: yup.string(), // Đổi tên thành voucher nếu muốn
+    vourcher: yup.string(),
   });
 
   const handleSubmit = async () => {
@@ -256,25 +249,14 @@ export const PaymentPage = () => {
     if (
       !userAddress ||
       !userAddress.phone ||
-      !userAddress.name /* || !userAddress.address */
+      !userAddress.name ||
+      !userAddress.address
     ) {
-      // Nếu bạn bắt buộc phải có cả địa chỉ thì bỏ comment !userAddress.address
-      toast.error(
-        "Thiếu thông tin người nhận (Tên, Số điện thoại). Vui lòng cập nhật."
-      );
-      // Có thể mở modal cập nhật nếu cần
-      // handleOpenUpdateAddressModal();
+      toast.error("Vui lòng cập nhật địa chỉ giao hàng trước khi thanh toán.");
+      handleOpenUpdateAddressModal();
       return;
     }
 
-    // Kiểm tra địa chỉ
-    // if (!userAddress || !userAddress.address) {
-    //   toast.error("Vui lòng cập nhật địa chỉ giao hàng.");
-    //   handleOpenUpdateAddressModal();
-    //   return;
-    // }
-
-    // Kiểm tra giỏ hàng trống
     if (
       !processedData ||
       processedData.length === 0 ||
@@ -289,7 +271,6 @@ export const PaymentPage = () => {
     setPaymentStatus("");
 
     try {
-      // --- BƯỚC 1: Gọi API tạo Payment record ---
       const paymentData = {
         paymentMethod: selectedPayment === 0 ? "online" : "cod",
         subtotal: calculatedValues.subtotal,
@@ -343,16 +324,9 @@ export const PaymentPage = () => {
           "Không nhận được paymentId từ server sau khi tạo đơn hàng."
         );
       }
-
-      // --- BƯỚC 2: Gọi API xác nhận Payment (nếu cần) ---
-      // Bỏ qua nếu không cần thiết
-
-      // --- BƯỚC 3: Gọi hàm từ hook usePayment để cập nhật trạng thái CartItem ---
       console.log(
         `[PaymentPage] Calling handleSuccessfulPayment for cartId: ${cartIdValue}`
       );
-
-      // Lấy danh sách cartItemId từ processedData (product.id là cartItemId)
       const paidCartItemIds: number[] = processedData
         .flatMap(
           (shop) => shop.products.map((product) => parseInt(product.id, 10)) // product.id là cartItemId (string)
@@ -365,16 +339,10 @@ export const PaymentPage = () => {
         );
       }
 
-      // *** THAY ĐỔI: Gọi hàm từ hook usePayment ***
       const backendUpdateSuccess = await handleSuccessfulPayment(
         cartIdValue,
         paidCartItemIds
       );
-      // *** KẾT THÚC THAY ĐỔI ***
-
-      // --- BỎ: Không gọi synchronizeOrdersWithBackend ở đây nữa ---
-      // const syncSuccess = await synchronizeOrdersWithBackend();
-      // --- KẾT THÚC BỎ ---
 
       if (!backendUpdateSuccess) {
         console.error(
@@ -389,8 +357,6 @@ export const PaymentPage = () => {
         );
         toast.success("Đặt hàng và cập nhật trạng thái thành công!");
       }
-
-      // --- BƯỚC 4: Xử lý sau khi thành công ---
       setIsPaymentComplete(true);
       setPaymentStatus("Thanh toán thành công!");
       localStorage.setItem("paymentComplete", "true");
@@ -401,7 +367,7 @@ export const PaymentPage = () => {
 
       setTimeout(() => {
         navigate("/", { replace: true });
-      }, 3500);
+      }, 1500);
     } catch (error) {
       console.error("[PaymentPage] Error during payment process:", error);
       const errorMessage =
@@ -410,7 +376,7 @@ export const PaymentPage = () => {
       toast.error(`Lỗi thanh toán: ${errorMessage}`);
       setIsPaymentComplete(false);
     } finally {
-      setIsLoading(false); // Kết thúc loading
+      setIsLoading(false);
     }
   };
 
@@ -503,6 +469,93 @@ export const PaymentPage = () => {
     );
   }
 
+  const handleOpenClearAllModal = () => {
+    setIsClearAllModalOpen(true);
+  };
+
+  const handleConfirmClearAll = async () => {
+    try {
+      // Lấy cartId từ state
+      if (!cartId) {
+        toast.error("Không tìm thấy ID giỏ hàng");
+        return;
+      }
+
+      setIsLoading(true);
+
+      // Gọi API xóa toàn bộ cart items chưa thanh toán
+      const response = await fetch(
+        `http://localhost:3000/cart-items/cart/${cartId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Lỗi khi xóa giỏ hàng: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("[PaymentPage] Đã xóa giỏ hàng:", result);
+
+      // Cập nhật UI
+      setProcessedData([]);
+      setIsClearAllModalOpen(false);
+      toast.success("Đã xóa tất cả sản phẩm khỏi giỏ hàng");
+
+      setTimeout(() => {
+        navigate("/", { replace: true });
+      }, 1500);
+    } catch (error) {
+      console.error("[PaymentPage] Lỗi khi xóa giỏ hàng:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Vui lòng thử lại.";
+      toast.error(`Không thể xóa giỏ hàng: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  interface ClearAllModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+  }
+
+  const ClearAllModal = ({
+    isOpen,
+    onClose,
+    onConfirm,
+  }: ClearAllModalProps) => {
+    return (
+      <Modal
+        title="Clear all"
+        open={isOpen}
+        onCancel={onClose}
+        footer={null}
+        centered
+        className="clear-all-modal"
+        destroyOnClose
+      >
+        <div className="product-card-line"></div>
+        <div className="clear-all-content">
+          <p>Do you really want to clear all items?</p>
+          <div className="clear-all-buttons">
+            <Button onClick={onClose} className="btn-back">
+              Back
+            </Button>
+            <Button onClick={onConfirm} className="btn-confirm-clear">
+              Confirm
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  };
+
   // --- Phần Render JSX ---
   return (
     <div className="payment-page">
@@ -510,18 +563,24 @@ export const PaymentPage = () => {
       <div className="payment_container">
         <div className="payment_left">
           <AddressPayment
-            address={
-              userAddress || {
-                name: "Loading...",
-                phone: "...",
-                address: "...",
-              }
-            }
+            address={userAddress || null}
             onEdit={handleOpenUpdateAddressModal}
+            isLoading={isLoading}
           />
 
           <div className="payment_left_detail">
-            <div className="payment_left_detail_name">Review item by store</div>
+            <div className="payment_left_detail_header">
+              <div className="payment_left_detail_name">
+                Review item by store
+              </div>
+              <div
+                className="payment_left_detail_clear_all"
+                onClick={handleOpenClearAllModal}
+              >
+                Clear all
+              </div>
+            </div>
+
             <div className="payment_left_detail_line"></div>
             {/* Render các shop và sản phẩm từ processedData */}
             {processedData.map((shop, index) => (
@@ -653,9 +712,14 @@ export const PaymentPage = () => {
 
       <UpdateAddressModal
         isOpen={isUpdateAddressModalOpen}
-        onClose={() => setIsUpdateAddressModalOpen(false)}
+        onClose={() => {
+          if (!isLoading) {
+            setIsUpdateAddressModalOpen(false);
+          }
+        }}
         onConfirm={handleUpdateAddress}
         initialData={userAddress}
+        isLoading={isLoading}
       />
 
       {/* Modal chọn voucher */}
@@ -665,7 +729,12 @@ export const PaymentPage = () => {
         onSelectVoucher={setSelectedVoucher}
       />
 
-      {/* Container cho Toastify */}
+      <ClearAllModal
+        isOpen={isClearAllModalOpen}
+        onClose={() => setIsClearAllModalOpen(false)}
+        onConfirm={handleConfirmClearAll}
+      />
+
       <ToastContainer
         position="top-right"
         autoClose={3000}

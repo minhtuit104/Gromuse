@@ -152,7 +152,7 @@ const OrderHistory = () => {
                         }}
                       />
                     </div>
-                    <div className="product-info">
+                    <div className="product-info-history">
                       <div className="product-name-shop">
                         {order.product.name}
                       </div>
@@ -163,9 +163,9 @@ const OrderHistory = () => {
                     <img
                       src={IconArrowRight}
                       alt="IconArrowRight"
-                      className="ic_20 arrow_right"
+                      className="ic_20 arrow_right-orderShop"
                     />
-                    <div className="customer-info">
+                    <div className="customer-info-history">
                       <div className="customer-name">{order.customer.name}</div>
                       <div className="customer-address">
                         {order.customer.address}
