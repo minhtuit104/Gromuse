@@ -90,8 +90,11 @@
   align-items: center;
 }
 
-.product-info {
+.product-info-cancel {
   width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 img.ic_20.arrow_right {
@@ -115,10 +118,13 @@ img.ic_20.arrow_right {
   margin: 0 15px;
 }
 
+img.ic_20.arrow_right-orderShop {
+  margin-left: 140px;
+}
+
 /* Customer Info */
-.customer-info {
-  width: 400px;
-  flex-grow: 1;
+.customer-info-cancel {
+  width: 700px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -138,7 +144,7 @@ img.ic_20.arrow_right {
 
 /* Price Info */
 .price-info-cancel {
-  width: 100px;
+  width: 150px;
   display: flex;
   align-items: center;
   gap: 10px;

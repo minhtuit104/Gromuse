@@ -1,10 +1,10 @@
 @import url(../../assets/css/styles.css);
 
 .home-page {
-    background-color: var(--red50);
-    height: auto;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
+  background-color: var(--white100);
+  height: auto;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
 }

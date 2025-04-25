@@ -304,7 +304,7 @@ const OrderShop = () => {
                         }}
                       />
                     </div>
-                    <div className="product-info">
+                    <div className="product-info-orderShop">
                       <div className="product-name-shop">
                         {order.product.name}
                       </div>
@@ -317,7 +317,7 @@ const OrderShop = () => {
                     <img
                       src={IconArrowRight}
                       alt="IconArrowRight"
-                      className="ic_20 arrow_right"
+                      className="ic_20 arrow_right-orderShop"
                     />
 
                     {/* Thông tin khách hàng (giữ nguyên) */}
@@ -346,10 +346,8 @@ const OrderShop = () => {
 
                     {/* Nút hành động */}
                     <div className="action-button">
-                      {/* Nút chấp nhận */}
                       <div
                         className="icon_check"
-                        // *** THAY ĐỔI: Truyền cả order object ***
                         onClick={() => handleAcceptOrder(order)}
                         title="Xác nhận hoàn thành"
                       >

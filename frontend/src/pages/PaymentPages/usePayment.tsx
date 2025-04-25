@@ -83,16 +83,16 @@ const usePayment = () => {
   }, []);
 
   const fetchUserData = useCallback(async () => {
-    const userId = getUserIdFromToken(); // Lấy userId
+    const userId = getUserIdFromToken();
     if (!userId) {
       setUserError("Không thể xác thực người dùng. Vui lòng đăng nhập lại.");
       setUserLoading(false);
-      setUserAddress(null); // Đặt địa chỉ về null
+      setUserAddress(null);
       return;
     }
 
-    setUserLoading(true); // Bắt đầu loading user data
-    setUserError(null); // Reset lỗi user data
+    setUserLoading(true);
+    setUserError(null);
     try {
       const userDataResponse = await fectchUserName(userId);
       console.log("[usePayment] User data fetched:", userDataResponse);
@@ -102,24 +102,18 @@ const usePayment = () => {
         typeof userDataResponse === "object" &&
         userDataResponse.idUser
       ) {
-        // Gán trực tiếp userDataResponse vào biến user
         const user = userDataResponse;
-        // Cập nhật state userAddress
         setUserAddress({
           name: user.name || "Chưa cập nhật",
-          // Sử dụng user.phoneNumber vì đó là tên trường trong entity User và token payload
           phone: user.phoneNumber || "Chưa cập nhật",
-          // user.address có thể là null, sẽ được xử lý thành "Chưa cập nhật"
-          address: user.address,
+          address: user.address || "Chưa cập nhật",
         });
       } else {
-        // Nếu userDataResponse không tồn tại hoặc không có idUser
         throw new Error(
           "Dữ liệu người dùng trả về không hợp lệ hoặc không tìm thấy."
         );
       }
     } catch (error) {
-      // Xử lý lỗi khi fetch user data
       console.error("[usePayment] Error fetching user data:", error);
       setUserError(
         error instanceof Error

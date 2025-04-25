@@ -86,12 +86,11 @@
   align-items: center;
 }
 
-.product-info {
+.product-info-orderShop {
   width: 200px;
-}
-
-img.ic_20.arrow_right {
-  margin-right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .product-name-shop {
@@ -111,9 +110,13 @@ img.ic_20.arrow_right {
   margin: 0 15px;
 }
 
+img.ic_20.arrow_right-orderShop {
+  margin-left: 140px;
+}
+
 /* Customer Info */
 .customer-info {
-  flex-grow: 1;
+  width: 600px;
   display: flex;
   flex-direction: column;
   gap: 5px;

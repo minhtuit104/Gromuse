@@ -17,6 +17,7 @@ export class AuthService {
   ) {}
 
   async register(createUserDto: CreateUserDto, role: number = 1) {
+    console.log('Received data:', createUserDto);
     //kiểm tra xem idUser đã tồn tại hay chưa
     const findUserByEmail = await this.userRepository.findOne({
       where: { email: createUserDto.email },
@@ -29,7 +30,8 @@ export class AuthService {
       throw new HttpException('Email hoặc số điện thoại đã tồn tại', 400);
     } else {
       //tạo ra một đối tượng user
-      const newUser: CreateUserDto = {
+      const newUser = {
+        ...createUserDto,
         name: createUserDto.name,
         email: createUserDto.email,
         birthday: createUserDto.birthday,

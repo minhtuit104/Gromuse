@@ -6,9 +6,10 @@ import IconError from "../../assets/images/icons/ic_error.svg";
 import IconEmail from "../../assets/images/icons/ic_email.svg";
 import IconPhone from "../../assets/images/icons/ic_phone.svg";
 import IconLockpass from "../../assets/images/icons/ic_lockpass.svg";
+import IconMap from "../../assets/images/icons/ic_location.svg";
 import "./SignUpLogInForm.css";
 import { loginApi, registerApi } from "../../Service/UserService";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 const SignUpLogInForm: React.FC = () => {
@@ -23,6 +24,7 @@ const SignUpLogInForm: React.FC = () => {
     password: "",
     name: "",
     phoneNumber: "",
+    address: "",
   });
 
   // Hàm xử lý validate email
@@ -73,10 +75,11 @@ const SignUpLogInForm: React.FC = () => {
       console.log("API:======", res);
       if (res && res.data.access_token) {
         localStorage.setItem("token", res.data.access_token);
+        localStorage.setItem("userRole", "customer");
         setTimeout(() => {
           setIsLoading(false);
           window.location.href = "/";
-        }, 500);
+        }, 1500);
         toast.success("Login successful!");
       } else {
         if (res && res.status === 400) {
@@ -95,6 +98,7 @@ const SignUpLogInForm: React.FC = () => {
     email: "",
     phoneNumber: "",
     password: "",
+    address: "",
   });
 
   // Hàm xử lý validate đăng kí
@@ -114,6 +118,15 @@ const SignUpLogInForm: React.FC = () => {
           newErrors.name = "Name must be at least 2 characters long";
         } else {
           newErrors.name = "";
+        }
+        break;
+      case "address":
+        if (!value.trim()) {
+          newErrors.address = "Address is required";
+        } else if (value.length < 5) {
+          newErrors.address = "The address must have at least 5 characters";
+        } else {
+          newErrors.address = "";
         }
         break;
       case "email":
@@ -156,7 +169,8 @@ const SignUpLogInForm: React.FC = () => {
         formData.name,
         formData.email,
         formData.phoneNumber,
-        formData.password
+        formData.password,
+        formData.address
       );
       console.log("Registration successful:", res);
       if (res && res.status === 400) {
@@ -168,6 +182,7 @@ const SignUpLogInForm: React.FC = () => {
           email: "",
           phoneNumber: "",
           password: "",
+          address: "",
         });
         navigate("/login");
       }
@@ -275,86 +290,21 @@ const SignUpLogInForm: React.FC = () => {
             </div>
             <div className="input-box">
               <input
-                type="phonenumber"
-                name="phoneNumber"
-                placeholder="Phone number"
-                value={formData.phoneNumber}
-                onChange={handleRegisterChange}
-              />
-              <img
-                src={IconPhone}
-                alt="user"
-                className="ic_20 icon-user-pass"
-              />
-              {errors.phoneNumber && (
-                <div className="error-message">
-                  <img src={IconError} alt="error" className="ic-error" />
-                  {errors.phoneNumber}
-                </div>
-              )}
-            </div>
-            <div className="input-box">
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleRegisterChange}
-              />
-              <img
-                src={IconLockpass}
-                alt="user"
-                className="ic_20 icon-user-pass"
-              />
-              {errors.password && (
-                <div className="error-message">
-                  <img src={IconError} alt="error" className="ic-error" />
-                  {errors.password}
-                </div>
-              )}
-            </div>
-            <button type="submit" className="btn">
-              Register
-            </button>
-          </form>
-        </div>
-        {/* Register Form ---------------------------------------------*/}
-        <div className="form-box register">
-          <form action="##" onSubmit={handleRegister} className="formLoginUser">
-            <h1>Registration</h1>
-            <div className="input-box">
-              <input
                 type="text"
-                name="name"
-                placeholder="Username"
-                value={formData.name}
-                onChange={handleRegisterChange}
-              />
-              <img src={IconUser} alt="user" className="ic_20 icon-user-pass" />
-              {errors.name && (
-                <div className="error-message">
-                  <img src={IconError} alt="error" className="ic-error" />
-                  {errors.name}
-                </div>
-              )}
-            </div>
-            <div className="input-box">
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
+                name="address"
+                placeholder="Address"
+                value={formData.address}
                 onChange={handleRegisterChange}
               />
               <img
-                src={IconEmail}
-                alt="user"
+                src={IconMap}
+                alt="address"
                 className="ic_20 icon-user-pass"
               />
-              {errors.email && (
+              {errors.address && (
                 <div className="error-message">
                   <img src={IconError} alt="error" className="ic-error" />
-                  {errors.email}
+                  {errors.address}
                 </div>
               )}
             </div>
@@ -429,6 +379,17 @@ const SignUpLogInForm: React.FC = () => {
           </div>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 };

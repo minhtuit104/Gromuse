@@ -1,8 +1,8 @@
 import "react-toastify/dist/ReactToastify.css";
 import { Routes, Route } from "react-router-dom";
 import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
-// import LoginShop from "./pages/LoginShop/loginShop";
-// import DashboardPage from "./pages/DashboardPage/DashboardPage";
+import LoginShop from "./pages/LoginShop/loginShop";
+import DashboardPage from "./pages/DashboardPage/DashboardPage";
 import { AuthRoute, PrivateRoute } from "./router/protectRouter";
 import HomePage from "./pages/HomePage/HomePage";
 import { PaymentPage } from "./pages/PaymentPages/index";
@@ -15,6 +15,7 @@ import OrderCancel from "./pages/OrderShop/OrderCancel/OrderCancel";
 import RatingProduct from "./pages/OrderStatus/RatingProduct/RatingProduct";
 import ListProduct from "./pages/ListProduct/ListProduct";
 import OrderStatuss from "./pages/OrderStatus/OrderStatus";
+import Notification from "./pages/Notification/Notification";
 
 function App() {
   return (
@@ -29,14 +30,23 @@ function App() {
             </AuthRoute>
           }
         />
-        {/* <Route
+        {/* Chỉ có thể vào trang DashboardPage nếu đã đăng nhập */}
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/loginShop"
           element={
             <AuthRoute>
               <LoginShop />
             </AuthRoute>
           }
-        /> */}
+        />
         {/* Chỉ có thể vào trang home nếu đã đăng nhập */}
         <Route
           path="/"
@@ -46,6 +56,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         {/* Thêm tuyến đường cho trang PaymentPage */}
         <Route
           path="/payment"
@@ -142,6 +153,15 @@ function App() {
           element={
             <PrivateRoute>
               <ListProduct />
+            </PrivateRoute>
+          }
+        />
+        {/* Thêm tuyến đường cho trang Notification */}
+        <Route
+          path="/notification"
+          element={
+            <PrivateRoute>
+              <Notification />
             </PrivateRoute>
           }
         />

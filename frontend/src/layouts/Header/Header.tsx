@@ -2,10 +2,10 @@ import "./header.css";
 import IconList from "../../assets/images/icons/ic_ list.svg";
 import IconSearch from "../../assets/images/icons/ic_ search.svg";
 import IconCart from "../../assets/images/icons/ic_cart.svg";
-import IconNotification from "../../assets/images/icons/ic_notification.svg";
 import IconMessage from "../../assets/images/icons/ic_message.svg";
 import ImgAvatar from "../../assets/images/avt.jpg";
 import { useNavigate } from "react-router-dom";
+import NotificationDropdown from "../../components/NotificationDropdown/NotificationDropdown";
 
 function Header() {
   const navigate = useNavigate();
@@ -19,17 +19,14 @@ function Header() {
   };
 
   const handleLogout = () => {
-    // 1. Xóa token khỏi localStorage
     localStorage.removeItem("token");
-
     localStorage.removeItem("currentCartId");
     localStorage.removeItem("buyNowCartId");
     localStorage.removeItem("isBuyNow");
     localStorage.removeItem("cartUpdated");
     localStorage.removeItem("lastPaidCartId");
-
-    navigate("/login"); // Hoặc '/login-shop'
-
+    localStorage.removeItem("userRole");
+    navigate("/login");
     console.log("User logged out.");
   };
 
@@ -49,14 +46,8 @@ function Header() {
         <img src={IconSearch} alt="icon-search" className="ic_32" />
       </div>
       <div className="header-right">
-        <div className="header-right-notification">
-          <img
-            src={IconNotification}
-            alt="icon-notification"
-            className="ic_16"
-          />
-          <span className="quantity">21</span>
-        </div>
+        <NotificationDropdown />
+
         <div className="header-right-message">
           <img src={IconMessage} alt="icon-message" className="ic_16" />
           <span className="quantity">53</span>

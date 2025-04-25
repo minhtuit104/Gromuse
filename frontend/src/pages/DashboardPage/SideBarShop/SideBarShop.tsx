@@ -25,8 +25,10 @@ const SidebarShop: React.FC<SidebarProps> = ({ open, onClose }) => {
       <div className="sidebar_header">
         <img src={ImgAvatar} alt="User Avatar" />
         <div className="sidebar_header_info">
-          <h3>Ashfak Sayem</h3>
-          <p>ashfaksayem@gmail.com</p>
+          <h3>
+            Dương Văn Tuyến<nav></nav>
+          </h3>
+          <p>tuyen@gmail.com</p>
         </div>
       </div>
 

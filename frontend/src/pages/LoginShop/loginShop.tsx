@@ -8,7 +8,7 @@ import IconAddress from "../../assets/images/icons/ic_location.svg";
 import { useState } from "react";
 import "./loginShop.css";
 import { loginApi, registerApiShop } from "../../Service/UserService";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import * as yup from "yup";
 import { Formik } from "formik";
 import { useNavigate } from "react-router-dom";
@@ -71,9 +71,10 @@ const LoginShop = () => {
       console.log("API login: ", res);
       if (res && res.data.access_token) {
         localStorage.setItem("token", res.data.access_token);
+        localStorage.setItem("userRole", "shop");
         setTimeout(() => {
           setIsLoading(false);
-          window.location.href = "/";
+          window.location.href = "/dashboard";
         }, 500);
         toast.success("Login successful!");
       } else {
@@ -294,6 +295,17 @@ const LoginShop = () => {
           </Formik>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 };

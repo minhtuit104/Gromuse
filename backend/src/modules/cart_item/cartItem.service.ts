@@ -353,12 +353,7 @@ export class CartItemService {
           cart: { id: cartId },
           id: In(cartItemIds), // <<< Lọc theo mảng cartItemIds
         },
-        relations: ['product'], // Load product để cập nhật 'sold' nếu cần
       });
-
-      this.logger.log(
-        `[updateItemsStatus] Found ${cartItems.length} CartItems matching provided IDs to potentially update.`,
-      );
 
       if (cartItems.length === 0) {
         this.logger.warn(
@@ -373,7 +368,6 @@ export class CartItemService {
       }
 
       const itemsToSave: CartItem[] = [];
-      const productsToUpdateSold: { id: number; quantity: number }[] = [];
 
       for (const cartItem of cartItems) {
         const wasAlreadyPaid = cartItem.isPaid;
@@ -387,13 +381,6 @@ export class CartItemService {
           if (isPaid) {
             // Nếu đánh dấu là đã thanh toán, đặt trạng thái là TO_RECEIVE
             cartItem.status = OrderStatus.TO_RECEIVE;
-            // Nếu trước đó chưa thanh toán, thêm vào danh sách cần cập nhật 'sold'
-            if (!wasAlreadyPaid && cartItem.product) {
-              productsToUpdateSold.push({
-                id: cartItem.productId,
-                quantity: cartItem.quantity,
-              });
-            }
           } else {
             // Nếu đánh dấu là chưa thanh toán (trường hợp hiếm), reset status
             cartItem.status = null;
@@ -411,28 +398,6 @@ export class CartItemService {
         this.logger.log(
           `[updateItemsStatus] Saved ${savedCount} CartItems with new status.`,
         );
-
-        // Cập nhật số lượng bán sau khi lưu CartItem thành công
-        if (productsToUpdateSold.length > 0) {
-          this.logger.log(
-            `[updateItemsStatus] Updating sold count for ${productsToUpdateSold.length} products.`,
-          );
-          const updateSoldPromises = productsToUpdateSold.map((p) =>
-            this.productRepository.increment({ id: p.id }, 'sold', p.quantity),
-          );
-          try {
-            await Promise.all(updateSoldPromises);
-            this.logger.log(
-              `[updateItemsStatus] Successfully updated sold counts.`,
-            );
-          } catch (soldError) {
-            this.logger.error(
-              `[updateItemsStatus] Error updating sold counts`,
-              soldError.stack,
-            );
-            // Không nên throw lỗi ở đây để tránh rollback toàn bộ
-          }
-        }
       } else {
         this.logger.log(
           `[updateItemsStatus] No CartItems needed status update for cartId: ${cartId}.`,

@@ -8,9 +8,14 @@ import { AddressDto } from "../../dtos/address.dto";
 interface AddressPaymentProps {
   address: AddressDto | null;
   onEdit: () => void;
+  isLoading?: boolean;
 }
 
-const AddressPayment: React.FC<AddressPaymentProps> = ({ address, onEdit }) => {
+const AddressPayment: React.FC<AddressPaymentProps> = ({
+  address,
+  onEdit,
+  isLoading = false,
+}) => {
   const displayName = address?.name || "Đang tải...";
   const displayPhone = address?.phone || "...";
   const displayAddress = address?.address || "...";
@@ -21,8 +26,8 @@ const AddressPayment: React.FC<AddressPaymentProps> = ({ address, onEdit }) => {
         <h1 className="payment_left_location_name">Delivery information</h1>
         <div className="payment_left_location_icon" onClick={onEdit}>
           <img src={IconEdit} alt="Edit Icon" className="ic_28" />
-          <button className="edit-button" onClick={onEdit}>
-            Edit
+          <button className="edit-button" disabled={isLoading} onClick={onEdit}>
+            {isLoading ? "Updating..." : "Edit"}
           </button>
         </div>
       </div>

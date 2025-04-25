@@ -1,4 +1,5 @@
 import axios from "./axios";
+import { AxiosError } from "axios";
 
 const loginApi = async (identifier: string, password: string) => {
   const res = await axios.post("/api/v1/auth/login", {
@@ -13,13 +14,15 @@ const registerApi = (
   name: string,
   email: string,
   phoneNumber: string,
-  password: string
+  password: string,
+  address: string
 ) => {
   return axios.post("/api/v1/auth/register", {
     name,
     email,
     phoneNumber,
     password,
+    address,
   });
 };
 
@@ -108,26 +111,77 @@ const updateUserProfile = async (updateData: {
   birthday?: string;
   phoneNumber?: string;
   address?: string;
-}) => {
+}): Promise<any> => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Authentication required. Please log in.");
+  }
+
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Token is missing");
-    }
+    console.log("Sending update profile request with data:", updateData);
     const response = await axios.put(
       "/api/v1/users/update-profile",
       updateData,
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }
     );
-    console.log("API response update profile ===", response);
+
+    console.log("Update profile response========:", response.data);
+    if (response.data?.status === "success") {
+      const cachedUserData = localStorage.getItem("userData");
+      if (cachedUserData) {
+        try {
+          const userData = JSON.parse(cachedUserData);
+          const updatedUserData = { ...userData, ...updateData };
+          localStorage.setItem("userData", JSON.stringify(updatedUserData));
+        } catch (e) {
+          console.warn("Failed to update cached user data", e);
+        }
+      }
+    }
+
     return response;
-  } catch (error) {
-    console.error("Error updating user profile:", error);
+  } catch (error: unknown) {
+    if (error instanceof AxiosError) {
+      console.error("Error updating user profile:", error);
+      console.error("Error response data:", error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message;
+      throw new Error(errorMessage);
+    }
     throw error;
   }
 };
+// const updateUserProfile = async (updateData: {
+//   name?: string;
+//   email?: string;
+//   birthday?: string;
+//   phoneNumber?: string;
+//   address?: string;
+// }) => {
+//   try {
+//     const token = localStorage.getItem("token");
+//     if (!token) {
+//       throw new Error("Token is missing");
+//     }
+//     console.log("Sending update profile request with data:", updateData);
+//     const response = await axios.put(
+//       "/api/v1/users/update-profile",
+//       updateData,
+//       {
+//         headers: { Authorization: `Bearer ${token}` },
+//       }
+//     );
+//     console.log("API response ===", response);
+//     return response.data;
+//   } catch (error) {
+//     console.error("Error updating user profile:", error);
+//     throw error;
+//   }
+// };
 
 export {
   loginApi,
