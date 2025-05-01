@@ -32,6 +32,11 @@
   align-items: center;
 }
 
+.search{
+  border-width: 0px;
+  border-radius: 16px;
+}
+
 .header_main_right {
   display: flex;
   width: 30%;

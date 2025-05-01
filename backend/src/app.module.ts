@@ -22,13 +22,14 @@ import { Payment } from './typeorm/entities/Payment';
 import { Voucher } from './typeorm/entities/Voucher';
 import { CartItemModule } from './modules/cart_item/cartItem.module';
 import { RatingsModule } from './modules/rating/ratings.module';
+import { DashboardModule } from './modules/dashboard_shop/dashboard.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       database: 'web_gromuse',
       username: 'root',
-      password: '12345',
+      password: 'luangoc0204',
       port: 3306,
       host: 'localhost',
       type: 'mysql',
@@ -58,6 +59,7 @@ import { RatingsModule } from './modules/rating/ratings.module';
     PaymentModule,
     CartItemModule,
     RatingsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,12 +6,14 @@ import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.int
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Sử dụng Global Validation Pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
   // Cấu hình Swagger
   const config = new DocumentBuilder()
@@ -20,9 +22,10 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('Accounts')
     .addTag('Auth')
-    .addTag('Products') 
+    .addTag('Products')
     .addTag('Cart')
     .addTag('Users')
+    .addTag('Dashboard')
     .addBearerAuth()
     .build();
 
@@ -31,17 +34,17 @@ async function bootstrap() {
     customSiteTitle: 'Gromuse API Documentation',
   });
 
-  const corsOptions: CorsOptions = { 
-    origin: 'http://localhost:5173', 
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', 
+  const corsOptions: CorsOptions = {
+    origin: 'http://localhost:5173',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization', 
-    exposedHeaders: 'Authorization', 
-    maxAge: 3600, 
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+    exposedHeaders: 'Authorization',
+    maxAge: 3600,
   };
   app.enableCors(corsOptions);
 
-  const port = process.env.PORT ?? 3000; 
+  const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
 }

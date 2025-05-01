@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
 import LoginShop from "./pages/LoginShop/loginShop";
 import DashboardPage from "./pages/DashboardPage/DashboardPage";
-import { AuthRoute, PrivateRoute } from "./router/protectRouter";
+import { AuthRoute, PrivateRoute, ShopRoute } from "./router/protectRouter";
 import HomePage from "./pages/HomePage/HomePage";
 import { PaymentPage } from "./pages/PaymentPages/index";
 import AddProduct from "./pages/AddProducts/addProduct";
@@ -34,9 +34,9 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <PrivateRoute>
+            <ShopRoute>
               <DashboardPage />
-            </PrivateRoute>
+            </ShopRoute>
           }
         />
         <Route
@@ -70,17 +70,17 @@ function App() {
         <Route
           path="/add_product"
           element={
-            <PrivateRoute>
+            <ShopRoute>
               <AddProduct />
-            </PrivateRoute>
+            </ShopRoute>
           }
         />
         <Route
           path="/add_product/:id"
           element={
-            <PrivateRoute>
+            <ShopRoute>
               <AddProduct />
-            </PrivateRoute>
+            </ShopRoute>
           }
         />
         {/* Thêm tuyến đường cho trang DetailPage */}
