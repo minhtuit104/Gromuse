@@ -1,5 +1,6 @@
 import React from "react";
 import { Drawer } from "antd";
+import { useNavigate } from "react-router-dom";
 import ImgAvatar from "../../../assets/images/imagePNG/Avatar.png";
 import IconDash from "../../../assets/images/icons/ic_dashboard.svg";
 import IconProduct from "../../../assets/images/icons/ic_food.svg";
@@ -13,6 +14,14 @@ interface SidebarProps {
 }
 
 const SidebarShop: React.FC<SidebarProps> = ({ open, onClose }) => {
+  const navigate = useNavigate();
+
+  // Hàm xử lý chuyển trang
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    onClose(); // Đóng sidebar sau khi chuyển trang
+  };
+
   return (
     <Drawer
       placement="left"
@@ -35,17 +44,17 @@ const SidebarShop: React.FC<SidebarProps> = ({ open, onClose }) => {
       {/* Menu Items */}
       <div className="sidebar_body">
         <ul>
-          <li>
+          <li onClick={() => handleNavigation("/dashboard")}>
             <img src={IconDash} alt="dashboard" className="ic_24" /> Dashboard
           </li>
-          <li>
+          <li onClick={() => handleNavigation("/list_product_Shop")}>
             <img src={IconProduct} alt="product" className="ic_24" /> Products
           </li>
-          <li>
+          <li onClick={() => handleNavigation("/discounts")}>
             <img src={IconDiscount} alt="discount" className="ic_24" />{" "}
             Discounts
           </li>
-          <li>
+          <li onClick={() => handleNavigation("/support")}>
             <img src={IconPhone} alt="phone" className="ic_24" /> Support
           </li>
         </ul>

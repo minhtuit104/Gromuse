@@ -2,6 +2,7 @@ import React from "react";
 import "./productCard.css";
 import ImgPlaceholder from "../../../assets/images/imagePNG/green-broccoli-levitating-white-background 1.png";
 import ImgAdd from "../../../assets/images/icons/ic_add.svg";
+import ImgStar from "../../../assets/images/icons/ic_star_fill.svg";
 
 export interface Product {
   id: number;
@@ -17,6 +18,7 @@ export interface Product {
   startDate?: string;
   endDate?: string;
   description?: string;
+  averageRating?: number;
 }
 
 interface ProductCardProps {
@@ -77,11 +79,13 @@ const isReadable = (textColor: string, backgroundColor: string): boolean => {
   return contrastRatio >= 4.5;
 };
 
-const ProductCard: React.FC<ProductCardProps> = ({
-  product,
-  onAddToCart,
-  style,
-}) => {
+// Format rating to display with one decimal place if needed
+const formatRating = (rating: number | undefined): string => {
+  if (rating === undefined || rating === null) return "0.0";
+  return rating % 1 === 0 ? rating.toString() : rating.toFixed(1);
+};
+
+const ProductCard: React.FC<ProductCardProps> = ({ product, style }) => {
   // Thêm xử lý cho URL hình ảnh
   const imageUrl =
     product.img && product.img.length > 0
@@ -112,6 +116,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ? priceColor
     : defaultTextColor;
 
+  // Format the rating to display
+  const displayRating = formatRating(product.averageRating);
+
   return (
     <div
       className="add-product-card"
@@ -122,6 +129,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className="add-product-image-container">
         <img src={imageUrl} alt={product.name} className="add-product-image" />
+        <div className="rating">
+          <span style={{ color: adjustedNameTagColor, fontWeight: "700" }}>
+            {displayRating}
+          </span>
+          <img src={ImgStar} alt="Star" className="ic_20 " />
+        </div>
       </div>
       <div className="add-product-info">
         <h2 className="add-product-name">
@@ -145,12 +158,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {product.price} $
         </p>
       </div>
-      <button
-        className="add-to-cart-button"
-        onClick={() => onAddToCart(product.id.toString())}
-      >
+      <div className="add-to-cart-button">
         <img src={ImgAdd} alt="Add Icon" className="ic_20" />
-      </button>
+      </div>
     </div>
   );
 };

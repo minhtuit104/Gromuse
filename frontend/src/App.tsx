@@ -16,6 +16,7 @@ import RatingProduct from "./pages/OrderStatus/RatingProduct/RatingProduct";
 import ListProduct from "./pages/ListProduct/ListProduct";
 import OrderStatuss from "./pages/OrderStatus/OrderStatus";
 import Notification from "./pages/Notification/Notification";
+import ListProductUser from "./pages/ListProductUser/ListProductUser";
 
 function App() {
   return (
@@ -149,10 +150,19 @@ function App() {
         />
         {/* Thêm tuyến đường cho trang ListProduct */}
         <Route
-          path="/list_product"
+          path="/list_product_Shop"
           element={
             <PrivateRoute>
               <ListProduct />
+            </PrivateRoute>
+          }
+        />
+        {/* Thêm tuyến đường cho trang ListProductUser */}
+        <Route
+          path="/list_product_User"
+          element={
+            <PrivateRoute>
+              <ListProductUser />
             </PrivateRoute>
           }
         />

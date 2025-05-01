@@ -6,11 +6,13 @@ import { Cart } from '../../typeorm/entities/Cart';
 import { CartItem } from '../../typeorm/entities/CartItem';
 import { CartItemController } from './cartItem.controller';
 import { CartModule } from '../cart/cart.module';
+import { UserModule } from '../users/user.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CartItem, Product, Cart]),
     forwardRef(() => CartModule),
+    UserModule,
   ],
   controllers: [CartItemController],
   providers: [CartItemService],

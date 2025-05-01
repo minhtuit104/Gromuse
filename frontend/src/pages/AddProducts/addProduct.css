@@ -35,119 +35,124 @@
   margin-bottom: 15px;
 }
 
-input.ant-input.ant-input-lg.css-dev-only-do-not-override-1v613y0.ant-input-outlined.input.undefined {
+/* Replace the overly specific input selector with a scoped one */
+.add-product .ant-input.ant-input-outlined {
   border: 2px solid var(--white200) !important;
   transition: border-color 0.3s ease !important;
   border-radius: 10px !important;
 }
 
-input.ant-input.ant-input-lg.css-dev-only-do-not-override-1v613y0.ant-input-outlined.input.undefined:focus {
+.add-product .ant-input.ant-input-outlined:focus {
   border-color: var(--green600) !important;
   outline: none !important;
 }
 
+/* This selector was also causing conflicts */
 .text-input.undefined {
   gap: 5px !important;
 }
 
-.form-grid {
+/* Scope the rest of the classes to the add-product container */
+.add-product .form-grid {
   display: flex;
   flex-direction: column;
 }
 
-.form-group-row {
+.add-product .form-group-row {
   display: flex;
   gap: 40px;
   margin-top: 8px;
 }
 
-.date-picker-wrapper {
+.add-product .date-picker-wrapper {
   display: flex;
   flex-direction: column;
   width: 50%;
   gap: 5px;
 }
 
-.ant-picker {
+.add-product .ant-picker {
   width: 100% !important;
   height: 42px !important;
   border-radius: 10px;
   border: 2px solid var(--white200);
 }
 
-.ant-picker:hover,
-.ant-picker-focused {
+.add-product .ant-picker:hover,
+.add-product .ant-picker-focused {
   border-color: var(--green600) !important;
 }
 
-.form-grid .form-group {
+.add-product .form-grid .form-group {
   width: 100%;
 }
 
-.form-label {
+.add-product .form-label {
   font-size: 15px;
   font-weight: 700;
   color: var(--white800);
 }
 
-.form-label-tag {
+.add-product .form-label-tag {
   gap: 4px;
   display: flex;
   flex-direction: column;
 }
 
-.tag-will {
+.add-product .tag-will {
   color: var(--white500);
 }
 
-.form-label-tag .input-field {
+.add-product .form-label-tag .input-field {
   width: 100%;
   background-color: var(--white100);
 }
 
-.add-product-date {
+/* Rest of the CSS remains the same but with add-product scoping */
+.add-product .add-product-date {
   gap: 25px !important;
   display: flex !important;
   flex-direction: row !important;
 }
 
-.add-product-start {
+/* Continue adding .add-product scoping to all the remaining classes */
+.add-product .add-product-start {
   gap: 4px;
   width: 45%;
   display: flex;
   flex-direction: column;
 }
 
-.add-product-end {
+.add-product .add-product-end {
   gap: 4px;
   width: 45%;
   display: flex;
   flex-direction: column;
 }
 
-.form-group-row.four-div {
+.add-product .form-group-row.four-div {
   gap: 40px;
   width: 100%;
   display: flex;
   justify-content: space-between;
 }
 
-.form-category {
+.add-product .form-category {
   display: flex;
   gap: 4px;
   flex-direction: column;
 }
 
-.form-group-row.three-div {
+.add-product .form-group-row.three-div {
   gap: 10px;
   width: 50%;
   display: flex !important;
   flex-direction: column !important;
 }
 
-.input-field,
-.textarea-field,
-.select-field {
+.add-product .input-field,
+.add-product .textarea-field,
+.add-product .select-field {
   padding: 0.75rem;
   border: 1px solid var(--white200);
   border-radius: 8px;
@@ -156,47 +161,47 @@ input.ant-input.ant-input-lg.css-dev-only-do-not-override-1v613y0.ant-input-outl
   outline: none;
 }
 
-.input-field::placeholder,
-.textarea-field::placeholder,
-.select-field::placeholder {
+.add-product .input-field::placeholder,
+.add-product .textarea-field::placeholder,
+.add-product .select-field::placeholder {
   color: var(--white400);
   font-size: 1rem;
   transition: color 0.2s ease;
 }
 
-.input-field:focus,
-.textarea-field:focus,
-.select-field:focus {
+.add-product .input-field:focus,
+.add-product .textarea-field:focus,
+.add-product .select-field:focus {
   border-color: var(--green600);
 }
 
-.textarea-field {
+.add-product .textarea-field {
   resize: none;
 }
 
-.color-picker-hidden {
+.add-product .color-picker-hidden {
   display: none;
 }
 
-input.text-input.color-text-input {
+.add-product input.text-input.color-text-input {
   border: 1px solid var(--white200);
   border-radius: 8px;
   width: 100%;
   height: 42px;
 }
 
-.color-input-wrapper .color-text-input {
+.add-product .color-input-wrapper .color-text-input {
   padding-left: 15px;
 }
 
-.color-picker-wrapper {
+.add-product .color-picker-wrapper {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-.color-picker-icon {
+.add-product .color-picker-icon {
   position: absolute;
   right: 10px;
   top: 70%;
@@ -206,38 +211,38 @@ input.text-input.color-text-input {
   cursor: pointer;
 }
 
-.product-preview {
+.add-product .product-preview {
   width: 50%;
   gap: 16px;
   display: flex;
   flex-direction: column;
 }
 
-.form-group.mt-4 {
+.add-product .form-group.mt-4 {
   width: 100%;
 }
 
-.remove-image {
+.add-product .remove-image {
   position: absolute;
   top: 0;
   right: 10px;
   z-index: 99;
 }
 
-.image-list {
+.add-product .image-list-product {
   margin-top: 8px;
   gap: 10px;
   display: flex;
   align-items: center;
 }
 
-.image-preview-container {
+.add-product .image-preview-container {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.image-preview {
+.add-product .image-preview {
   position: relative;
   cursor: pointer;
   width: 80px;
@@ -245,20 +250,21 @@ input.text-input.color-text-input {
   border: 1px solid var(--white200);
   transition: transform 0.3s ease;
   border-radius: 25px;
+  padding: 10px;
 }
 
-.image-preview:hover {
+.add-product .image-preview:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-.image-preview img {
+.add-product .image-preview img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.image-hover {
+.add-product .image-hover {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -274,29 +280,29 @@ input.text-input.color-text-input {
   transition: opacity 0.3s ease;
 }
 
-.image-preview:hover .image-hover {
+.add-product .image-preview:hover .image-hover {
   opacity: 1;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.image-hover img.ic_20 {
+.add-product .image-hover img.ic_20 {
   width: 20px;
   height: 20px;
   filter: invert(1);
 }
 
-.modal-preview-image {
+.add-product .modal-preview-image {
   width: 100%;
   max-height: 80vh;
   object-fit: contain;
   border-radius: 10px;
 }
 
-.image-icon {
-  width: 80px;
-  height: 80px;
+.add-product .image-icon-product {
+  width: 72px;
+  height: 72px;
   border: 2px dashed var(--white400);
   border-radius: 16px;
   display: flex;
@@ -305,42 +311,21 @@ input.text-input.color-text-input {
   cursor: pointer;
   transition: border-color 0.3s ease, background-color 0.3s ease;
 }
-#file-input {
+
+.add-product #file-input {
   display: none;
 }
 
-.image-icon:hover {
+.add-product .image-icon-product:hover {
   border-color: var(--green800);
   background-color: var(--white50);
 }
 
-.input-field[type="file"] {
+.add-product .input-field[type="file"] {
   margin-top: 10px;
 }
 
-.add-product-date {
-  display: flex;
-  gap: 20px;
-}
-
-.add-product-start,
-.add-product-end {
-  flex: 1;
-}
-
-select.select-field {
-  width: 100%;
-}
-
-.quill {
-  margin-top: 10px;
-}
-
-.ql-editor.ql-blank {
-  height: auto;
-}
-
-.checkbox-container {
+.add-product .checkbox-container {
   margin-top: 15px;
   width: 10%;
   display: flex;
@@ -348,26 +333,26 @@ select.select-field {
   gap: 10px;
 }
 
-.checkbox-label {
+.add-product .checkbox-label {
   font-size: 15px;
   font-weight: 700;
   color: var(--white700);
 }
 
-.checkbox-input {
+.add-product .checkbox-input {
   width: 20px;
   height: 20px;
   cursor: pointer;
 }
 
-.action-buttons {
+.add-product .action-buttons {
   display: flex;
   justify-content: flex-end;
   align-self: flex-end;
   gap: 10px;
 }
 
-.cancel-button {
+.add-product .cancel-button {
   width: 100px;
   height: 40px;
   background-color: var(--white50);
@@ -379,13 +364,13 @@ select.select-field {
   color: var(--green800);
 }
 
-.cancel-button:hover {
+.add-product .cancel-button:hover {
   background-color: var(--white50) !important;
   color: var(--green800) !important;
   border-color: var(--green800) !important;
 }
 
-.add-button {
+.add-product .add-button {
   width: 100px;
   height: 40px;
   background-color: var(--lime300);
@@ -397,13 +382,13 @@ select.select-field {
   color: var(--green800);
 }
 
-.add-button:hover {
+.add-product .add-button:hover {
   background-color: var(--lime300) !important;
   color: var(--green800) !important;
   border-color: var(--lime300) !important;
 }
 
-.required-asterisk {
+.add-product .required-asterisk {
   font-size: 20px;
   font-weight: 700;
   color: var(--red600);

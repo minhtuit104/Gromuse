@@ -35,6 +35,13 @@ interface PaymentItemProps {
   isSecondShop?: boolean;
 }
 
+const notifyCartUpdated = () => {
+  localStorage.setItem("cartUpdated", "true");
+  window.dispatchEvent(new Event("cartUpdated"));
+  document.dispatchEvent(new Event("cartUpdate"));
+  console.log("[PaymentItem] Dispatched cart update events");
+};
+
 export const PaymentItem = ({
   item,
   onUpdateAmount,
@@ -53,8 +60,16 @@ export const PaymentItem = ({
     setShowAllProducts(true);
   };
 
-  const handleCountChange = (productId: string, newCount: number) => {
-    onUpdateAmount(productId, newCount);
+  const handleCountChange = async (productId: string, newCount: number) => {
+    try {
+      // Call the onUpdateAmount function provided by parent
+      await onUpdateAmount(productId, newCount);
+
+      // Manually trigger cart update events to ensure header updates
+      notifyCartUpdated();
+    } catch (error) {
+      console.error("Error updating product count:", error);
+    }
   };
 
   const handleOpenDeleteModal = (product: Product) => {
@@ -62,11 +77,20 @@ export const PaymentItem = ({
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (productToDelete) {
-      onUpdateAmount(productToDelete.id, 0);
-      setIsDeleteModalOpen(false);
-      setProductToDelete(null);
+      try {
+        // Update quantity to 0 which should remove the item
+        await onUpdateAmount(productToDelete.id, 0);
+
+        // Manually trigger cart update events
+        notifyCartUpdated();
+
+        setIsDeleteModalOpen(false);
+        setProductToDelete(null);
+      } catch (error) {
+        console.error("Error deleting product:", error);
+      }
     }
   };
 

@@ -1,59 +1,150 @@
 @import url(../../assets/css/styles.css);
 
-.group-section{
-    width: calc(100% - 90px);
-    height: 155px;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    grid-gap: 10px;
-    margin-top: 33px;
+.group-section-container {
+  width: 94.1%;
 }
 
-.group-section-item{
-    background-color: var(--white50);
-    height: 150px;
-    border-radius: 20px;
-    display: flex;
-    justify-content: space-between;
-    border: none;
-    cursor: pointer;
+.group-section {
+  width: 100%;
+  height: 155px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-gap: 10px;
+  margin-top: 20px;
 }
 
-.group-section-item-text{
-    width: 169px;
-    display: flex;
-    flex-direction: column;
-    gap: 13px;
-    padding: 16px 0 16px 16px;
+.see-more-category {
+  display: flex;
+  justify-content: flex-end;
 }
 
-.group-section-item-text h3{
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--green800);
+.see-more-category span {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--orange400);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-.group-section-item-text span{
-    font-size: 21px;
-    font-weight: 400;
-    color: var(--white500);
+.see-more-category span:hover {
+  color: var(--orange500);
 }
 
-.group-section-item-img{
-    width: 100px;
-    height: 100px;
-    margin-top: 40px;
-    padding-right: 10px;
+.see-more-category img {
+  width: 28px;
+  height: 28px;
+  filter: invert(52%) sepia(30%) saturate(3351%) hue-rotate(1deg)
+    brightness(101%) contrast(100%);
 }
 
-.group-section-item-img img{
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.group-section-item {
+  background-color: var(--white50);
+  height: 150px;
+  border-radius: 20px;
+  display: flex;
+  justify-content: space-between;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
+/* Add hover effect similar to ListProduct */
+.group-section-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
 
+/* Add active state styling */
+.group-section-item.active {
+  background-color: var(--green400);
+}
 
+/* Style the text in active state */
+.group-section-item.active .group-section-item-text h3 {
+  color: var(--white50);
+  font-weight: 700;
+}
 
+.group-section-item.active .group-section-item-text span {
+  color: var(--white50);
+  font-weight: 500;
+}
 
+.group-section-item-text {
+  width: 169px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 16px 0 16px 16px;
+}
 
+.group-section-item-text h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--green800);
+  transition: color 0.2s;
+}
+
+.group-section-item-text span {
+  font-size: 21px;
+  font-weight: 400;
+  color: var(--white500);
+  transition: color 0.2s;
+}
+
+.group-section-item-img {
+  width: 100px;
+  height: 100px;
+  margin-top: 40px;
+  padding-right: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.group-section-item-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+
+.group-section-item:hover .group-section-item-img img {
+  transform: scale(1.05);
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 1200px) {
+  .group-section {
+    grid-template-columns: repeat(3, 1fr);
+    height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .group-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .group-section {
+    grid-template-columns: 1fr;
+  }
+
+  .group-section-item {
+    height: 130px;
+  }
+
+  .group-section-item-text h3 {
+    font-size: 24px;
+  }
+
+  .group-section-item-text span {
+    font-size: 18px;
+  }
+}

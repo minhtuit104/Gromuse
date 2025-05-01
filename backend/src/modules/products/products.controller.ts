@@ -9,21 +9,52 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
-import { ProductsService } from './products.service';
+import { formatCategoryName, ProductsService } from './products.service';
 import { Product } from '../../typeorm/entities/Product';
 import { CartService } from '../cart/cart.service';
-import { tagMap } from './products.service';
+import {
+  tagMap,
+  categoryDisplayNames,
+  displayNameToKey,
+  categoryImageUrls,
+} from './products.service';
+import { Repository } from 'typeorm';
+import { Category } from '../../typeorm/entities/Category';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Controller('api/products')
 export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly cartService: CartService,
+    @InjectRepository(Category)
+    private readonly categoriesRepository: Repository<Category>,
   ) {}
 
   @Get()
-  async findAll(): Promise<Product[]> {
+  async findAll(@Query('category') category?: string): Promise<Product[]> {
+    if (category) {
+      return this.productsService.findByCategory(category);
+    }
     return this.productsService.findAll();
+  }
+
+  @Get('categories')
+  async getAllCategories() {
+    const categories = await this.categoriesRepository.find();
+
+    return categories.map((category) => {
+      const displayName =
+        categoryDisplayNames[category.name] ||
+        formatCategoryName(category.name);
+
+      return {
+        key: category.name,
+        displayName,
+        tag: tagMap[category.name] || '🏷️ Default Tag',
+        imageUrl: category.imageUrl || categoryImageUrls[category.name] || null,
+      };
+    });
   }
 
   @Get(':id')
@@ -61,8 +92,18 @@ export class ProductsController {
       };
 
       if (typeof productData.category === 'string') {
-        normalizedData.category =
-          await this.productsService.findOrCreateCategory(productData.category);
+        // Kiểm tra xem category có phải là tên hiển thị không
+        if (displayNameToKey[productData.category]) {
+          normalizedData.category =
+            await this.productsService.findOrCreateCategory(
+              displayNameToKey[productData.category],
+            );
+        } else {
+          normalizedData.category =
+            await this.productsService.findOrCreateCategory(
+              productData.category,
+            );
+        }
       }
 
       const product = await this.productsService.create(normalizedData);
@@ -92,9 +133,16 @@ export class ProductsController {
       let category = existingProduct.category;
       if (productData.category) {
         if (typeof productData.category === 'string') {
-          category = await this.productsService.findOrCreateCategory(
-            productData.category,
-          );
+          // Kiểm tra xem category có phải là tên hiển thị không
+          if (displayNameToKey[productData.category]) {
+            category = await this.productsService.findOrCreateCategory(
+              displayNameToKey[productData.category],
+            );
+          } else {
+            category = await this.productsService.findOrCreateCategory(
+              productData.category,
+            );
+          }
         } else {
           category = productData.category;
         }
@@ -144,6 +192,50 @@ export class ProductsController {
       console.error('Error getting most sold products:', error);
       throw new HttpException(
         error.message || 'Failed to get most sold products',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('categories/update-images') // Make sure you call this endpoint (e.g., using Postman or curl)
+  async updateCategoryImages() {
+    try {
+      const categories = await this.categoriesRepository.find();
+      let updatedCount = 0;
+
+      for (const category of categories) {
+        // Use the correct map from the service
+        const correctImageUrl = categoryImageUrls[category.name];
+        // Check if the correct URL exists AND if the current DB URL is missing or different
+        if (correctImageUrl && category.imageUrl !== correctImageUrl) {
+          console.log(
+            `Updating category ${category.name}: '${category.imageUrl}' -> '${correctImageUrl}'`,
+          ); // Add logging
+          category.imageUrl = correctImageUrl; // Assign the CORRECT path
+          await this.categoriesRepository.save(category);
+          updatedCount++;
+        } else if (correctImageUrl && !category.imageUrl) {
+          console.log(
+            `Updating category ${category.name}: null -> '${correctImageUrl}'`,
+          ); // Add logging for initial set
+          category.imageUrl = correctImageUrl;
+          await this.categoriesRepository.save(category);
+          updatedCount++;
+        }
+      }
+
+      console.log(
+        `Category image update finished. Updated ${updatedCount} categories.`,
+      ); // Add logging
+      return {
+        success: true,
+        message: `Updated images for ${updatedCount} categories`,
+        updatedCount,
+      };
+    } catch (error) {
+      console.error('Error updating category images:', error);
+      throw new HttpException(
+        'Failed to update category images',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

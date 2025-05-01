@@ -1,50 +1,63 @@
 @import url(../../assets/css/styles.css);
 
-.text-input {
+.custom-text-input {
   display: flex;
   flex-direction: column;
   gap: 15px;
   width: 100%;
 }
-.input {
+
+.custom-text-input .input {
   border-color: var(--white200) !important;
   border-width: 3px;
   border-radius: 32px;
 }
-.input_error {
+
+.custom-text-input .input_error {
   border-color: var(--red500) !important;
   background-color: var(--red100) !important;
 }
-.input_disabled {
+
+.custom-text-input .input_disabled {
   border-color: var(--white400) !important;
   background-color: var(--white100) !important;
 }
-.input .ant-input {
+
+.custom-text-input .ant-input {
   font-weight: 500;
   color: var(--white800);
   font-size: 24;
 }
 
-.input .ant-input::placeholder {
+.custom-text-input .ant-input::placeholder {
   font-weight: 500;
   color: var(--white300);
   font-size: 24;
 }
-.label {
+
+.custom-text-input .label {
   font-weight: 700;
   color: var(--white800);
   font-size: 24;
 }
-.label_require {
+
+.custom-text-input .label_require {
   color: var(--red500);
 }
-.message {
+
+.custom-text-input .message {
   font-weight: 500;
   color: var(--white500);
   font-size: 24;
 }
-.error {
+
+.custom-text-input .error {
   font-weight: 500;
   color: var(--red500);
   font-size: 24;
+}
+
+/* Header dashboard specific styles */
+.header_search .custom-text-input .input {
+  border-radius: 32px !important;
 }

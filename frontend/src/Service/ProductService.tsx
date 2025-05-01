@@ -23,3 +23,53 @@ export const getAllProducts = async () => {
     throw error;
   }
 };
+
+export const getAllCategories = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/products/categories`);
+    return response;
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    throw error;
+  }
+};
+
+export const addToCart = async (
+  productId: number,
+  quantity: number,
+  userId?: number,
+  cartId?: number
+) => {
+  try {
+    // Create the appropriate request body based on the backend's expected structure
+    const addToCartDto = {
+      productId,
+      quantity,
+      // Only include userId if it exists and is valid
+      ...(userId ? { userId } : {}),
+      // Only include cartId if it exists (might be stored in localStorage)
+      ...(cartId ? { cartId } : {}),
+    };
+
+    console.log("Sending to cart API:", addToCartDto);
+
+    // Make sure to use the full API path
+    const response = await axios.post(`/cart-items`, addToCartDto);
+
+    console.log("Cart updated successfully:", response);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating cart:", error);
+    throw error;
+  }
+};
+
+export const getCartItems = async (cartId: number) => {
+  try {
+    const response = await axios.get(`${API_URL}/cart-items/cart/${cartId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching cart items:", error);
+    throw error;
+  }
+};

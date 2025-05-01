@@ -596,11 +596,12 @@ export class CartItemService {
     }
   }
 
-  async findPaidItemsByStatusTemp(
+  async findPaidItemsByStatus(
     statuses: OrderStatus[],
+    requestingUserId: number,
   ): Promise<CartItem[]> {
     this.logger.log(
-      `[findPaidItemsByStatusTemp] Finding paid items with statuses: ${statuses}`,
+      `[findPaidItemsByStatus] User ${requestingUserId} finding paid items with statuses: ${statuses}`,
     );
     if (!statuses || statuses.length === 0) {
       return [];
@@ -609,6 +610,7 @@ export class CartItemService {
     const options: FindManyOptions<CartItem> = {
       where: {
         isPaid: true,
+        cart: { idUser: requestingUserId },
         status: In(statuses),
       },
       relations: ['product', 'product.shop', 'cart', 'cart.user', 'rating'],
@@ -619,16 +621,11 @@ export class CartItemService {
 
     try {
       const items = await this.cartItemRepository.find(options);
-      this.logger.log(
-        `[findPaidItemsByStatusTemp] Found ${items.length} items.`,
-      );
-      items.forEach((item) =>
-        console.log(`Item ID: ${item.id}, Rating:`, item.rating),
-      );
+      this.logger.log(`[findPaidItemsByStatus] Found ${items.length} items.`);
       return items;
     } catch (error) {
       this.logger.error(
-        `[findPaidItemsByStatusTemp] Error fetching items`,
+        `[findPaidItemsByStatus] Error fetching items for user ${requestingUserId}`,
         error.stack,
       );
       throw new InternalServerErrorException(
@@ -636,62 +633,46 @@ export class CartItemService {
       );
     }
   }
+
+  // async findShopPaidItemsByStatus(
+  //   statuses: OrderStatus[],
+  //   requestingShopId: number, // ID of the shop making the request
+  // ): Promise<CartItem[]> {
+  //   this.logger.log(
+  //     `[findShopPaidItemsByStatus] Shop ${requestingShopId} finding paid items with statuses: ${statuses}`,
+  //   );
+  //   if (!statuses || statuses.length === 0) {
+  //     return [];
+  //   }
+
+  //   // Query CartItems that are paid, match the status, AND belong to the requesting shop
+  //   const options: FindManyOptions<CartItem> = {
+  //     where: {
+  //       isPaid: true,
+  //       status: In(statuses),
+  //       product: { shop: { id: requestingShopId } }, // <<< Filter by Shop ID via Product relation
+  //     },
+  //     // Include necessary relations for shop view (customer info, product info)
+  //     relations: ['product', 'product.shop', 'cart', 'cart.user', 'rating'],
+  //     order: {
+  //       updatedAt: 'DESC', // Or other relevant sorting for the shop
+  //     },
+  //   };
+
+  //   try {
+  //     const items = await this.cartItemRepository.find(options);
+  //     this.logger.log(
+  //       `[findShopPaidItemsByStatus] Found ${items.length} items for shop ${requestingShopId}.`,
+  //     );
+  //     return items;
+  //   } catch (error) {
+  //     this.logger.error(
+  //       `[findShopPaidItemsByStatus] Error fetching items for shop ${requestingShopId}`,
+  //       error.stack,
+  //     );
+  //     throw new InternalServerErrorException(
+  //       'Could not fetch paid items by status for shop',
+  //     );
+  //   }
+  // }
 }
-
-// ----- HÀM ĐẦY ĐỦ HƠN (Cần implement logic user/shop) -----
-/*
-async findPaidItemsByStatus(
-    requestingUserId: number,
-    requestingUserRole: number, // Giả sử có role
-    statuses: OrderStatus[],
-    filterShopId?: number // Optional: Lọc theo shop cụ thể nếu là admin/shop
-): Promise<CartItem[]> {
-    this.logger.log(`[findPaidItemsByStatus] User ${requestingUserId} (Role: ${requestingUserRole}) finding paid items with statuses: ${statuses}`);
-    if (!statuses || statuses.length === 0) {
-        return [];
-    }
-
-    const options: FindManyOptions<CartItem> = {
-        where: {
-            isPaid: true,
-            status: In(statuses),
-        },
-        relations: ['product', 'product.shop', 'cart', 'cart.user'],
-        order: { updatedAt: 'DESC' },
-    };
-
-    // --- Logic Phân Quyền ---
-    if (requestingUserRole === USER_ROLE) { // Giả sử USER_ROLE là role của user thường
-         // Thêm điều kiện lọc theo cart.idUser
-         options.where = { ...options.where, cart: { idUser: requestingUserId } };
-    } else if (requestingUserRole === SHOP_ROLE) { // Giả sử SHOP_ROLE là role của shop
-        // Thêm điều kiện lọc theo product.shop.id (cần đảm bảo shop chỉ thấy đơn hàng của mình)
-        // Cách 1: Join và lọc (phức tạp hơn với TypeORM where)
-        // Cách 2: Lấy shopId của user đang login và lọc trực tiếp nếu có quan hệ dễ dàng
-        // Ví dụ đơn giản nếu user shop có trường shopId:
-        // const userShopId = await this.getShopIdForUser(requestingUserId); // Hàm lấy shopId của user
-        // options.where = { ...options.where, product: { shop: { id: userShopId } } };
-         if (filterShopId) { // Nếu có filter shopId rõ ràng (ví dụ từ query param)
-             options.where = { ...options.where, product: { shop: { id: filterShopId } } };
-         } else {
-             // Cần logic để lấy shopId mặc định của user đang login
-             throw new Error("Shop user must provide or have an associated shopId");
-         }
-    } else { // Admin có thể thấy hết hoặc cần logic khác
-         if (filterShopId) {
-             options.where = { ...options.where, product: { shop: { id: filterShopId } } };
-         }
-    }
-    // --- Kết thúc Logic Phân Quyền ---
-
-
-    try {
-        const items = await this.cartItemRepository.find(options);
-        this.logger.log(`[findPaidItemsByStatus] Found ${items.length} items for user ${requestingUserId}.`);
-        return items;
-    } catch (error) {
-        this.logger.error(`[findPaidItemsByStatus] Error fetching items for user ${requestingUserId}`, error.stack);
-        throw new InternalServerErrorException('Could not fetch paid items by status');
-    }
-}
-*/

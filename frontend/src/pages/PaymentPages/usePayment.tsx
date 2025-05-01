@@ -37,6 +37,13 @@ export interface Product {
   isPaid: boolean;
 }
 
+const dispatchCartUpdateEvent = () => {
+  localStorage.setItem("cartUpdated", "true");
+  window.dispatchEvent(new Event("cartUpdated"));
+  document.dispatchEvent(new Event("cartUpdate"));
+  console.log("[usePayment] Dispatched cart update events");
+};
+
 const usePayment = () => {
   const [data, setData] = useState<Shop[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -322,9 +329,14 @@ const usePayment = () => {
           `[usePayment] Quantity updated successfully for cartItemId ${cartItemId}. Response:`,
           result
         );
+
+        // Dispatch event to notify other components of cart update
+        dispatchCartUpdateEvent();
+
         if (result && result.message === "Item removed successfully") {
           console.log(`[usePayment] CartItem ${cartItemId} removed.`);
         }
+
         fetchCartData(); // Fetch lại để cập nhật UI
         return true;
       } catch (error: any) {
@@ -361,14 +373,25 @@ const usePayment = () => {
     cartId: number,
     paidCartItemIds: number[]
   ): Promise<boolean> => {
-    // Gọi hàm confirmPaymentAndUpdateBackend từ OrderService
-    const success = await confirmPaymentAndUpdateBackend(
-      cartId,
-      paidCartItemIds
-    );
-    // Không cần gọi synchronizeOrdersWithBackend ở đây nữa, có thể gọi ở component cha nếu cần
-    return success; // Trả về true/false
+    try {
+      // Gọi hàm confirmPaymentAndUpdateBackend từ OrderService
+      const success = await confirmPaymentAndUpdateBackend(
+        cartId,
+        paidCartItemIds
+      );
+
+      // Dispatch event to update cart counter after payment
+      if (success) {
+        dispatchCartUpdateEvent();
+      }
+
+      return success; // Trả về true/false
+    } catch (error) {
+      console.error("[usePayment] Error in handleSuccessfulPayment:", error);
+      return false;
+    }
   };
+
   return {
     data,
     setData,

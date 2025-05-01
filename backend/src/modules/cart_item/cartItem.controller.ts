@@ -13,7 +13,10 @@ import {
   Logger,
   Query,
   ParseArrayPipe,
+  InternalServerErrorException,
 } from '@nestjs/common';
+import { UseGuards, Req, ForbiddenException } from '@nestjs/common';
+import { Request } from 'express';
 import { CartItemService } from './cartItem.service';
 import { AddToCartDto } from '../cart/dtos/add-to-cart.dto';
 import {
@@ -32,12 +35,13 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-// import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard'; // Nếu cần
+import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
+// import { UserService } from '../users/user.service';
 
 class UpdateQuantityDto {
   @ApiProperty({ example: 2, description: 'Số lượng mới của sản phẩm' })
   @IsNumber()
-  @Min(0, { message: 'Quantity cannot be negative. Use 0 to remove.' }) // Cho phép 0 để xóa
+  @Min(0, { message: 'Quantity cannot be negative. Use 0 to remove.' })
   quantity: number;
 }
 
@@ -61,12 +65,25 @@ class UpdateOrderStatusDto {
   cancelReason?: string;
 }
 
+interface RequestWithUser extends Request {
+  user: { idUser: number };
+  // user: {
+  //   idUser: number;
+  //   role: number;
+  // };
+}
+
 @ApiTags('cart-items')
 @Controller('cart-items')
 export class CartItemController {
   private readonly logger = new Logger(CartItemController.name);
 
   constructor(private readonly cartItemService: CartItemService) {}
+
+  // constructor(
+  //   private readonly cartItemService: CartItemService,
+  //   private readonly userService: UserService,
+  // ) {}
 
   @Post()
   // @UseGuards(JwtAuthGuard) // Bảo vệ nếu cần
@@ -246,37 +263,105 @@ export class CartItemController {
   }
 
   @Get('paid/by-status')
-  // @UseGuards(JwtAuthGuard) // Bảo vệ endpoint này
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Lấy danh sách các mục đơn hàng đã thanh toán theo trạng thái',
   })
   @ApiResponse({ status: 200, description: 'Danh sách các mục đơn hàng' })
   async getPaidItemsByStatus(
-    // @Req() req, // Lấy thông tin user đã login nếu dùng Guard
+    @Req() req: RequestWithUser,
     @Query('statuses', new ParseArrayPipe({ items: String, separator: ',' }))
     statuses: OrderStatus[],
-    // Thêm các query param khác nếu cần lọc theo shopId hoặc userId cụ thể
-    // @Query('userId') userId?: number,
-    // @Query('shopId') shopId?: number,
   ) {
     this.logger.log(
-      `[GET /cart-items/paid/by-status] Request for statuses: ${statuses}`,
+      `[GET /cart-items/paid/by-status] Request for statuses: ${statuses} by user: ${req.user['idUser']}`,
     );
-    // const loggedInUserId = req.user?.idUser; // Lấy userId từ token (ví dụ)
-    // const userRole = req.user?.role; // Lấy role từ token (ví dụ)
 
-    // // Logic xác thực và phân quyền:
-    // // - Nếu là user, chỉ lấy đơn hàng của user đó.
-    // // - Nếu là shop, chỉ lấy đơn hàng thuộc shop đó.
-    // // Cần implement logic này trong service dựa trên loggedInUserId và userRole
-    // if (!loggedInUserId) {
-    //   throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
-    // }
+    const loggedInUserId = req.user['idUser'];
+    if (!loggedInUserId) {
+      this.logger.error(
+        '[GET /cart-items/paid/by-status] User ID not found in token payload after guard.',
+      );
+      throw new HttpException(
+        'Unauthorized: User ID not found in token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
 
-    // Gọi service function mới
-    // return this.cartItemService.findPaidItemsByStatus(loggedInUserId, userRole, statuses /*, shopId */);
-    // ---- Bỏ comment và implement logic xác thực/phân quyền ----
-    // ---- Ví dụ tạm thời không có xác thực ----
-    return this.cartItemService.findPaidItemsByStatusTemp(statuses);
+    return this.cartItemService.findPaidItemsByStatus(statuses, loggedInUserId);
   }
+
+  // @Get('shop/paid/by-status') // New route prefix
+  // @UseGuards(JwtAuthGuard) // Secure the endpoint
+  // @ApiOperation({
+  //   summary:
+  //     '[SHOP] Lấy danh sách các mục đơn hàng đã thanh toán theo trạng thái cho shop',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Danh sách các mục đơn hàng cho shop',
+  // })
+  // @ApiResponse({
+  //   status: 403,
+  //   description: 'Không có quyền truy cập (không phải shop)',
+  // })
+  // async getShopPaidItemsByStatus(
+  //   @Req() req: RequestWithUser,
+  //   @Query('statuses', new ParseArrayPipe({ items: String, separator: ',' }))
+  //   statuses: OrderStatus[],
+  // ) {
+  //   const loggedInUserId = req.user?.idUser;
+  //   const userRole = req.user?.role;
+
+  //   this.logger.log(
+  //     `[GET /cart-items/shop/paid/by-status] Request for statuses: ${statuses} by user: ${loggedInUserId}, role: ${userRole}`,
+  //   );
+
+  //   // --- Authorization Check ---
+  //   if (!loggedInUserId) {
+  //     // Should be caught by guard, but double-check
+  //     throw new HttpException(
+  //       'Unauthorized: User ID not found',
+  //       HttpStatus.UNAUTHORIZED,
+  //     );
+  //   }
+  //   // Assuming role 2 is SHOP
+  //   if (userRole !== 2) {
+  //     this.logger.warn(
+  //       `[GET /cart-items/shop/paid/by-status] User ${loggedInUserId} with role ${userRole} attempted to access shop endpoint.`,
+  //     );
+  //     throw new ForbiddenException(
+  //       'Access denied. Only shops can access this resource.',
+  //     );
+  //   }
+
+  //   // --- Get Shop ID ---
+  //   // Fetch user details to get associated shopId (adjust based on your entity structure)
+  //   let shopId: number | null = null;
+  //   try {
+  //     const userWithShop = await this.userService.findOne(loggedInUserId); // Assuming findOne returns user with shop relation/id
+  //     // **IMPORTANT**: Adjust the next line based on how shopId is stored/related in your User/Account entity
+  //     shopId = userWithShop?.['shopId'] || userWithShop?.['shop']?.id; // Example: access shopId directly or via relation
+
+  //     if (!shopId) {
+  //       throw new Error(
+  //         `Could not determine shopId for user ${loggedInUserId}`,
+  //       );
+  //     }
+  //     this.logger.log(
+  //       `[GET /cart-items/shop/paid/by-status] User ${loggedInUserId} belongs to shop ${shopId}`,
+  //     );
+  //   } catch (error) {
+  //     this.logger.error(
+  //       `[GET /cart-items/shop/paid/by-status] Error fetching shopId for user ${loggedInUserId}: ${error.message}`,
+  //       error.stack,
+  //     );
+  //     throw new InternalServerErrorException(
+  //       'Could not retrieve shop information for the user.',
+  //     );
+  //   }
+
+  //   // Call the new service method with the shop ID
+  //   return this.cartItemService.findShopPaidItemsByStatus(statuses, shopId);
+  // }
 }

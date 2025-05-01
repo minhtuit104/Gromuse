@@ -412,7 +412,7 @@ const DetailPage = () => {
       // Chuyển hướng đến trang thanh toán
       setTimeout(() => {
         navigate("/payment");
-      }, 500);
+      }, 1000);
     } else {
       toast.update(toastId, {
         render: `Lỗi khi xử lý Mua ngay: ${

@@ -13,6 +13,7 @@ interface Product {
   tag: string;
   img?: string;
   sold?: number;
+  averageRating: number;
   category?: {
     name?: string;
   };
@@ -25,37 +26,43 @@ function MightNeed() {
   const navigate = useNavigate();
 
   const handleSeeMoreClick = () => {
-    navigate("/list_product");
+    navigate("/list_product_User");
   };
 
   useEffect(() => {
     const fetchTopSellingProducts = async () => {
       try {
         setLoading(true);
-        setError(null); // Reset lỗi
-        console.log("Đang gọi API lấy sản phẩm bán chạy (MightNeed)...");
+        setError(null); // Reset error
+        console.log("Fetching top selling products (MightNeed)...");
 
-        // Gọi hàm từ service, ví dụ lấy 10 sản phẩm
-        const topProducts = await getTopSellingProducts(10);
-        console.log("Dữ liệu API nhận được (MightNeed):", topProducts);
+        // Call service function to get top 10 products
+        const response = await getTopSellingProducts(10);
+        console.log("API response received (MightNeed):", response);
 
-        // Service đã xử lý response, nên topProducts là mảng
-        if (Array.isArray(topProducts)) {
-          setProducts(topProducts);
+        // Check if we have valid data
+        if (response && Array.isArray(response.data)) {
+          setProducts(response.data);
           console.log(
-            "Đã cập nhật state với dữ liệu sản phẩm (MightNeed):",
-            topProducts
+            "State updated with product data (MightNeed):",
+            response.data
+          );
+        } else if (response && Array.isArray(response)) {
+          // Handle case where response itself might be the array
+          setProducts(response);
+          console.log(
+            "State updated with direct product array (MightNeed):",
+            response
           );
         } else {
-          // Trường hợp service trả về không phải mảng (ít khả năng xảy ra nếu service đúng)
-          console.log("Dữ liệu trả về từ service không phải mảng (MightNeed)");
-          setError("Không có sản phẩm");
-          setProducts([]); // Đảm bảo state là mảng rỗng
+          console.log("Data returned from service is not an array (MightNeed)");
+          setError("No products found");
+          setProducts([]); // Ensure state is empty array
         }
       } catch (err) {
-        console.error("Lỗi khi lấy sản phẩm bán chạy (MightNeed):", err);
-        setError("Không thể tải dữ liệu sản phẩm");
-        setProducts([]); // Đảm bảo state là mảng rỗng khi lỗi
+        console.error("Error fetching top selling products (MightNeed):", err);
+        setError("Unable to load product data");
+        setProducts([]); // Ensure state is empty array on error
       } finally {
         setLoading(false);
       }
@@ -78,7 +85,7 @@ function MightNeed() {
       </div>
       <div className="might-need-list">
         {loading ? (
-          <div>Đang tải...</div>
+          <div>Loading...</div>
         ) : error ? (
           <div>{error}</div>
         ) : products && products.length > 0 ? (
@@ -86,7 +93,7 @@ function MightNeed() {
             <MightNeedItem key={product.id} product={product} />
           ))
         ) : (
-          <div>Không có sản phẩm</div>
+          <div>No products available</div>
         )}
       </div>
     </div>

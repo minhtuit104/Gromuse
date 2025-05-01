@@ -1,4 +1,3 @@
-// src/components/TextInput/TextInput.tsx
 import { Input } from "antd";
 import React, { useMemo } from "react";
 import "./TextInput.css";
@@ -52,7 +51,7 @@ const TextInput = ({
   }, [error, message]);
 
   return (
-    <div className={`text-input ${wrapperStyle}`}>
+    <div className={`custom-text-input text-input ${wrapperStyle}`}>
       {label && (
         <label className={`label ${labelStyle}`}>
           {label}

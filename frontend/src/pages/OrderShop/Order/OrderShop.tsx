@@ -10,7 +10,8 @@ import ImgProductDefault from "../../../assets/images/imagePNG/banana 1.png";
 import {
   OrderData,
   OrderStatus,
-  fetchOrdersByStatus, // Import hàm fetch mới
+  fetchOrdersByStatus,
+  // fetchShopOrdersByStatus,
   updateOrderStatusOnBackend, // Import hàm update đã sửa
 } from "../../../Service/OrderService";
 import { toast, ToastContainer } from "react-toastify";

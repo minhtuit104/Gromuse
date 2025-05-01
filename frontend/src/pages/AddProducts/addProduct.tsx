@@ -35,6 +35,7 @@ interface Product {
   startDate?: string;
   endDate?: string;
   description?: string;
+  averageRating?: number;
 }
 
 interface FormValues {
@@ -50,6 +51,7 @@ interface FormValues {
   description: string;
   active: boolean;
   img: string;
+  averageRating?: number;
 }
 
 const AddProduct = () => {
@@ -219,6 +221,7 @@ const AddProduct = () => {
         description: product.description || "",
         active: product.active || true,
         img: product.img || "",
+        averageRating: product.averageRating || 0,
       });
 
       // Xử lý các hình ảnh đã tồn tại
@@ -428,7 +431,6 @@ const AddProduct = () => {
   const sampleProduct: Product = {
     id: isEditMode && id ? parseInt(id, 10) : 1,
     name: formik.values.name || "Sample Product",
-    // Sử dụng hình ảnh đầu tiên từ localPreviewImages nếu có
     img:
       localPreviewImages.length > 0
         ? localPreviewImages[0]
@@ -442,6 +444,7 @@ const AddProduct = () => {
     category: formik.values.category
       ? { id: formik.values.category, name: formik.values.category }
       : undefined,
+    averageRating: formik.values.averageRating || 0,
   };
 
   const categoryMapping: Record<string, string> = {
@@ -662,11 +665,11 @@ const AddProduct = () => {
             {/* Category, Tag, and Background Color */}
             <div className="form-group-row four-div">
               <div className="form-group-row three-div">
-                <div className="image-upload-container">
+                <div className="image-uploadProduct-container">
                   <label className="form-label">
                     Image <span className="required-asterisk">*</span>
                   </label>
-                  <div className="image-list">
+                  <div className="image-list-product">
                     {localPreviewImages.map((image, index) => (
                       <div key={index} className="image-preview">
                         <img
@@ -693,7 +696,7 @@ const AddProduct = () => {
                     ))}
                     {localPreviewImages.length < 10 && (
                       <div
-                        className="image-icon"
+                        className="image-icon-product"
                         onClick={() =>
                           document.getElementById("file-input")?.click()
                         }

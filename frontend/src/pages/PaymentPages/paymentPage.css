@@ -304,7 +304,7 @@
 }
 
 .product-info-item {
-  width: 100px;
+  width: 300px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -338,7 +338,6 @@
   align-items: center;
   justify-content: center;
   gap: 30px;
-  margin-left: 200px;
 }
 
 .custom-counter-wrapper .counter-button {
@@ -658,7 +657,7 @@
   margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 5px;
 }
 
 .voucher-container h3 {
@@ -676,14 +675,21 @@
 .voucher-item {
   display: flex;
   gap: 10px;
+  height: 120px;
   padding: 10px;
   width: calc(50% - 8px);
   border: 1px solid var(--white50);
-  border-radius: 8px;
-  background-color: var(--green50);
+  border-radius: 24px;
+  background-color: var(--green100);
   cursor: pointer;
   transition: all 0.3s ease-in-out;
   justify-content: flex-start;
+}
+
+.voucher-item:hover {
+  transform: scale(1.02);
+  border: 3px solid var(--orange400);
+  box-shadow: none;
 }
 
 .voucher-item.selected {
@@ -757,11 +763,6 @@
   margin-left: 5px;
   color: var(--orange400);
   font-weight: 500;
-}
-.voucher-item:hover {
-  transform: scale(1.02);
-  border-color: var(--orange500);
-  box-shadow: none;
 }
 
 .ant-modal {
