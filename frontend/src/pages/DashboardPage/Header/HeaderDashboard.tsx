@@ -59,6 +59,7 @@ function HeaderDashboard() {
         <SidebarShop open={openSideBar} onClose={() => setOpenSideBar(false)} />
         <div className="header_search">
           <TextInput
+            style="search"
             placeholder="Search here"
             value={search}
             onChange={(value: string) => setSearch(value)}

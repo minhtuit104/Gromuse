@@ -1,30 +1,31 @@
-import IconUser from "../../assets/images/icons/ic_user.svg";
-import IconEye from "../../assets/images/icons/ic_eye.svg";
-import IconLockEye from "../../assets/images/icons/ic_lock_eye.svg";
-import IconPhone from "../../assets/images/icons/ic_phone.svg";
-import IconEmail from "../../assets/images/icons/ic_email.svg";
-import IconPass from "../../assets/images/icons/ic_lockpass.svg";
-import IconAddress from "../../assets/images/icons/ic_location.svg";
+import { Formik } from "formik";
 import { useState } from "react";
-import "./loginShop.css";
-import { loginApi, registerApiShop } from "../../Service/UserService";
+import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import * as yup from "yup";
-import { Formik } from "formik";
-import { useNavigate } from "react-router-dom";
+import IconEmail from "../../assets/images/icons/ic_email.svg";
+import IconEye from "../../assets/images/icons/ic_eye.svg";
+import IconAddress from "../../assets/images/icons/ic_location.svg";
+import IconLockEye from "../../assets/images/icons/ic_lock_eye.svg";
+import IconPass from "../../assets/images/icons/ic_lockpass.svg";
+import IconPhone from "../../assets/images/icons/ic_phone.svg";
+import IconUser from "../../assets/images/icons/ic_user.svg";
 import TextInput from "../../components/TextInput/TextInput";
+import { loginApi, registerApiShop } from "../../Service/UserService";
+import "./loginShop.css";
 
 interface LoginFormValues {
   email: string;
   password: string;
 }
 
-interface RegisterFormValues {
+export interface RegisterFormValues {
   name: string;
   phoneNumber: string;
   email: string;
   address: string;
   password: string;
+  role: number;
 }
 
 const LoginShop = () => {
@@ -38,7 +39,6 @@ const LoginShop = () => {
   };
   const loginLink = () => {
     setAction("");
-    navigate("/login");
   };
   const loginSchema = yup.object().shape({
     email: yup.string().email("Invalid email").required("Email is required"),
@@ -95,20 +95,15 @@ const LoginShop = () => {
     { resetForm }: any
   ) => {
     try {
-      let res = await registerApiShop(
-        values.name,
-        values.email,
-        values.phoneNumber,
-        values.password,
-        values.address
-      );
+      console.log("Values before API call:", values);
+      let res = await registerApiShop(values);
       console.log("API sign up: ", res);
       if (res && res.status === 400) {
         toast.error(res.data.message.message);
       } else {
         toast.success("Register successful!");
         resetForm();
-        navigate("/login");
+        // navigate("/login");
       }
     } catch (error) {
       console.error("Registration failed:", error);
@@ -177,7 +172,7 @@ const LoginShop = () => {
                       className="register"
                       onClick={registerLink}
                     >
-                      Sing up
+                      Sign up
                     </a>
                   </p>
                 </div>
@@ -204,6 +199,7 @@ const LoginShop = () => {
               email: "",
               address: "",
               password: "",
+              role: 2,
             }}
             validationSchema={registerSchema}
             onSubmit={handleRegister}
@@ -288,7 +284,7 @@ const LoginShop = () => {
                 </div>
 
                 <button type="submit" className="login">
-                  Sing up
+                  Sign up
                 </button>
               </form>
             )}
