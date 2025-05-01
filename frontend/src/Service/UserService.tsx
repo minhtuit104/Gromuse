@@ -1,3 +1,4 @@
+import { RegisterFormValues } from "../pages/LoginShop/loginShop";
 import axios from "./axios";
 import { AxiosError } from "axios";
 
@@ -26,21 +27,9 @@ const registerApi = (
   });
 };
 
-const registerApiShop = async (
-  name: string,
-  email: string,
-  phoneNumber: string,
-  password: string,
-  address: string
-) => {
-  const res = await axios.post("/api/v1/auth/register", {
-    name,
-    email,
-    phoneNumber,
-    password,
-    address,
-    role: 2,
-  });
+const registerApiShop = async (data: RegisterFormValues) => {
+  console.log("Data being sent to API:", data);
+  const res = await axios.post("/api/v1/auth/register", data);
   console.log("API dang ki: ", res);
   return res;
 };

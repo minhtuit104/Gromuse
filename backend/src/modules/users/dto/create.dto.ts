@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty()
@@ -36,5 +37,7 @@ export class CreateUserDto {
     description: 'User role (1: Normal User, 2: Shop/Admin)',
     default: 1,
   })
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
   role?: number;
 }
