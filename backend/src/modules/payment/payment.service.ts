@@ -229,7 +229,6 @@ export class PaymentService {
         couponDiscount,
         total: createPaymentDto.total,
         status: PaymentStatus.PENDING,
-        vouchers,
       });
 
       await this.paymentRepository.save(payment);

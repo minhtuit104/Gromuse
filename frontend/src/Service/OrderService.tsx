@@ -63,7 +63,7 @@ export const fetchOrdersByStatus = async (
   try {
     // Gọi endpoint mới
     const response = await fetch(
-      `${apiURL}/cart-items/paid/by-status?statuses=${statusQuery}`,
+      `${apiURL}/api/cart-items/paid/by-status?statuses=${statusQuery}`,
       {
         method: "GET",
         headers: {
@@ -288,14 +288,17 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
   try {
     // API endpoint should return ALL items for the cart, regardless of isPaid status initially
     // Backend needs to be adjusted if /cart/:cartId only returns unpaid items
-    const response = await fetch(`${apiURL}/cart-items/cart/${numericCartId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        // Add Authorization header if needed
-      },
-      credentials: "include", // If using cookies/sessions
-    });
+    const response = await fetch(
+      `${apiURL}/api/cart-items/cart/${numericCartId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          // Add Authorization header if needed
+        },
+        credentials: "include", // If using cookies/sessions
+      }
+    );
 
     if (!response.ok) {
       const errorBody = await response.text();
@@ -493,7 +496,7 @@ export async function updateOrderStatusOnBackend(
 
   const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
   // Dùng endpoint mới với cartItemId
-  const endpointUrl = `${apiURL}/cart-items/${cartItemId}/order-status`; // *** ENDPOINT MỚI ***
+  const endpointUrl = `${apiURL}/api/cart-items/${cartItemId}/order-status`; // *** ENDPOINT MỚI ***
 
   const requestBody: { status: string; cancelReason?: string } = {
     status: status.toString(),
@@ -608,7 +611,7 @@ export const confirmPaymentAndUpdateBackend = async (
   }
 
   // Sử dụng endpoint cũ nhưng gửi payload mới
-  const endpointUrl = `${apiURL}/cart-items/cart/${cartId}/status`;
+  const endpointUrl = `${apiURL}/api/cart-items/cart/${cartId}/status`;
   const payload = {
     isPaid: true,
     cartItemIds: paidCartItemIds, // <<< Gửi mảng cartItemIds

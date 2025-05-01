@@ -279,7 +279,7 @@ const DetailPage = () => {
   }> => {
     try {
       const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-      const response = await fetch(`${apiURL}/cart-items`, {
+      const response = await fetch(`${apiURL}/api/cart-items`, {
         // Endpoint POST /cart-items
         method: "POST",
         headers: { "Content-Type": "application/json" },

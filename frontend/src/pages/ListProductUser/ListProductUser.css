@@ -43,22 +43,35 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 .category-buttons {
   display: flex;
   align-items: center;
   gap: 16px;
-  width: 94%;
   height: 80px;
   overflow-x: auto;
-  scrollbar-width: thin;
-  scroll-behavior: smooth;
-  padding-bottom: 5px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  box-sizing: content-box;
+  position: relative;
+  z-index: 1;
 }
 
 .category-buttons::-webkit-scrollbar {
-  height: 4px;
+  height: 0;
+  width: 0;
+  display: none;
+}
+
+.category-buttons::after {
+  content: "";
+  display: block;
+  height: 0;
+  width: 100%;
+  position: absolute;
+  bottom: 0;
 }
 
 .category-buttons::-webkit-scrollbar-track {
@@ -110,10 +123,6 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: absolute;
-  right: 0;
-  top: 30px;
-  transform: translateY(-50%);
   z-index: 10;
   flex-shrink: 0;
 }

@@ -54,7 +54,7 @@ export const addToCart = async (
     console.log("Sending to cart API:", addToCartDto);
 
     // Make sure to use the full API path
-    const response = await axios.post(`/cart-items`, addToCartDto);
+    const response = await axios.post(`/api/cart-items`, addToCartDto);
 
     console.log("Cart updated successfully:", response);
     return response.data;
@@ -70,6 +70,26 @@ export const getCartItems = async (cartId: number) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching cart items:", error);
+    throw error;
+  }
+};
+
+export const addProduct = async (data: any) => {
+  try {
+    const response = await axios.post(`${API_URL}/products`, data);
+    return response;
+  } catch (error) {
+    console.error("Error add product:", error);
+    throw error;
+  }
+}
+
+export const editProduct = async (data: any, id: any) => {
+  try {
+    const response = await axios.put(`${API_URL}/products/${id}`, data);
+    return response;
+  } catch (error) {
+    console.error("Error add product:", error);
     throw error;
   }
 };

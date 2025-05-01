@@ -15,6 +15,7 @@ import * as Yup from "yup";
 import { DatePicker, Modal } from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
 import moment from "moment";
+import { addProduct, editProduct } from "../../Service/ProductService";
 
 const loadSupabaseClient = async () => {
   const module = await import("../../lib/supabaseClient");
@@ -250,30 +251,16 @@ const AddProduct = () => {
     console.log("Starting addProductToAPI with data:", productData);
 
     try {
-      const response = await fetch("http://localhost:3000/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productData),
-      });
+      const response = (await addProduct(productData)) as any;
 
-      console.log("Response received:", response.status, response.statusText);
+      console.log("Response received:", response);
 
-      const responseData = await response.json().catch((err) => {
-        console.error("Failed to parse response JSON:", err);
-        return { message: "Invalid response from server" };
-      });
-
-      if (response.ok) {
-        console.log("Product added successfully:", responseData);
+      if (response.message === "success") {
         alert("Product added successfully!");
-        setProducts((prev) => [...prev, responseData]);
-        formik.resetForm();
-        setLocalPreviewImages([]);
-        setImagesToUpload([]);
-        setExistingImages([]);
+        navigate("/list_product_Shop");
       } else {
-        console.error("API error response:", responseData);
-        throw new Error(responseData.message || "Failed to add product");
+        console.error("API error response:", response);
+        throw new Error(response.message || "Failed to add product");
       }
     } catch (error: unknown) {
       console.error("Error in addProductToAPI:", error);
@@ -294,30 +281,15 @@ const AddProduct = () => {
       if (!id) throw new Error("No product ID provided for update");
       const numericId = parseInt(id, 10);
 
-      const response = await fetch(
-        `http://localhost:3000/api/products/${numericId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(productData),
-        }
-      );
+      const response = (await editProduct(productData, numericId)) as any;
       console.log("Response received:", response.status, response.statusText);
 
-      const responseData = await response.json().catch((err) => {
-        console.error("Failed to parse response JSON:", err);
-        return { message: "Invalid response from server" };
-      });
-
-      if (response.ok) {
-        console.log("Product updated successfully:", responseData);
+      if (response.message === "success") {
         alert("Product updated successfully!");
-        setProducts((prev) =>
-          prev.map((p) => (p.id === numericId ? responseData : p))
-        );
+        navigate("/list_product_Shop");
       } else {
-        console.error("API error response:", responseData);
-        throw new Error(responseData.message || "Failed to update product");
+        console.error("API error response:", response);
+        throw new Error(response.message || "Failed to add product");
       }
     } catch (error: unknown) {
       console.error("Error in updateProduct:", error);

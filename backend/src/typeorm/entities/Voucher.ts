@@ -52,6 +52,4 @@ export class Voucher {
   })
   updatedAt: Date;
 
-  @ManyToMany(() => Payment, (payment) => payment.vouchers)
-  payments: Payment[];
 }

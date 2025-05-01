@@ -6,6 +6,7 @@ import { AddressDto } from "../../dtos/address.dto";
 import DefaultAvatar from "../../assets/images/imagePNG/Avatar.png";
 import Img1 from "../../assets/images/imagePNG/lays_1 1.png";
 import { confirmPaymentAndUpdateBackend } from "../../Service/OrderService";
+import { getAllCartItemInCart } from "../../Service/CartService";
 
 interface DecodedToken {
   idAccount: number;
@@ -150,32 +151,15 @@ const usePayment = () => {
       );
     }
 
-    // Luôn lấy cartId hiện tại của user
-    const cartIdToFetch = localStorage.getItem("currentCartId");
-
-    console.log(`[usePayment] Fetching cart data for cartId: ${cartIdToFetch}`);
-
-    if (!cartIdToFetch) {
-      console.log("[usePayment] No valid currentCartId found.");
-      setData([]);
-      setLoading(false);
-      return;
-    }
-
-    // Lưu lại cartId đang dùng cho thanh toán
-    localStorage.setItem("cartId", cartIdToFetch);
-
     try {
-      const response = await fetch(
-        `http://localhost:3000/cart-items/cart/${cartIdToFetch}`
-      );
-      if (!response.ok) {
+      const response = await getAllCartItemInCart() as any;
+      if (response.message !== 'success') {
         if (response.status === 404) setError("Không tìm thấy giỏ hàng.");
         else setError(`Lỗi API lấy giỏ hàng: ${response.status}`);
         throw new Error(`API thất bại: ${response.status}`);
       }
 
-      const cartData = await response.json();
+      const cartData = await response.data as any;
 
       if (!Array.isArray(cartData) || cartData.length === 0) {
         setData([]);
@@ -289,7 +273,7 @@ const usePayment = () => {
       localStorage.removeItem("cartUpdated");
       fetchCartData(); // Gọi lại fetchCartData
     }
-  }, [fetchCartData, fetchUserData]);
+  }, []);
 
   const updateProductQuantity = useCallback(
     async (cartItemId: string, newQuantity: number) => {
@@ -307,7 +291,7 @@ const usePayment = () => {
       }, 5000);
 
       try {
-        const endpoint = `http://localhost:3000/cart-items/${cartItemId}`;
+        const endpoint = `http://localhost:3000/api/cart-items/${cartItemId}`;
         const response = await fetch(endpoint, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

@@ -633,7 +633,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
     quantity: number
   ): Promise<{ cartId: number | null; error?: string }> => {
     try {
-      const response = await fetch("http://localhost:3000/cart-items", {
+      const response = await fetch("http://localhost:3000/api/cart-items", {
         // Endpoint thêm vào giỏ
         method: "POST",
         headers: { "Content-Type": "application/json" },

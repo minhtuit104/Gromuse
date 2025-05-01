@@ -31,6 +31,13 @@ export class CartItemService {
     private cartService: CartService,
   ) {}
 
+  async getCartById(idUser: number): Promise<Cart | null> {
+    return this.cartRepository.findOne({
+      where: { idUser: idUser },
+      relations: ['user'],
+    });
+  }
+
   async addItemToCart(dto: AddToCartDto): Promise<CartItem> {
     this.logger.log(`[addItemToCart] Adding item: ${JSON.stringify(dto)}`);
     let cart: Cart;

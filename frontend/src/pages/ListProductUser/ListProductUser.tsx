@@ -59,74 +59,74 @@ function ListProductUser() {
   const [tempSortByPrice, setTempSortByPrice] = useState<SortOption>("");
 
   // Fetch data from API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Fetch categories
-        const categoriesResponse = await getAllCategories();
-        let categoriesData: Category[] = [];
-        if (
-          categoriesResponse?.data &&
-          Array.isArray(categoriesResponse.data)
-        ) {
-          categoriesData = categoriesResponse.data;
-        } else if (Array.isArray(categoriesResponse)) {
-          categoriesData = categoriesResponse;
-        } else {
-          console.error(
-            "Unexpected categories data format:",
-            categoriesResponse
-          );
-          toast.warn("Could not load categories properly.");
-        }
-        setCategories(categoriesData);
-        console.log("Fetched Categories:", categoriesData);
-
-        // Fetch products
-        const productsResponse = await getAllProducts();
-        let productsData: Product[] = [];
-        if (productsResponse?.data && Array.isArray(productsResponse.data)) {
-          productsData = productsResponse.data.map((p) => ({
-            ...p,
-            createdAt: p.createdAt ? new Date(p.createdAt) : undefined,
-          }));
-          // Debug output to verify date conversion
-          console.log(
-            "Sample product date:",
-            productsData.length > 0
-              ? productsData[0].createdAt instanceof Date
-                ? productsData[0].createdAt.toISOString()
-                : "Not a date object"
-              : "No products"
-          );
-        } else if (Array.isArray(productsResponse)) {
-          productsData = productsResponse.map((p) => ({
-            ...p,
-            createdAt: p.createdAt ? new Date(p.createdAt) : undefined,
-          }));
-        } else {
-          console.error("Unexpected products data format:", productsResponse);
-          toast.error("Could not load products properly.");
-        }
-        setProducts(productsData);
-        console.log("Fetched Products:", productsData);
-
-        setLoading(false);
-      } catch (err: any) {
-        console.error("Failed to fetch data:", err);
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          "Failed to load data. Please try again later.";
-        setError(errorMessage);
-        toast.error(errorMessage);
-        setLoading(false);
+      // Fetch categories
+      const categoriesResponse = await getAllCategories();
+      let categoriesData: Category[] = [];
+      if (
+        categoriesResponse?.data &&
+        Array.isArray(categoriesResponse.data)
+      ) {
+        categoriesData = categoriesResponse.data;
+      } else if (Array.isArray(categoriesResponse)) {
+        categoriesData = categoriesResponse;
+      } else {
+        console.error(
+          "Unexpected categories data format:",
+          categoriesResponse
+        );
+        toast.warn("Could not load categories properly.");
       }
-    };
+      setCategories(categoriesData);
+      console.log("Fetched Categories:", categoriesData);
 
+      // Fetch products
+      const productsResponse = await getAllProducts();
+      let productsData: Product[] = [];
+      if (productsResponse?.data && Array.isArray(productsResponse.data)) {
+        productsData = productsResponse.data.map((p) => ({
+          ...p,
+          createdAt: p.createdAt ? new Date(p.createdAt) : undefined,
+        }));
+        // Debug output to verify date conversion
+        console.log(
+          "Sample product date:",
+          productsData.length > 0
+            ? productsData[0].createdAt instanceof Date
+              ? productsData[0].createdAt.toISOString()
+              : "Not a date object"
+            : "No products"
+        );
+      } else if (Array.isArray(productsResponse)) {
+        productsData = productsResponse.map((p) => ({
+          ...p,
+          createdAt: p.createdAt ? new Date(p.createdAt) : undefined,
+        }));
+      } else {
+        console.error("Unexpected products data format:", productsResponse);
+        toast.error("Could not load products properly.");
+      }
+      setProducts(productsData);
+      console.log("Fetched Products:", productsData);
+
+      setLoading(false);
+    } catch (err: any) {
+      console.error("Failed to fetch data:", err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to load data. Please try again later.";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    window.scrollTo(0, 0);
     fetchData();
   }, []);
 

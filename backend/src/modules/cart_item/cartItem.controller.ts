@@ -14,8 +14,10 @@ import {
   Query,
   ParseArrayPipe,
   InternalServerErrorException,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
-import { UseGuards, Req, ForbiddenException } from '@nestjs/common';
+import { UseGuards, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { CartItemService } from './cartItem.service';
 import { AddToCartDto } from '../cart/dtos/add-to-cart.dto';
@@ -24,6 +26,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiProperty,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { UpdateCartItemsStatusDto } from '../cart/dtos/update-cart-items-status';
 import { OrderStatus } from '../../typeorm/entities/CartItem';
@@ -74,7 +77,7 @@ interface RequestWithUser extends Request {
 }
 
 @ApiTags('cart-items')
-@Controller('cart-items')
+@Controller('api/cart-items')
 export class CartItemController {
   private readonly logger = new Logger(CartItemController.name);
 
@@ -145,17 +148,31 @@ export class CartItemController {
     }
   }
 
-  @Get('cart/:cartId')
+  @Get('cart')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    summary: 'Lấy danh sách sản phẩm chưa thanh toán trong giỏ hàng',
+    summary:
+      'Lấy danh sách sản phẩm chưa thanh toán trong giỏ hàng của người dùng hiện tại',
   })
   @ApiResponse({ status: 200, description: 'Danh sách sản phẩm' })
   @ApiResponse({ status: 404, description: 'Giỏ hàng không tồn tại' })
-  async getCartItems(@Param('cartId', ParseIntPipe) cartId: number) {
-    this.logger.log(
-      `[GET /cart-items/cart/:cartId] Request for cartId: ${cartId}`,
-    );
-    return this.cartItemService.getCartItemsByCartId(cartId);
+  @ApiBearerAuth()
+  async getCartItems(@Req() req) {
+    const user = req.user;
+
+    // Tìm giỏ hàng bằng id của người dùng (idUser)
+    const cart = await this.cartItemService.getCartById(user.id);
+
+    if (!cart) {
+      throw new NotFoundException('Giỏ hàng không tồn tại');
+    }
+
+    const items = await this.cartItemService.getCartItemsByCartId(cart.id);
+
+    return {
+      message: 'success',
+      data: items,
+    };
   }
 
   // @Patch('cart/:cartId/product/:productId')

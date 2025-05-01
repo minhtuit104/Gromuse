@@ -184,7 +184,7 @@ const SignUpLogInForm: React.FC = () => {
           password: "",
           address: "",
         });
-        navigate("/login");
+        setIsRegistering(false);
       }
     } catch (error) {
       console.error("Registration failed:", error);

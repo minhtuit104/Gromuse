@@ -163,7 +163,7 @@ const DetailProduct = () => {
   }> => {
     try {
       const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-      const response = await fetch(`${apiURL}/cart-items`, {
+      const response = await fetch(`${apiURL}/api/cart-items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, productId, quantity }),

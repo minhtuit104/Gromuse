@@ -5,10 +5,11 @@ import { ProductsController } from './products.controller';
 import { Product } from '../../typeorm/entities/Product';
 import { Category } from '../../typeorm/entities/Category';
 import { CartModule } from '../cart/cart.module';
+import { Shop } from 'src/typeorm/entities/Shop';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, Category]),
+    TypeOrmModule.forFeature([Product, Category, Shop]),
     forwardRef(() => CartModule),
   ],
   providers: [ProductsService],

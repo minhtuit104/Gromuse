@@ -68,8 +68,4 @@ export class Payment {
 
   @Column({ type: 'timestamp', nullable: true })
   deletedAt: Date;
-
-  @ManyToMany(() => Voucher)
-  @JoinTable()
-  vouchers: Voucher[];
 }

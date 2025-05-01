@@ -485,7 +485,7 @@ export const PaymentPage = () => {
 
       // Gọi API xóa toàn bộ cart items chưa thanh toán
       const response = await fetch(
-        `http://localhost:3000/cart-items/cart/${cartId}`,
+        `http://localhost:3000/api/cart-items/cart/${cartId}`,
         {
           method: "DELETE",
           headers: {

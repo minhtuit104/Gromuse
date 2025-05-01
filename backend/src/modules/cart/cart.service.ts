@@ -131,4 +131,19 @@ export class CartService {
     );
     return cartItem;
   }
+
+  async getCartByIdUser(userId: number): Promise<Cart | null> {
+    this.logger.log(`[getCartByIdUser] Finding cart for user ID: ${userId}`);
+    const cart = await this.cartRepository.findOne({
+      where: { idUser: userId },
+      relations: ['items', 'items.product'],
+    });
+    if (cart) {
+      this.logger.log(`[getCartByIdUser] Found cart for user ID: ${userId}`);
+      return cart;
+    } else {
+      this.logger.log(`[getCartByIdUser] No cart found for user ID: ${userId}`);
+      return null;
+    }
+  }
 }

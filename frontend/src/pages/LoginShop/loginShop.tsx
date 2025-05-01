@@ -103,7 +103,7 @@ const LoginShop = () => {
       } else {
         toast.success("Register successful!");
         resetForm();
-        // navigate("/login");
+        loginLink();
       }
     } catch (error) {
       console.error("Registration failed:", error);

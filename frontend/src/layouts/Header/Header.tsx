@@ -24,7 +24,7 @@ function Header() {
       }
 
       const response = await fetch(
-        `http://localhost:3000/cart-items/cart/${cartId}`
+        `http://localhost:3000/api/cart-items/cart/${cartId}`
       );
       if (!response.ok) {
         console.error(`Error fetching cart: ${response.status}`);

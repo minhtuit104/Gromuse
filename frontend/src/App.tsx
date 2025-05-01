@@ -152,9 +152,9 @@ function App() {
         <Route
           path="/list_product_Shop"
           element={
-            <PrivateRoute>
+            <ShopRoute>
               <ListProduct />
-            </PrivateRoute>
+            </ShopRoute>
           }
         />
         {/* Thêm tuyến đường cho trang ListProductUser */}

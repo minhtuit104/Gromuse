@@ -66,6 +66,7 @@ export class Product {
   cartItems: CartItem[];
 
   @ManyToOne(() => Shop, (shop) => shop.products)
+  @JoinColumn({ name: 'shopId' })
   shop: Shop;
 
   @OneToMany(() => Rating, (rating) => rating.product)

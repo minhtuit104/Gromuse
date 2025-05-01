@@ -8,6 +8,8 @@ import {
   Put,
   Param,
   Query,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { formatCategoryName, ProductsService } from './products.service';
 import { Product } from '../../typeorm/entities/Product';
@@ -21,6 +23,8 @@ import {
 import { Repository } from 'typeorm';
 import { Category } from '../../typeorm/entities/Category';
 import { InjectRepository } from '@nestjs/typeorm';
+import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
+import { Shop } from '../../typeorm/entities/Shop';
 
 @Controller('api/products')
 export class ProductsController {
@@ -29,6 +33,8 @@ export class ProductsController {
     private readonly cartService: CartService,
     @InjectRepository(Category)
     private readonly categoriesRepository: Repository<Category>,
+    @InjectRepository(Shop)
+    private readonly shopRepository: Repository<Shop>,
   ) {}
 
   @Get()
@@ -63,8 +69,31 @@ export class ProductsController {
   }
 
   @Post()
-  async create(@Body() productData: Partial<Product>): Promise<Product> {
+  @UseGuards(JwtAuthGuard)
+  async create(
+    @Body() productData: Partial<Product>,
+    @Req() req,
+  ): Promise<any> {
     try {
+      const user = req.user;
+
+      // Kiểm tra quyền truy cập (role = 2 là shop owner)
+      if (!user || user.role !== 2) {
+        throw new HttpException(
+          'Bạn không có quyền tạo sản phẩm',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
+      // Tìm shop của user
+      const shop = await this.shopRepository.findOneBy({ id: user.id });
+      if (!shop) {
+        throw new HttpException(
+          'Không tìm thấy thông tin cửa hàng',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
       const requiredFields = ['name', 'price', 'weight'];
       const missingFields = requiredFields.filter(
         (field) => !productData[field],
@@ -89,6 +118,7 @@ export class ProductsController {
           : null,
         endDate: productData.endDate ? new Date(productData.endDate) : null,
         active: productData.active !== undefined ? productData.active : true,
+        shop: shop, // Truyền toàn bộ đối tượng shop
       };
 
       if (typeof productData.category === 'string') {
@@ -109,7 +139,11 @@ export class ProductsController {
       const product = await this.productsService.create(normalizedData);
       console.log('Product created successfully:', product);
 
-      return product;
+      // Trả về định dạng phản hồi mới
+      return {
+        message: 'success',
+        data: product,
+      };
     } catch (error) {
       console.error('Error in create product:', error);
       throw new HttpException(
@@ -120,14 +154,35 @@ export class ProductsController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: string,
     @Body() productData: Partial<Product>,
-  ): Promise<Product> {
+    @Req() req,
+  ): Promise<any> {
     try {
+      const user = req.user;
+      console.log(user);
+      
+      // Kiểm tra quyền truy cập (role = 2 là shop owner)
+      if (!user || user.role !== 2) {
+        throw new HttpException(
+          'Bạn không có quyền cập nhật sản phẩm',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
       const existingProduct = await this.productsService.findOne(id);
       if (!existingProduct) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Kiểm tra xem sản phẩm có thuộc về shop của người dùng đang đăng nhập không
+      if (existingProduct.shop?.id !== user.idUser) {
+        throw new HttpException(
+          'Bạn không có quyền cập nhật sản phẩm này',
+          HttpStatus.FORBIDDEN,
+        );
       }
 
       let category = existingProduct.category;
@@ -174,7 +229,16 @@ export class ProductsController {
         tag: tagMap[category.name] || existingProduct.tag,
       };
 
-      return await this.productsService.update(id, normalizedData);
+      const updatedProduct = await this.productsService.update(
+        id,
+        normalizedData,
+      );
+
+      // Trả về định dạng phản hồi giống như create
+      return {
+        message: 'success',
+        data: updatedProduct,
+      };
     } catch (error) {
       console.error('Error in update product:', error);
       throw new HttpException(
