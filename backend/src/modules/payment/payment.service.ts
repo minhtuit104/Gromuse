@@ -299,7 +299,7 @@ export class PaymentService {
   }
 
   async createDirectPayment(
-    createPaymentDto: CreatePaymentDto,
+    paymentData: CreatePaymentDto & { cartId: number },
   ): Promise<Payment> {
     // Bắt đầu transaction
     const queryRunner =
@@ -309,12 +309,12 @@ export class PaymentService {
 
     try {
       const vouchers = await this.processVouchers(
-        createPaymentDto.voucherCodes,
-        createPaymentDto.subtotal,
+        paymentData.voucherCodes,
+        paymentData.subtotal,
       );
 
       const payment = this.paymentRepository.create({
-        ...createPaymentDto,
+        ...paymentData,
         status: PaymentStatus.PENDING,
       });
 
@@ -363,6 +363,7 @@ export class PaymentService {
 
     const updatePromises = cartItems.map(async (cartItem) => {
       cartItem.paymentId = paymentId;
+      cartItem.isPaid = true;
       try {
         await this.cartItemRepository.save(cartItem);
         this.logger.log(

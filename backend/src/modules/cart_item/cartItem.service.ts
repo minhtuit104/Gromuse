@@ -58,7 +58,9 @@ export class CartItemService {
     // 2. Tìm sản phẩm
     const product = await this.productRepository.findOne({
       where: { id: dto.productId },
+      relations: ['shop'],
     });
+
     if (!product) {
       this.logger.warn(
         `[addItemToCart] Product with ID ${dto.productId} not found.`,
@@ -95,6 +97,7 @@ export class CartItemService {
         product: product,
         isPaid: false,
         status: null,
+        shop: product.shop,
       });
     }
 
@@ -142,6 +145,7 @@ export class CartItemService {
     // 2. Tìm Product
     const product = await this.productRepository.findOne({
       where: { id: productId },
+      relations: ['shop'],
     });
     if (!product) {
       this.logger.warn(
@@ -159,6 +163,7 @@ export class CartItemService {
       product: product,
       isPaid: false, // Mua ngay ban đầu cũng là chưa thanh toán
       status: null,
+      shop: product.shop,
     });
 
     // 4. Lưu CartItem
@@ -641,45 +646,47 @@ export class CartItemService {
     }
   }
 
-  // async findShopPaidItemsByStatus(
-  //   statuses: OrderStatus[],
-  //   requestingShopId: number, // ID of the shop making the request
-  // ): Promise<CartItem[]> {
-  //   this.logger.log(
-  //     `[findShopPaidItemsByStatus] Shop ${requestingShopId} finding paid items with statuses: ${statuses}`,
-  //   );
-  //   if (!statuses || statuses.length === 0) {
-  //     return [];
-  //   }
+  async getUnpaidCartItemsCount(userId: number): Promise<number> {
+    this.logger.log(
+      `[getUnpaidCartItemsCount] Counting unpaid items for user: ${userId}`,
+    );
 
-  //   // Query CartItems that are paid, match the status, AND belong to the requesting shop
-  //   const options: FindManyOptions<CartItem> = {
-  //     where: {
-  //       isPaid: true,
-  //       status: In(statuses),
-  //       product: { shop: { id: requestingShopId } }, // <<< Filter by Shop ID via Product relation
-  //     },
-  //     // Include necessary relations for shop view (customer info, product info)
-  //     relations: ['product', 'product.shop', 'cart', 'cart.user', 'rating'],
-  //     order: {
-  //       updatedAt: 'DESC', // Or other relevant sorting for the shop
-  //     },
-  //   };
+    try {
+      // Tìm giỏ hàng của người dùng
+      const cart = await this.cartRepository.findOne({
+        where: { idUser: userId },
+      });
 
-  //   try {
-  //     const items = await this.cartItemRepository.find(options);
-  //     this.logger.log(
-  //       `[findShopPaidItemsByStatus] Found ${items.length} items for shop ${requestingShopId}.`,
-  //     );
-  //     return items;
-  //   } catch (error) {
-  //     this.logger.error(
-  //       `[findShopPaidItemsByStatus] Error fetching items for shop ${requestingShopId}`,
-  //       error.stack,
-  //     );
-  //     throw new InternalServerErrorException(
-  //       'Could not fetch paid items by status for shop',
-  //     );
-  //   }
-  // }
+      if (!cart) {
+        this.logger.log(
+          `[getUnpaidCartItemsCount] No cart found for user ID: ${userId}`,
+        );
+        return 0; // Trả về 0 nếu không có giỏ hàng
+      }
+
+      // Đếm số lượng cart item chưa thanh toán (COUNT thay vì SUM)
+      const result = await this.cartItemRepository
+        .createQueryBuilder('cartItem')
+        .select('COUNT(cartItem.id)', 'itemCount')
+        .where('cartItem.cartId = :cartId', { cartId: cart.id })
+        .andWhere('cartItem.isPaid = :isPaid', { isPaid: false })
+        .getRawOne();
+
+      const count = result?.itemCount || 0;
+      this.logger.log(
+        `[getUnpaidCartItemsCount] Found ${count} unpaid cart items for user: ${userId}`,
+      );
+
+      return Number(count);
+    } catch (error) {
+      this.logger.error(
+        `[getUnpaidCartItemsCount] Error counting unpaid items for user: ${userId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Could not count unpaid cart items',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

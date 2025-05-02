@@ -159,10 +159,10 @@ export class CartItemController {
   @ApiBearerAuth()
   async getCartItems(@Req() req) {
     const user = req.user;
-
+    console.log(user);
     // Tìm giỏ hàng bằng id của người dùng (idUser)
-    const cart = await this.cartItemService.getCartById(user.id);
-
+    const cart = await this.cartItemService.getCartById(user.idUser);
+    console.log(cart);
     if (!cart) {
       throw new NotFoundException('Giỏ hàng không tồn tại');
     }
@@ -308,77 +308,27 @@ export class CartItemController {
     return this.cartItemService.findPaidItemsByStatus(statuses, loggedInUserId);
   }
 
-  // @Get('shop/paid/by-status') // New route prefix
-  // @UseGuards(JwtAuthGuard) // Secure the endpoint
-  // @ApiOperation({
-  //   summary:
-  //     '[SHOP] Lấy danh sách các mục đơn hàng đã thanh toán theo trạng thái cho shop',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Danh sách các mục đơn hàng cho shop',
-  // })
-  // @ApiResponse({
-  //   status: 403,
-  //   description: 'Không có quyền truy cập (không phải shop)',
-  // })
-  // async getShopPaidItemsByStatus(
-  //   @Req() req: RequestWithUser,
-  //   @Query('statuses', new ParseArrayPipe({ items: String, separator: ',' }))
-  //   statuses: OrderStatus[],
-  // ) {
-  //   const loggedInUserId = req.user?.idUser;
-  //   const userRole = req.user?.role;
+  @Get('count')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary:
+      'Lấy số lượng sản phẩm chưa thanh toán trong giỏ hàng của người dùng hiện tại',
+  })
+  @ApiResponse({ status: 200, description: 'Số lượng sản phẩm' })
+  @ApiBearerAuth()
+  async getUnpaidCartItemsCount(@Req() req) {
+    const user = req.user;
+    this.logger.log(
+      `[GET /cart-items/count] Counting unpaid items for user: ${user.idUser}`,
+    );
 
-  //   this.logger.log(
-  //     `[GET /cart-items/shop/paid/by-status] Request for statuses: ${statuses} by user: ${loggedInUserId}, role: ${userRole}`,
-  //   );
+    const count = await this.cartItemService.getUnpaidCartItemsCount(
+      user.idUser,
+    );
 
-  //   // --- Authorization Check ---
-  //   if (!loggedInUserId) {
-  //     // Should be caught by guard, but double-check
-  //     throw new HttpException(
-  //       'Unauthorized: User ID not found',
-  //       HttpStatus.UNAUTHORIZED,
-  //     );
-  //   }
-  //   // Assuming role 2 is SHOP
-  //   if (userRole !== 2) {
-  //     this.logger.warn(
-  //       `[GET /cart-items/shop/paid/by-status] User ${loggedInUserId} with role ${userRole} attempted to access shop endpoint.`,
-  //     );
-  //     throw new ForbiddenException(
-  //       'Access denied. Only shops can access this resource.',
-  //     );
-  //   }
-
-  //   // --- Get Shop ID ---
-  //   // Fetch user details to get associated shopId (adjust based on your entity structure)
-  //   let shopId: number | null = null;
-  //   try {
-  //     const userWithShop = await this.userService.findOne(loggedInUserId); // Assuming findOne returns user with shop relation/id
-  //     // **IMPORTANT**: Adjust the next line based on how shopId is stored/related in your User/Account entity
-  //     shopId = userWithShop?.['shopId'] || userWithShop?.['shop']?.id; // Example: access shopId directly or via relation
-
-  //     if (!shopId) {
-  //       throw new Error(
-  //         `Could not determine shopId for user ${loggedInUserId}`,
-  //       );
-  //     }
-  //     this.logger.log(
-  //       `[GET /cart-items/shop/paid/by-status] User ${loggedInUserId} belongs to shop ${shopId}`,
-  //     );
-  //   } catch (error) {
-  //     this.logger.error(
-  //       `[GET /cart-items/shop/paid/by-status] Error fetching shopId for user ${loggedInUserId}: ${error.message}`,
-  //       error.stack,
-  //     );
-  //     throw new InternalServerErrorException(
-  //       'Could not retrieve shop information for the user.',
-  //     );
-  //   }
-
-  //   // Call the new service method with the shop ID
-  //   return this.cartItemService.findShopPaidItemsByStatus(statuses, shopId);
-  // }
+    return {
+      message: 'success',
+      data: count,
+    };
+  }
 }

@@ -13,4 +13,15 @@ export const getAllCartItemInCart = async () => {
   }
 };
 
+export const getCartCount = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/cart-items/count`);
+    console.log("All products data:", response);
+    return response;
+  } catch (error) {
+    console.error("Error fetching all products:", error);
+    throw error;
+  }
+};
+
 

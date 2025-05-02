@@ -47,15 +47,7 @@ function HeaderDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("currentCartId");
-    localStorage.removeItem("buyNowCartId");
-    localStorage.removeItem("isBuyNow");
-    localStorage.removeItem("cartUpdated");
-    localStorage.removeItem("lastPaidCartId");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("shopName");
-    localStorage.removeItem("shopEmail");
+    localStorage.clear();
     navigate("/loginShop");
   };
 

@@ -8,10 +8,12 @@ import { Product } from '../../typeorm/entities/Product';
 import { Shop } from '../../typeorm/entities/Shop';
 import { Cart } from '../../typeorm/entities/Cart';
 import { CartItem } from '../../typeorm/entities/CartItem';
+import { CartModule } from '../cart/cart.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Payment, Voucher, Product, Shop, Cart, CartItem]),
+    CartModule,
   ],
   controllers: [PaymentController],
   providers: [PaymentService],

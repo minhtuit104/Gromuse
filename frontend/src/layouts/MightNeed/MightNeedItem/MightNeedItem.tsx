@@ -149,7 +149,10 @@ const MightNeedItem = ({ product }: { product: Product }) => {
       }
     };
   }, []);
-
+  const updateCartCount = () => {
+    // Phát sự kiện cập nhật giỏ hàng
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
   const updateCart = async (quantity: number, userId: number | null) => {
     const operationToastId = currentToastId.current;
 
@@ -196,6 +199,7 @@ const MightNeedItem = ({ product }: { product: Product }) => {
           { autoClose: 2000 }
         );
       }
+      updateCartCount();
     } catch (error: any) {
       console.error("MightNeedItem: Error updating cart:", error);
       const errorMessage =

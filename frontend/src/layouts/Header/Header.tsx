@@ -7,6 +7,7 @@ import ImgAvatar from "../../assets/images/avt.jpg";
 import { useNavigate } from "react-router-dom";
 import NotificationDropdown from "../../components/NotificationDropdown/NotificationDropdown";
 import { useEffect, useState, useRef } from "react";
+import { getCartCount } from "../../Service/CartService";
 
 function Header() {
   const navigate = useNavigate();
@@ -17,27 +18,14 @@ function Header() {
 
   const fetchCartQuantity = async () => {
     try {
-      const cartId = localStorage.getItem("currentCartId");
-      if (!cartId) {
-        setCartQuantity(0);
-        return;
-      }
-
-      const response = await fetch(
-        `http://localhost:3000/api/cart-items/cart/${cartId}`
-      );
-      if (!response.ok) {
+      const response = (await getCartCount()) as any;
+      console.log("res cart count: ", response);
+      if (response.message !== "success") {
         console.error(`Error fetching cart: ${response.status}`);
         return;
       }
 
-      const cartData = await response.json();
-      if (Array.isArray(cartData)) {
-        const totalQuantity = cartData.reduce((sum, item) => {
-          return sum + (Number(item.quantity) || 0);
-        }, 0);
-        setCartQuantity(totalQuantity);
-      }
+      setCartQuantity(response.data);
     } catch (error) {
       console.error("Error fetching cart quantity:", error);
     }
@@ -45,43 +33,16 @@ function Header() {
 
   useEffect(() => {
     fetchCartQuantity();
-    const handleStorageChange = (e: StorageEvent) => {
-      if (
-        e.key === "cartUpdated" ||
-        e.key === "currentCartId" ||
-        e.key === "buyNowCartId"
-      ) {
-        fetchCartQuantity();
-      }
-    };
 
-    window.addEventListener("storage", handleStorageChange);
     const handleCartUpdate = () => {
       fetchCartQuantity();
     };
+
+    // Lắng nghe sự kiện cập nhật giỏ hàng
     window.addEventListener("cartUpdated", handleCartUpdate);
-    document.addEventListener("cartUpdate", handleCartUpdate);
-    const intervalId = setInterval(fetchCartQuantity, 30000);
 
-    // Add click event listener to close dropdown when clicking outside
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    // Cleanup
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("cartUpdated", handleCartUpdate);
-      document.removeEventListener("cartUpdate", handleCartUpdate);
-      document.removeEventListener("mousedown", handleClickOutside);
-      clearInterval(intervalId);
     };
   }, []);
 
@@ -94,13 +55,7 @@ function Header() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("currentCartId");
-    localStorage.removeItem("buyNowCartId");
-    localStorage.removeItem("isBuyNow");
-    localStorage.removeItem("cartUpdated");
-    localStorage.removeItem("lastPaidCartId");
-    localStorage.removeItem("userRole");
+    localStorage.clear();
     navigate("/login");
     console.log("User logged out.");
   };

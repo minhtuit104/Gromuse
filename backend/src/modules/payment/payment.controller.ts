@@ -1,26 +1,39 @@
 // src/modules/payment/payment.controller.ts
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  Query,
-  HttpException,
+  Get,
   HttpStatus,
+  InternalServerErrorException,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { PaymentService } from './payment.service';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { PaymentStatus } from '../../typeorm/entities/Payment';
+import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
+import { CartService } from '../cart/cart.service';
 import { CreatePaymentDto } from './dtos/create-payment.dto';
 import { ApplyVoucherDto, UpdatePaymentDto } from './dtos/update-payment.dto';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { PaymentStatus } from '../../typeorm/entities/Payment';
+import { PaymentService } from './payment.service';
 
 @ApiTags('payment')
 @Controller('payment')
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+  constructor(
+    private readonly paymentService: PaymentService,
+    private readonly cartService: CartService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Tạo đơn thanh toán mới' })
@@ -112,27 +125,77 @@ export class PaymentController {
   }
 
   @Post('create')
-  @ApiOperation({ summary: 'Tạo đơn thanh toán trực tiếp' })
-  async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Tạo đơn thanh toán tự động sử dụng giỏ hàng của người dùng đăng nhập',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Đơn thanh toán đã được tạo thành công',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Không có quyền truy cập (thiếu token)',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Không tìm thấy giỏ hàng cho người dùng',
+  })
+  async createPayment(@Body() createPaymentDto: CreatePaymentDto, @Req() req) {
     console.log('Received request to /payment/create:', createPaymentDto);
-    const payment =
-      await this.paymentService.createDirectPayment(createPaymentDto);
-    console.log('Payment record created:', payment);
 
-    // Cập nhật paymentId cho các CartItem
-    await this.paymentService.updateCartItemsWithPayment(
-      createPaymentDto.cartId,
-      payment.id,
-    );
-    console.log(
-      `Associated cart items from cart ${createPaymentDto.cartId} with payment ${payment.id}`,
-    );
+    const userId = req.user.idUser;
 
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: 'Payment created successfully',
-      data: payment,
-    };
+    try {
+      // Luôn lấy giỏ hàng hiện tại của người dùng
+      const userCart = await this.cartService.getOrCreateUserCart(userId);
+
+      if (!userCart) {
+        throw new NotFoundException('Không tìm thấy giỏ hàng cho người dùng.');
+      }
+
+      console.log(`Using cart ID ${userCart.id} for user ID ${userId}`);
+
+      // Tạo một phiên bản DTO với cartId
+      const paymentDtoWithCartId = {
+        ...createPaymentDto,
+        cartId: userCart.id,
+      };
+
+      const payment =
+        await this.paymentService.createDirectPayment(paymentDtoWithCartId);
+      console.log('Payment record created:', payment);
+
+      // Cập nhật các cartItem với payment mới
+      await this.paymentService.updateCartItemsWithPayment(
+        userCart.id,
+        payment.id,
+      );
+      console.log(
+        `Associated cart items from cart ${userCart.id} with payment ${payment.id}`,
+      );
+
+      return {
+        statusCode: HttpStatus.CREATED,
+        message: 'success',
+        data: payment,
+      };
+    } catch (error) {
+      console.error(
+        `Error in payment creation process for user ${userId}:`,
+        error,
+      );
+
+      if (error instanceof NotFoundException) {
+        throw error; // Trả về lỗi 404 nếu không tìm thấy cart
+      }
+
+      throw new InternalServerErrorException(
+        'Đã xảy ra lỗi khi tạo đơn thanh toán.',
+      );
+    }
   }
 
   @Post(':id/confirm')

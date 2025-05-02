@@ -17,6 +17,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { updateUserProfile } from "../../Service/UserService";
 import { Modal, Button } from "antd";
+import { addPayment } from "../../Service/PaymentService";
 
 export const PaymentPage = () => {
   const navigate = useNavigate();
@@ -229,23 +230,12 @@ export const PaymentPage = () => {
     vourcher: yup.string(),
   });
 
+  const updateCartCount = () => {
+    // Phát sự kiện cập nhật giỏ hàng
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
+
   const handleSubmit = async () => {
-    console.log("[handleSubmit] Bắt đầu xử lý thanh toán...");
-    const cartIdToProcess = cartId;
-    console.log("[handleSubmit] cartIdToProcess từ state:", cartIdToProcess);
-
-    if (!cartIdToProcess) {
-      toast.error("Lỗi: Không tìm thấy ID giỏ hàng hợp lệ để thanh toán.");
-      console.error("[PaymentPage] Invalid or missing cartId for payment.");
-      return;
-    }
-    const cartIdValue = parseInt(cartIdToProcess, 10);
-    if (isNaN(cartIdValue)) {
-      toast.error("Lỗi: ID giỏ hàng không hợp lệ.");
-      console.error("[PaymentPage] Invalid cartId format:", cartIdToProcess);
-      return;
-    }
-
     if (
       !userAddress ||
       !userAddress.phone ||
@@ -280,100 +270,33 @@ export const PaymentPage = () => {
           calculatedValues.couponDiscount + calculatedValues.deliveryDiscount,
         total: calculatedValues.total,
         voucherCodes: selectedVoucher ? [selectedVoucher] : [],
-        cartId: cartIdValue,
         phone: userAddress.phone,
         address: userAddress.address || "N/A",
         name: userAddress.name,
       };
 
-      console.log(
-        "[PaymentPage] Calling API: POST /payment/create with data:",
-        paymentData
-      );
-      const createPaymentResponse = await fetch(
-        `http://localhost:3000/payment/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(paymentData),
-        }
-      );
+      // Gọi service đã cập nhật
+      const response = (await addPayment(paymentData)) as any;
 
-      if (!createPaymentResponse.ok) {
-        const errorResponse = await createPaymentResponse.json().catch(() => ({
-          message: `HTTP Error ${createPaymentResponse.status}`,
-        }));
-        console.error(
-          "[PaymentPage] Payment creation API error:",
-          errorResponse
-        );
-        throw new Error(
-          errorResponse.message ||
-            `Không thể tạo đơn hàng: ${createPaymentResponse.status}`
-        );
+      if (response.message === "success") {
+        // Xử lý khi thanh toán thành công
+        setIsPaymentComplete(true);
+        setPaymentStatus("Thanh toán thành công!");
+        localStorage.setItem("paymentComplete", "true");
+        localStorage.removeItem("currentCartId");
+        localStorage.removeItem("buyNowCartItemId");
+        localStorage.removeItem("cartId");
+        updateCartCount();
+        setTimeout(() => {
+          navigate("/order_status", { replace: true });
+        }, 1500);
       }
-      const createPaymentData = await createPaymentResponse.json();
-      console.log(
-        "[PaymentPage] Payment creation API success:",
-        createPaymentData
-      );
-
-      const paymentId = createPaymentData.data?.id;
-      if (!paymentId) {
-        throw new Error(
-          "Không nhận được paymentId từ server sau khi tạo đơn hàng."
-        );
-      }
-      console.log(
-        `[PaymentPage] Calling handleSuccessfulPayment for cartId: ${cartIdValue}`
-      );
-      const paidCartItemIds: number[] = processedData
-        .flatMap(
-          (shop) => shop.products.map((product) => parseInt(product.id, 10)) // product.id là cartItemId (string)
-        )
-        .filter((id) => !isNaN(id));
-
-      if (paidCartItemIds.length === 0) {
-        throw new Error(
-          "Không có sản phẩm hợp lệ nào để đánh dấu đã thanh toán."
-        );
-      }
-
-      const backendUpdateSuccess = await handleSuccessfulPayment(
-        cartIdValue,
-        paidCartItemIds
-      );
-
-      if (!backendUpdateSuccess) {
-        console.error(
-          "[PaymentPage] handleSuccessfulPayment (backend update) failed."
-        );
-        toast.warn(
-          "Thanh toán thành công nhưng cập nhật trạng thái đơn hàng có lỗi."
-        );
-      } else {
-        console.log(
-          "[PaymentPage] handleSuccessfulPayment (backend update) successful."
-        );
-        toast.success("Đặt hàng và cập nhật trạng thái thành công!");
-      }
-      setIsPaymentComplete(true);
-      setPaymentStatus("Thanh toán thành công!");
-      localStorage.setItem("paymentComplete", "true");
-      localStorage.setItem("lastPaidCartId", cartIdValue.toString());
-      localStorage.removeItem("currentCartId");
-      localStorage.removeItem("buyNowCartItemId");
-      localStorage.removeItem("cartId");
-
-      setTimeout(() => {
-        navigate("/", { replace: true });
-      }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[PaymentPage] Error during payment process:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Vui lòng thử lại.";
-      setPaymentStatus(`Có lỗi khi thanh toán! ${errorMessage}`);
-      toast.error(`Lỗi thanh toán: ${errorMessage}`);
+      setPaymentStatus(
+        `Có lỗi khi thanh toán! ${error.message || "Vui lòng thử lại."}`
+      );
+      toast.error(`Lỗi thanh toán: ${error.message || "Vui lòng thử lại."}`);
       setIsPaymentComplete(false);
     } finally {
       setIsLoading(false);

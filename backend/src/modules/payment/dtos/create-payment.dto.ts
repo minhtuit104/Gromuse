@@ -56,7 +56,4 @@ export class CreatePaymentDto {
   @IsOptional()
   voucherCodes?: string[];
 
-  @ApiProperty({ example: 1 })
-  @IsNumber()
-  cartId: number;
 }
