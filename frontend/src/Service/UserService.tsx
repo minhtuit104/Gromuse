@@ -24,7 +24,7 @@ const registerApi = (
     phoneNumber,
     password,
     address,
-    role: 1
+    role: 1,
   });
 };
 

@@ -107,27 +107,27 @@ function App() {
         <Route
           path="/order_shop"
           element={
-            <PrivateRoute>
+            <ShopRoute>
               <OrderShop />
-            </PrivateRoute>
+            </ShopRoute>
           }
         />
         {/* Thêm tuyến đường cho trang OrderHistory */}
         <Route
           path="/order_history"
           element={
-            <PrivateRoute>
+            <ShopRoute>
               <OrderHistory />
-            </PrivateRoute>
+            </ShopRoute>
           }
         />
         {/* Thêm tuyến đường cho trang OrderCancel */}
         <Route
           path="/order_cancel"
           element={
-            <PrivateRoute>
+            <ShopRoute>
               <OrderCancel />
-            </PrivateRoute>
+            </ShopRoute>
           }
         />
         {/* Thêm tuyến đường cho trang OrderStatus */}

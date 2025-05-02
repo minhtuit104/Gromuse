@@ -14,6 +14,7 @@ function HeaderDashboard() {
   const [openSideBar, setOpenSideBar] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [shopName, setShopName] = useState<string>("Shop");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,6 +36,12 @@ function HeaderDashboard() {
     };
   }, []);
 
+  // Get shop name from localStorage on component mount
+  useEffect(() => {
+    const storedName = localStorage.getItem("shopName");
+    if (storedName) setShopName(storedName);
+  }, []);
+
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
   };
@@ -47,6 +54,8 @@ function HeaderDashboard() {
     localStorage.removeItem("cartUpdated");
     localStorage.removeItem("lastPaidCartId");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("shopName");
+    localStorage.removeItem("shopEmail");
     navigate("/loginShop");
   };
 
@@ -87,7 +96,7 @@ function HeaderDashboard() {
         <div className="header_right_avatar_container" ref={dropdownRef}>
           <div className="header_right_avatar" onClick={toggleDropdown}>
             <p>
-              Hello, <i>Lay's Việt Nam</i>
+              Hello, <i>{shopName}</i>
             </p>
             <img src={ImgAvatar} alt="avatar" />
           </div>

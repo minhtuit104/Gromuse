@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Drawer } from "antd";
 import { useNavigate } from "react-router-dom";
 import ImgAvatar from "../../../assets/images/imagePNG/Avatar.png";
@@ -6,6 +6,7 @@ import IconDash from "../../../assets/images/icons/ic_dashboard.svg";
 import IconProduct from "../../../assets/images/icons/ic_food.svg";
 import IconDiscount from "../../../assets/images/icons/ic_discount_bold.svg";
 import IconPhone from "../../../assets/images/icons/ic_phone.svg";
+import IconOrder from "../../../assets/images/icons/ic_order.svg";
 import "./sideBarShop.css";
 
 interface SidebarProps {
@@ -15,6 +16,15 @@ interface SidebarProps {
 
 const SidebarShop: React.FC<SidebarProps> = ({ open, onClose }) => {
   const navigate = useNavigate();
+  const [shopName, setShopName] = useState<string>("Shop Owner");
+  const [shopEmail, setShopEmail] = useState<string>("shop@example.com");
+
+  useEffect(() => {
+    const storedName = localStorage.getItem("shopName");
+    const storedEmail = localStorage.getItem("shopEmail");
+    if (storedName) setShopName(storedName);
+    if (storedEmail) setShopEmail(storedEmail);
+  }, [open]); // Re-check when 'open' state changes
 
   // Hàm xử lý chuyển trang
   const handleNavigation = (path: string) => {
@@ -30,14 +40,12 @@ const SidebarShop: React.FC<SidebarProps> = ({ open, onClose }) => {
       open={open}
       width={340}
     >
-      {/* User Info */}
+      {/* Shop Info */}
       <div className="sidebar_header">
         <img src={ImgAvatar} alt="User Avatar" />
         <div className="sidebar_header_info">
-          <h3>
-            Dương Văn Tuyến<nav></nav>
-          </h3>
-          <p>tuyen@gmail.com</p>
+          <h3 title={shopName}>{shopName}</h3>
+          <p title={shopEmail}>{shopEmail}</p>
         </div>
       </div>
 
@@ -49,6 +57,10 @@ const SidebarShop: React.FC<SidebarProps> = ({ open, onClose }) => {
           </li>
           <li onClick={() => handleNavigation("/list_product_Shop")}>
             <img src={IconProduct} alt="product" className="ic_24" /> Products
+          </li>
+          <li onClick={() => handleNavigation("/order_shop")}>
+            <img src={IconOrder} alt="IconOrder" className="ic_24 order" />{" "}
+            Orders
           </li>
           <li onClick={() => handleNavigation("/discounts")}>
             <img src={IconDiscount} alt="discount" className="ic_24" />{" "}

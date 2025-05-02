@@ -19,6 +19,7 @@ import ImgProducts14 from "../../assets/images/imagePNG/Ready-to-Eat Meals.png";
 import ImgProducts15 from "../../assets/images/imagePNG/Beverages & Juices.png";
 import ImgProducts16 from "../../assets/images/imagePNG/Herbs & Mushrooms.png";
 import IconEditBtn from "../../assets/images/icons/ic_ edit.svg";
+import IconAdd from "../../assets/images/icons/ic_add.svg";
 import { getAllProducts, getAllCategories } from "../../Service/ProductService";
 import { useNavigate } from "react-router-dom";
 
@@ -378,9 +379,19 @@ const ListProduct: React.FC = () => {
           )}
         </div>
 
-        <h2 className="name-product">
-          Products {selectedCategory !== "ALL" ? `- ${selectedCategory}` : ""}
-        </h2>
+        <div className="product-header-row">
+          <h2 className="name-product">
+            Products {selectedCategory !== "ALL" ? `- ${selectedCategory}` : ""}{" "}
+            ({filteredProducts.length})
+          </h2>
+          <button
+            className="add-products-btn"
+            onClick={() => navigate("/add_product")}
+          >
+            <img src={IconAdd} alt="Icon Add" className="ic_20" />
+            Add
+          </button>
+        </div>
 
         {currentProducts.length === 0 && !loading ? (
           <div>
