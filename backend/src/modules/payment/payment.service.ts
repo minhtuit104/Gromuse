@@ -364,7 +364,7 @@ export class PaymentService {
     const updatePromises = cartItems.map(async (cartItem) => {
       cartItem.paymentId = paymentId;
       cartItem.isPaid = true;
-      cartItem.status = OrderStatus.TO_RECEIVE; // <<< THÊM DÒNG NÀY ĐỂ CẬP NHẬT STATUS
+      cartItem.status = OrderStatus.TO_ORDER; // <<< THÊM DÒNG NÀY ĐỂ CẬP NHẬT STATUS
       try {
         await this.cartItemRepository.save(cartItem);
         this.logger.log(

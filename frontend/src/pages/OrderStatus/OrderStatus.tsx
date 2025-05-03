@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./OrderStatus.css";
 import Header from "../../layouts/Header/Header";
 import IconSend from "../../assets/images/icons/ic_ send.svg";
@@ -12,8 +12,9 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { OrderItem } from "./OrderItem/OrderItem";
 import { useNavigate } from "react-router-dom";
+import OrderEmptyImage from "../../assets/images/imagePNG/order_empty.png";
 
-type TabType = "toReceive" | "completed" | "cancelled";
+type TabType = "toOrder" | "toReceive" | "completed" | "cancelled";
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -25,7 +26,7 @@ interface PaginationControlsProps {
 
 const OrderStatuss = () => {
   const navigate = useNavigate(); // Khởi tạo navigate
-  const [activeTab, setActiveTab] = useState<TabType>("toReceive");
+  const [activeTab, setActiveTab] = useState<TabType>("toOrder");
   const [currentOrders, setCurrentOrders] = useState<OrderData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -37,6 +38,12 @@ const OrderStatuss = () => {
   const [cancelReasons, setCancelReasons] = useState<{ [key: string]: string }>(
     {}
   );
+
+  const [indicatorStyle, setIndicatorStyle] = useState({});
+  const toOrderTabRef = useRef<HTMLDivElement>(null);
+  const toReceiveTabRef = useRef<HTMLDivElement>(null);
+  const completedTabRef = useRef<HTMLDivElement>(null);
+  const cancelledTabRef = useRef<HTMLDivElement>(null);
 
   // --- AUTH CHECK ---
   useEffect(() => {
@@ -59,7 +66,9 @@ const OrderStatuss = () => {
     console.log(`[OrderStatus] Loading data for tab: ${tab} from API...`);
     try {
       let orders: OrderData[] = [];
-      if (tab === "toReceive") {
+      if (tab === "toOrder") {
+        orders = await fetchOrdersByStatus([OrderStatus.TO_ORDER]);
+      } else if (tab === "toReceive") {
         orders = await fetchOrdersByStatus([OrderStatus.TO_RECEIVE]);
       } else if (tab === "completed") {
         orders = await fetchOrdersByStatus([OrderStatus.COMPLETE]);
@@ -120,6 +129,36 @@ const OrderStatuss = () => {
     if (tab === activeTab) return; // Không làm gì nếu click vào tab đang active
     setActiveTab(tab);
   };
+
+  // Thêm useEffect để tính toán vị trí của indicator
+  useEffect(() => {
+    const updateIndicator = () => {
+      let activeTabElement = null;
+
+      if (activeTab === "toOrder") activeTabElement = toOrderTabRef.current;
+      else if (activeTab === "toReceive")
+        activeTabElement = toReceiveTabRef.current;
+      else if (activeTab === "completed")
+        activeTabElement = completedTabRef.current;
+      else if (activeTab === "cancelled")
+        activeTabElement = cancelledTabRef.current;
+
+      if (activeTabElement) {
+        const tabWidth = activeTabElement.offsetWidth;
+        const tabLeft = activeTabElement.offsetLeft;
+
+        setIndicatorStyle({
+          width: `${tabWidth}px`,
+          transform: `translateX(${tabLeft - 5}px)`,
+        });
+      }
+    };
+
+    updateIndicator();
+
+    window.addEventListener("resize", updateIndicator);
+    return () => window.removeEventListener("resize", updateIndicator);
+  }, [activeTab]);
 
   // --- Logic phân trang ---
   const totalPages = Math.max(
@@ -229,13 +268,23 @@ const OrderStatuss = () => {
     <div className="order-status-container">
       <Header />
       <div className="three-tab-status">
-        {/* Tab Header giữ nguyên */}
         <div className="tab-header-status">
+          <div className="tab-indicator" style={indicatorStyle}></div>
+          <div
+            className={`tab-item-status ${
+              activeTab === "toOrder" ? "active" : ""
+            }`}
+            onClick={() => handleTabChange("toOrder")}
+            ref={toOrderTabRef}
+          >
+            To Order ({activeTab === "toOrder" ? currentOrders.length : 0})
+          </div>
           <div
             className={`tab-item-status ${
               activeTab === "toReceive" ? "active" : ""
             }`}
             onClick={() => handleTabChange("toReceive")}
+            ref={toReceiveTabRef}
           >
             To Receive ({activeTab === "toReceive" ? currentOrders.length : 0})
           </div>
@@ -244,6 +293,7 @@ const OrderStatuss = () => {
               activeTab === "completed" ? "active" : ""
             }`}
             onClick={() => handleTabChange("completed")}
+            ref={completedTabRef}
           >
             Completed ({activeTab === "completed" ? currentOrders.length : 0})
           </div>
@@ -252,22 +302,21 @@ const OrderStatuss = () => {
               activeTab === "cancelled" ? "active" : ""
             }`}
             onClick={() => handleTabChange("cancelled")}
+            ref={cancelledTabRef}
           >
             Cancelled ({activeTab === "cancelled" ? currentOrders.length : 0})
           </div>
         </div>
-        {/* Tab Content */}
         <div className="tab-content-status">
           {isLoading && <div className="loading-indicator">Đang tải...</div>}
           {!isLoading && currentOrders.length === 0 && (
             <div className="no-orders-status">
-              <p>
-                {activeTab === "toReceive" &&
-                  "Không có đơn hàng nào đang chờ nhận"}
-                {activeTab === "completed" &&
-                  "Chưa có đơn hàng nào đã hoàn thành"}
-                {activeTab === "cancelled" && "Không có đơn hàng nào đã bị hủy"}
-              </p>
+              <img
+                src={OrderEmptyImage}
+                alt="No orders"
+                className="no-orders-image"
+              />
+              <p className="no-orders-message">Have no data!!!</p>
             </div>
           )}
           {!isLoading && currentOrders.length > 0 && (
@@ -276,23 +325,18 @@ const OrderStatuss = () => {
                 <div key={order.orderId} className="order-wrapper">
                   <OrderItem
                     order={order}
-                    // Props điều kiện dựa trên activeTab
-                    showCancelButton={activeTab === "toReceive"}
-                    showBuyAgainButton={activeTab === "cancelled"}
-                    // Props cho việc hủy (chỉ khi ở tab 'toReceive')
                     onCancelOrder={
-                      activeTab === "toReceive"
+                      activeTab === "toOrder" || activeTab === "toReceive"
                         ? () => handleCancelClick(order.orderId)
                         : undefined
                     }
                     expanded={
-                      activeTab === "toReceive"
+                      activeTab === "toOrder" || activeTab === "toReceive"
                         ? !!showCancelInputs[order.orderId]
                         : false
                     }
                   />
-                  {/* Giữ input hủy ở đây HOẶC chuyển vào OrderItem */}
-                  {activeTab === "toReceive" &&
+                  {(activeTab === "toOrder" || activeTab === "toReceive") &&
                     showCancelInputs[order.orderId] && (
                       <div className="cancel-reason-container-status">
                         <input
@@ -317,7 +361,6 @@ const OrderStatuss = () => {
                     )}
                 </div>
               ))}
-              {/* Thanh phân trang */}
               {totalPages > 1 && (
                 <PaginationControls
                   currentPage={currentPage}
@@ -331,7 +374,6 @@ const OrderStatuss = () => {
           )}
         </div>
       </div>
-      {/* ToastContainer giữ nguyên */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -347,7 +389,6 @@ const OrderStatuss = () => {
   );
 };
 
-// --- Component hiển thị các nút điều khiển phân trang ---
 const PaginationControls: React.FC<PaginationControlsProps> = ({
   currentPage,
   totalPages,

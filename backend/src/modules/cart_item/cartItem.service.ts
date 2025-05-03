@@ -656,20 +656,22 @@ export class CartItemService {
       return [];
     }
 
-    const options: FindManyOptions<CartItem> = {
-      where: {
-        isPaid: true,
-        cart: { idUser: requestingUserId },
-        status: In(statuses),
-      },
-      relations: ['product', 'product.shop', 'cart', 'cart.user', 'rating'],
-      order: {
-        updatedAt: 'DESC',
-      },
-    };
-
     try {
-      const items = await this.cartItemRepository.find(options);
+      // Sử dụng QueryBuilder thay vì find với options
+      console.log('requestingUserId', requestingUserId);
+      const items = await this.cartItemRepository
+        .createQueryBuilder('cartItem')
+        .leftJoinAndSelect('cartItem.product', 'product')
+        .leftJoinAndSelect('product.shop', 'shop')
+        .leftJoinAndSelect('cartItem.cart', 'cart')
+        .leftJoinAndSelect('cart.user', 'user')
+        .leftJoinAndSelect('cartItem.rating', 'rating')
+        .where('cartItem.isPaid = :isPaid', { isPaid: true })
+        .andWhere('cart.idUser = :userId', { userId: requestingUserId })
+        .andWhere('cartItem.status IN (:...statuses)', { statuses })
+        .orderBy('cartItem.updatedAt', 'DESC')
+        .getMany();
+
       this.logger.log(`[findPaidItemsByStatus] Found ${items.length} items.`);
       return items;
     } catch (error) {
@@ -738,32 +740,22 @@ export class CartItemService {
       return [];
     }
 
-    const options: FindManyOptions<CartItem> = {
-      where: {
-        isPaid: true,
-        shop: { id: requestingShopId },
-        status: In(statuses),
-      },
-      relations: ['product', 'cart', 'cart.user', 'shop'],
-      order: {
-        updatedAt: 'DESC', // Hoặc createdAt tùy logic
-      },
-    };
+    const items = await this.cartItemRepository
+      .createQueryBuilder('cartItem')
+      .leftJoinAndSelect('cartItem.product', 'product')
+      .leftJoinAndSelect('cartItem.shop', 'shop')
+      .leftJoinAndSelect('cartItem.cart', 'cart')
+      .leftJoinAndSelect('cart.user', 'user')
+      .where('cartItem.isPaid = :isPaid', { isPaid: true })
+      .andWhere('shop.id = :shopId', { shopId: requestingShopId })
+      .andWhere('cartItem.status IN (:...statuses)', { statuses })
+      .orderBy('cartItem.updatedAt', 'DESC')
+      .getMany();
 
-    try {
-      const items = await this.cartItemRepository.find(options);
-      this.logger.log(
-        `[findShopOrdersByStatus] Found ${items.length} items for shop ${requestingShopId}.`,
-      );
-      return items;
-    } catch (error) {
-      this.logger.error(
-        `[findShopOrdersByStatus] Error fetching items for shop ${requestingShopId}`,
-        error.stack,
-      );
-      throw new InternalServerErrorException(
-        'Could not fetch shop orders by status',
-      );
-    }
+    this.logger.log(
+      `[findShopOrdersByStatus] Found ${items.length} items for shop ${requestingShopId}.`,
+    );
+    console.log('items cart : ', items);
+    return items;
   }
 }

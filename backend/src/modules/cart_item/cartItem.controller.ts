@@ -312,6 +312,7 @@ export class CartItemController {
     );
 
     const loggedInUserId = req.user['idUser'];
+    console.log('loggedInUserId', loggedInUserId);
     if (!loggedInUserId) {
       this.logger.error(
         '[GET /cart-items/paid/by-status] User ID not found in token payload after guard.',

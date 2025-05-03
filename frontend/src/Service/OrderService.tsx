@@ -1,9 +1,10 @@
+import axios from "./axios";
 import { toast } from "react-toastify";
-import { CartItem as BackendCartItem } from "../../../backend/src/typeorm/entities/CartItem"; // **QUAN TRỌNG**: Import kiểu từ backend (điều chỉnh đường dẫn)
-import { User as BackendUser } from "../../../backend/src/typeorm/entities/User"; // Import kiểu User nếu cần
-import { Product as BackendProduct } from "../../../backend/src/typeorm/entities/Product"; // Import kiểu Product nếu cần
+
+const API_URL = "/api";
 
 export enum OrderStatus {
+  TO_ORDER = "TO_ORDER",
   TO_RECEIVE = "TO_RECEIVE",
   COMPLETE = "COMPLETE",
   CANCEL_BYSHOP = "CANCEL_BYSHOP",
@@ -49,15 +50,12 @@ export interface OrderMapping {
 export const fetchOrdersByStatus = async (
   statuses: OrderStatus[]
 ): Promise<OrderData[]> => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-  const token = localStorage.getItem("token");
   const statusQuery = statuses.join(",");
-
   console.log(
     `[fetchOrdersByStatus] Fetching orders with statuses: ${statusQuery}`
   );
 
-  if (!token) {
+  if (!localStorage.getItem("token")) {
     console.error(
       "[fetchOrdersByStatus] No token found. User might not be logged in."
     );
@@ -66,44 +64,14 @@ export const fetchOrdersByStatus = async (
   }
 
   try {
-    // Gọi endpoint mới
-    const response = await fetch(
-      `${apiURL}/api/cart-items/paid/by-status?statuses=${statusQuery}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-      }
-    );
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(
-        `[fetchOrdersByStatus] API Error ${response.status}:`,
-        errorBody
-      );
-      if (response.status === 401 || response.status === 403) {
-        toast.error("Lỗi xác thực hoặc không có quyền truy cập đơn hàng.");
-        // Có thể xử lý logout hoặc chuyển hướng đăng nhập ở đây
-      } else {
-        toast.error(`Lỗi ${response.status} khi tải danh sách đơn hàng.`);
-      }
-      return []; // Trả về mảng rỗng nếu lỗi
-    }
-
-    // Parse dữ liệu trả về từ backend (dạng BackendCartItem[])
-    const backendItems: (BackendCartItem & {
-      cart?: { user?: BackendUser };
-      product?: BackendProduct;
-    })[] = await response.json();
-    console.log(`[fetchOrdersByStatus] Raw data received:`, backendItems);
+    const response = await axios.get(
+      `${API_URL}/cart-items/paid/by-status?statuses=${statusQuery}`
+    ) as any;
+    console.log(`[fetchOrdersByStatus] Raw data received:`, response);
 
     // Map dữ liệu backend sang cấu trúc OrderData của frontend
-    const frontendOrders: OrderData[] = backendItems
-      .map((item) => {
+    const frontendOrders: OrderData[] = response
+      ?.map((item: any) => {
         console.log(`[fetchOrdersByStatus] Processing item ID: ${item.id}`);
         console.log(`[fetchOrdersByStatus] Product data:`, item.product);
         console.log(
@@ -114,31 +82,31 @@ export const fetchOrdersByStatus = async (
 
         return {
           orderId: orderId,
-          cartItemId: item.id, // **QUAN TRỌNG**: Lấy cartItemId thật
-          cartId: item.cart?.id || 0, // Lấy cartId (cần đảm bảo backend trả về)
+          cartItemId: item.id,
+          cartId: item.cart?.id || 0,
           product: {
-            id: item.product?.id || 0, // Lấy productId
+            id: item.product?.id || 0,
             name: item.product?.name || "N/A",
             img: item.product?.img || "/placeholder.png",
             price: Number(item.product?.price) || 0,
             quantity: Number(item.quantity) || 1,
             weight: Number(item.product?.weight) || 0,
-            title: item.product?.name, // Hoặc trường title nếu có
+            title: item.product?.name,
           },
           customer: {
             name: item.cart?.user?.name || "Khách hàng",
             address: item.cart?.user?.address || "Chưa cung cấp",
           },
           shop: {
-            id: item.product?.shop?.id || 0, // Lấy id shop
-            name: item.product?.shop?.name || "Cửa hàng không tên", // Lấy tên shop
+            id: item.product?.shop?.id || 0,
+            name: item.product?.shop?.name || "Cửa hàng không tên",
           },
           orderStatus: item.status || OrderStatus.TO_RECEIVE,
           cancelReason: item.cancelReason || undefined,
           isRated: !!item.rating,
         };
       })
-      .filter((order) => order.cartItemId > 0 && order.product.id > 0);
+      .filter((order: any) => order.cartItemId > 0 && order.product.id > 0);
 
     console.log(
       `[fetchOrdersByStatus] Mapped to frontend orders:`,
@@ -155,15 +123,12 @@ export const fetchOrdersByStatus = async (
 export const fetchShopOrdersByStatus = async (
   statuses: OrderStatus[]
 ): Promise<OrderData[]> => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-  const token = localStorage.getItem("token");
   const statusQuery = statuses.join(",");
-
   console.log(
     `[fetchShopOrdersByStatus] Fetching SHOP orders with statuses: ${statusQuery}`
   );
 
-  if (!token) {
+  if (!localStorage.getItem("token")) {
     console.error(
       "[fetchShopOrdersByStatus] No token found. Shop owner might not be logged in."
     );
@@ -172,48 +137,15 @@ export const fetchShopOrdersByStatus = async (
   }
 
   try {
-    // Gọi endpoint mới của shop
-    const response = await fetch(
-      `${apiURL}/api/cart-items/shop/by-status?statuses=${statusQuery}`, // <<< ENDPOINT MỚI
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Gửi token để xác thực và lấy shopId
-        },
-        credentials: "include",
-      }
-    );
+    const response = await axios.get(
+      `${API_URL}/cart-items/shop/by-status?statuses=${statusQuery}`
+    ) as any;
+    console.log(`[fetchShopOrdersByStatus] Raw data received:`, response);
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(
-        `[fetchShopOrdersByStatus] API Error ${response.status}:`,
-        errorBody
-      );
-      if (response.status === 401 || response.status === 403) {
-        toast.error(
-          "Lỗi xác thực hoặc bạn không có quyền xem đơn hàng của shop."
-        );
-      } else {
-        toast.error(
-          `Lỗi ${response.status} khi tải danh sách đơn hàng của shop.`
-        );
-      }
-      return [];
-    }
-
-    const backendItems: (BackendCartItem & {
-      cart?: { user?: BackendUser };
-      product?: BackendProduct;
-      shop?: { id: number; name: string }; // Đảm bảo shop được load từ relation
-    })[] = await response.json();
-    console.log(`[fetchShopOrdersByStatus] Raw data received:`, backendItems);
-
-    // Map dữ liệu backend sang cấu trúc OrderData (tương tự fetchOrdersByStatus)
-    const frontendOrders: OrderData[] = backendItems
-      .map((item) => {
-        const orderId = `SHOP-ORD-${item.id}`; // Có thể dùng prefix khác
+    // Map dữ liệu backend sang cấu trúc OrderData
+    const frontendOrders: OrderData[] = response
+      .map((item: any) => {
+        const orderId = `SHOP-ORD-${item.id}`;
         return {
           orderId: orderId,
           cartItemId: item.id,
@@ -228,21 +160,19 @@ export const fetchShopOrdersByStatus = async (
             title: item.product?.name,
           },
           customer: {
-            // Thông tin người mua
             name: item.cart?.user?.name || "Khách hàng",
             address: item.cart?.user?.address || "Chưa cung cấp",
           },
           shop: {
-            // Thông tin shop (có thể không cần nếu đã biết là shop của mình)
-            id: item.shop?.id || 0, // Lấy từ relation CartItem -> Shop
+            id: item.shop?.id || 0,
             name: item.shop?.name || "Cửa hàng",
           },
           orderStatus: item.status || OrderStatus.TO_RECEIVE,
           cancelReason: item.cancelReason || undefined,
-          isRated: !!item.rating, // Có thể không liên quan ở view shop
+          isRated: !!item.rating,
         };
       })
-      .filter((order) => order.cartItemId > 0 && order.product.id > 0);
+      .filter((order: any) => order.cartItemId > 0 && order.product.id > 0);
 
     console.log(
       `[fetchShopOrdersByStatus] Mapped to frontend orders:`,
@@ -275,7 +205,6 @@ export const saveOrderHistoryToLocalStorage = (history: OrderData[]) => {
 };
 
 export const fetchAndUpdateOrders = async (): Promise<boolean> => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
   // Fetch based on the *last paid* cart ID if available, otherwise currentCartId
   const cartIdToFetch =
     localStorage.getItem("lastPaidCartId") ||
@@ -283,9 +212,8 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
 
   if (!cartIdToFetch || isNaN(parseInt(cartIdToFetch))) {
     console.warn(
-      "[fetchAndUpdateOrders] No valid cartId (lastPaidCartId or currentCartId) found. Cannot fetch cart data."
+      "[fetchAndUpdateOrders] No valid cartId found. Cannot fetch cart data."
     );
-    // It's not necessarily an error if there's no cart to fetch, return true to indicate sync process finished without critical failure.
     return true;
   }
 
@@ -295,38 +223,9 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
   );
 
   try {
-    // API endpoint should return ALL items for the cart, regardless of isPaid status initially
-    // Backend needs to be adjusted if /cart/:cartId only returns unpaid items
-    const response = await fetch(
-      `${apiURL}/api/cart-items/cart/${numericCartId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          // Add Authorization header if needed
-        },
-        credentials: "include", // If using cookies/sessions
-      }
+    const cartItemsFromApi = await axios.get(
+      `${API_URL}/cart-items/cart/${numericCartId}`
     );
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(
-        `[fetchAndUpdateOrders] API Error ${response.status} for cartId ${numericCartId}:`,
-        errorBody
-      );
-      if (response.status === 404) {
-        console.warn(
-          `[fetchAndUpdateOrders] Cart ${numericCartId} not found on backend. Consider clearing local data if needed.`
-        );
-        // Optionally clear local data related to this cartId
-      } else {
-        toast.error(`Lỗi ${response.status} khi tải dữ liệu giỏ hàng.`);
-      }
-      return false; // Indicate sync failure
-    }
-
-    const cartItemsFromApi = await response.json(); // Expecting an array of CartItem entities
     console.log(
       `[fetchAndUpdateOrders] Raw data received from API for cartId ${numericCartId}:`,
       JSON.stringify(cartItemsFromApi, null, 2)
@@ -338,7 +237,7 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
         cartItemsFromApi
       );
       toast.error("Dữ liệu đơn hàng trả về không hợp lệ.");
-      return false; // Indicate sync failure
+      return false;
     }
 
     const newPendingOrders: OrderData[] = [];
@@ -349,9 +248,8 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
     cartItemsFromApi.forEach((item: any) => {
       const backendCartItemId = item.id;
       const backendProductId = item.product?.id;
-      const backendCartId = numericCartId; // Use the cartId we fetched for
+      const backendCartId = numericCartId;
 
-      // Validate essential IDs
       if (
         !backendCartItemId ||
         !backendProductId ||
@@ -361,19 +259,17 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
         backendProductId <= 0
       ) {
         console.warn(
-          "[fetchAndUpdateOrders] Skipping item due to missing or invalid IDs (cartItemId, productId, cartId):",
+          "[fetchAndUpdateOrders] Skipping item due to missing or invalid IDs:",
           item
         );
-        return; // Skip this item
+        return;
       }
 
-      // Generate consistent frontend orderId
       const orderId = `FE_ORD-${backendCartId}-${backendCartItemId}`;
 
-      // Create the OrderData object
       const orderData: OrderData = {
         orderId: orderId,
-        cartItemId: backendCartItemId, // Use the REAL cartItemId from backend
+        cartItemId: backendCartItemId,
         cartId: backendCartId,
         product: {
           id: backendProductId,
@@ -385,7 +281,6 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
           title: item.product?.title,
         },
         customer: {
-          // Fetch or use stored customer info
           name: localStorage.getItem("customerName") || "Khách hàng",
           address: localStorage.getItem("customerAddress") || "Chưa cung cấp",
         },
@@ -393,12 +288,10 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
           id: item.product?.shop?.id || 0,
           name: item.product?.shop?.name || "Cửa hàng không tên",
         },
-        orderStatus: item.status as OrderStatus, // Use status from backend
-        cancelReason: item.cancelReason, // Use cancelReason from backend
-        // cancelledBy and cancelDate can be derived if needed, or added to backend entity
+        orderStatus: item.status as OrderStatus,
+        cancelReason: item.cancelReason,
       };
 
-      // Add mapping for this item
       newMappingsForThisCart.push({
         orderId: orderData.orderId,
         cartId: orderData.cartId,
@@ -406,7 +299,6 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
         cartItemId: orderData.cartItemId,
       });
 
-      // Categorize into pending or history based on backend status
       if (item.isPaid && item.status === OrderStatus.TO_RECEIVE) {
         newPendingOrders.push(orderData);
       } else if (
@@ -417,15 +309,13 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
       ) {
         newHistoryOrders.push(orderData);
       } else {
-        // Log items that are not paid or have unexpected statuses
         console.log(
-          `[fetchAndUpdateOrders] Skipping item for local storage (not paid or unexpected status): cartItemId=${backendCartItemId}, isPaid=${item.isPaid}, status=${item.status}`
+          `[fetchAndUpdateOrders] Skipping item for local storage: cartItemId=${backendCartItemId}, isPaid=${item.isPaid}, status=${item.status}`
         );
       }
     });
 
-    // --- Update Local Storage ---
-    // Get current local data, excluding the cart being updated
+    // Update Local Storage
     const currentPending = getOrdersFromLocalStorage().filter(
       (o) => o.cartId !== numericCartId
     );
@@ -438,18 +328,15 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
       ) as OrderMapping[]
     ).filter((m) => m.cartId !== numericCartId);
 
-    // Combine old data (for other carts) with new data (for the current cart)
     const finalPending = [...currentPending, ...newPendingOrders];
     const finalHistory = [...currentHistory, ...newHistoryOrders];
     const finalMappings = [...currentMappings, ...newMappingsForThisCart];
 
-    // Ensure uniqueness in history (optional but good practice)
     const uniqueHistoryMap = new Map(
       finalHistory.map((order) => [order.orderId, order])
     );
     const uniqueFinalHistory = Array.from(uniqueHistoryMap.values());
 
-    // Save updated lists back to localStorage
     saveOrderDataToLocalStorage(finalPending);
     saveOrderHistoryToLocalStorage(uniqueFinalHistory);
     localStorage.setItem("orderMappings", JSON.stringify(finalMappings));
@@ -461,20 +348,20 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
       `[fetchAndUpdateOrders] Updated mappings for cartId ${numericCartId}: ${newMappingsForThisCart.length} mappings.`
     );
 
-    return true; // Indicate successful sync
+    return true;
   } catch (error) {
     console.error(
       `[fetchAndUpdateOrders] Critical error during fetch/processing for cartId ${numericCartId}:`,
       error
     );
     toast.error("Lỗi nghiêm trọng khi đồng bộ dữ liệu đơn hàng.");
-    return false; // Indicate sync failure
+    return false;
   }
 };
 
 export const synchronizeOrdersWithBackend = async (): Promise<boolean> => {
   console.log("[synchronizeOrdersWithBackend] Starting synchronization...");
-  const success = await fetchAndUpdateOrders(); // Call the refined function
+  const success = await fetchAndUpdateOrders();
   if (success) {
     console.log(
       "[synchronizeOrdersWithBackend] Synchronization finished successfully."
@@ -484,7 +371,7 @@ export const synchronizeOrdersWithBackend = async (): Promise<boolean> => {
       "[synchronizeOrdersWithBackend] Synchronization finished with errors."
     );
   }
-  return success; // Return the success status
+  return success;
 };
 
 export async function updateOrderStatusOnBackend(
@@ -498,7 +385,6 @@ export async function updateOrderStatusOnBackend(
     }`
   );
 
-  // Validate cartItemId
   if (!cartItemId || isNaN(cartItemId) || cartItemId <= 0) {
     console.error(
       `[updateOrderStatusOnBackend] Invalid cartItemId: ${cartItemId}. Cannot update.`
@@ -507,13 +393,10 @@ export async function updateOrderStatusOnBackend(
     return false;
   }
 
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-  // Dùng endpoint mới với cartItemId
-  const endpointUrl = `${apiURL}/api/cart-items/${cartItemId}/order-status`; // *** ENDPOINT MỚI ***
-
   const requestBody: { status: string; cancelReason?: string } = {
     status: status.toString(),
   };
+
   if (
     (status === OrderStatus.CANCEL_BYSHOP ||
       status === OrderStatus.CANCEL_BYUSER) &&
@@ -523,67 +406,46 @@ export async function updateOrderStatusOnBackend(
   }
 
   console.log(
-    `[updateOrderStatusOnBackend] Calling PUT ${endpointUrl} with body:`,
+    `[updateOrderStatusOnBackend] Calling PUT with body:`,
     JSON.stringify(requestBody)
   );
 
   try {
-    const response = await fetch(endpointUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        // 'Authorization': `Bearer ${token}`, // Add if needed
-      },
-      body: JSON.stringify(requestBody),
-      credentials: "include", // If needed
-    });
+    await axios.put(
+      `${API_URL}/cart-items/${cartItemId}/order-status`,
+      requestBody
+    );
+    console.log("[updateOrderStatusOnBackend] Backend update successful");
+    return true;
+  } catch (error:any) {
+    console.error("[updateOrderStatusOnBackend] Error:", error);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `[updateOrderStatusOnBackend] API Error ${response.status} at ${endpointUrl}:`,
-        errorText
-      );
-      // Xử lý lỗi cụ thể (404, 400, 401/403)
-      if (response.status === 404) {
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 404) {
         toast.error(
           `Lỗi 404: Không tìm thấy mục đơn hàng với ID: ${cartItemId} trên máy chủ.`
         );
-      } else if (response.status === 400) {
-        try {
-          const errorJson = JSON.parse(errorText);
-          toast.error(
-            `Lỗi cập nhật trạng thái: ${
-              errorJson.message || "Dữ liệu không hợp lệ."
-            }`
-          );
-        } catch {
-          toast.error(`Lỗi 400: Yêu cầu cập nhật trạng thái không hợp lệ.`);
-        }
-      } else if (response.status === 401 || response.status === 403) {
+      } else if (status === 400) {
+        toast.error(
+          `Lỗi cập nhật trạng thái: ${
+            error.response.data?.message || "Dữ liệu không hợp lệ."
+          }`
+        );
+      } else if (status === 401 || status === 403) {
         toast.error(
           "Lỗi xác thực hoặc không có quyền cập nhật trạng thái đơn hàng này."
         );
       } else {
-        toast.error(`Lỗi ${response.status} khi cập nhật trạng thái đơn hàng.`);
+        toast.error(`Lỗi ${status} khi cập nhật trạng thái đơn hàng.`);
       }
-      return false; // Indicate failure
+    } else {
+      toast.error(
+        "Lỗi kết nối hoặc lỗi không xác định khi cập nhật trạng thái."
+      );
     }
 
-    const result = await response.json();
-    console.log(
-      "[updateOrderStatusOnBackend] Backend update successful:",
-      result
-    );
-
-    return true; // Indicate success
-  } catch (error) {
-    console.error(
-      "[updateOrderStatusOnBackend] Network or unexpected error:",
-      error
-    );
-    toast.error("Lỗi kết nối hoặc lỗi không xác định khi cập nhật trạng thái.");
-    return false; // Indicate failure
+    return false;
   }
 }
 
@@ -603,8 +465,6 @@ export const confirmPaymentAndUpdateBackend = async (
   cartId: number,
   paidCartItemIds: number[]
 ): Promise<boolean> => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
   console.log(
     `[confirmPaymentAndUpdateBackend] Sending backend update for cartId: ${cartId}, paidCartItemIds:`,
     paidCartItemIds
@@ -623,60 +483,32 @@ export const confirmPaymentAndUpdateBackend = async (
     return false;
   }
 
-  // Sử dụng endpoint cũ nhưng gửi payload mới
-  const endpointUrl = `${apiURL}/api/cart-items/cart/${cartId}/status`;
   const payload = {
     isPaid: true,
-    cartItemIds: paidCartItemIds, // <<< Gửi mảng cartItemIds
+    cartItemIds: paidCartItemIds,
   };
-  const method = "PUT";
 
   try {
-    const response = await fetch(endpointUrl, {
-      method: method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      credentials: "include", // If needed
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `[confirmPaymentAndUpdateBackend] Backend API Error ${response.status}:`,
-        errorText
-      );
-      toast.error(
-        `Lỗi ${response.status} khi cập nhật trạng thái thanh toán trên backend.`
-      );
-      return false; // Indicate failure
-    }
-
-    const result = await response.json();
-    console.log(
-      "[confirmPaymentAndUpdateBackend] Backend update successful:",
-      result
-    );
+    await axios.put(`${API_URL}/cart-items/cart/${cartId}/status`, payload);
+    console.log("[confirmPaymentAndUpdateBackend] Backend update successful");
 
     // Xóa cartId hiện tại sau khi thanh toán thành công
     localStorage.removeItem("currentCartId");
-    localStorage.removeItem("cartId"); // Xóa cả cartId lưu tạm
-    localStorage.removeItem("cartUpdated"); // Xóa cờ cập nhật
+    localStorage.removeItem("cartId");
+    localStorage.removeItem("cartUpdated");
 
-    return true; // Indicate backend update success
+    return true;
   } catch (error) {
-    console.error(
-      "[confirmPaymentAndUpdateBackend] Network or unexpected error:",
-      error
-    );
+    console.error("[confirmPaymentAndUpdateBackend] Error:", error);
     toast.error("Lỗi kết nối hoặc lỗi không xác định khi cập nhật backend.");
-    return false; // Indicate failure
+    return false;
   }
 };
 
 export const saveBuyAgainProduct = (product: any): void => {
   try {
     localStorage.setItem("buyAgainProduct", JSON.stringify(product));
-    localStorage.setItem("isBuyNow", "true"); // Indicate buy now mode
+    localStorage.setItem("isBuyNow", "true");
     console.log("Saved buy again product info:", product);
   } catch (error) {
     console.error("Error saving buy again product:", error);

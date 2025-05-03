@@ -14,6 +14,7 @@ import { Cart } from './Cart';
 import { Rating } from './Rating';
 
 export enum OrderStatus {
+  TO_ORDER = 'TO_ORDER',
   TO_RECEIVE = 'TO_RECEIVE',
   COMPLETE = 'COMPLETE',
   CANCEL_BYSHOP = 'CANCEL_BYSHOP',

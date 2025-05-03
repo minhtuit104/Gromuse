@@ -7,6 +7,7 @@ import { OrderStatus } from "../../../Service/OrderService";
 import IconView from "../../../assets/images/icons/ic_eye.svg";
 import IconSend from "../../../assets/images/icons/ic_ send.svg"; // Thêm icon send nếu chuyển input vào đây
 import ImgShop from "../../../assets/images/icons/ic_ shop.svg";
+import IconChecked from "../../../assets/images/icons/ic_ check.svg";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { jwtDecode } from "jwt-decode";
@@ -38,9 +39,6 @@ interface OrderItemProps {
 // eslint-disable-next-line react-refresh/only-export-components
 export const OrderItem: React.FC<OrderItemProps> = ({
   order,
-  showCancelButton,
-  // showRateButton,
-  showBuyAgainButton,
   onCancelOrder,
   expanded, // Vẫn dùng để thêm class 'expanded' nếu cần
   showCancelInput, // Nhận prop mới
@@ -247,12 +245,9 @@ export const OrderItem: React.FC<OrderItemProps> = ({
           </div>
         </div>
         <div className="product-price-status">
-          {/* Chỉ hiển thị giá gốc nếu là tab ToReceive */}
-          {showCancelButton && (
-            <div className="original-price-status">
-              ${originalPrice.toFixed(2)}
-            </div>
-          )}
+          <div className="original-price-status">
+            ${originalPrice.toFixed(2)}
+          </div>
           <div className="current-price-status">${currentPrice.toFixed(2)}</div>
         </div>
       </div>
@@ -261,7 +256,7 @@ export const OrderItem: React.FC<OrderItemProps> = ({
         <span className="Shop-name">{order.shop?.name || "Cửa hàng"}</span>{" "}
       </div>
       <div className="item-actions-status">
-        {showCancelButton && (
+        {order.orderStatus === OrderStatus.TO_ORDER && (
           <button className="cancel-button-status" onClick={handleCancelClick}>
             <span className="cancel-icon-status">
               <img src={IconCancel} alt="IconCancel" className="ic_20" />
@@ -269,7 +264,17 @@ export const OrderItem: React.FC<OrderItemProps> = ({
             Cancel
           </button>
         )}
-
+        {order.orderStatus === OrderStatus.TO_RECEIVE && (
+          <button
+            className="to-receive-button-status"
+            onClick={handleCancelClick}
+          >
+            <span className="cancel-icon-status">
+              <img src={IconChecked} alt="IconCancel" className="ic_20" />
+            </span>
+            Received
+          </button>
+        )}
         {order.orderStatus === OrderStatus.COMPLETE && (
           <>
             {!order.isRated && (
@@ -295,17 +300,18 @@ export const OrderItem: React.FC<OrderItemProps> = ({
         )}
 
         {/* Nút Buy Again: Hiển thị nếu showBuyAgainButton là true */}
-        {showBuyAgainButton && (
-          <button
-            className="buy-again-button-status"
-            onClick={handleBuyAgainClick}
-          >
-            <span className="cart-icon-status">
-              <img src={IconCart} alt="IconCart" className="ic_20" />
-            </span>
-            Buy again
-          </button>
-        )}
+        {order.orderStatus === OrderStatus.CANCEL_BYSHOP ||
+          (order.orderStatus === OrderStatus.CANCEL_BYUSER && (
+            <button
+              className="buy-again-button-status"
+              onClick={handleBuyAgainClick}
+            >
+              <span className="cart-icon-status">
+                <img src={IconCart} alt="IconCart" className="ic_20" />
+              </span>
+              Buy again
+            </button>
+          ))}
       </div>
       {/* Hiển thị lý do hủy nếu có */}
       {order.cancelReason &&

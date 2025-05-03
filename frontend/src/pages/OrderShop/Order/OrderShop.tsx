@@ -41,7 +41,7 @@ const OrderShop = () => {
     console.log("[OrderShop] Loading TO_RECEIVE orders from API...");
     try {
       // Chỉ fetch các đơn hàng có trạng thái TO_RECEIVE
-      const pending = await fetchShopOrdersByStatus([OrderStatus.TO_RECEIVE]);
+      const pending = await fetchShopOrdersByStatus([OrderStatus.TO_ORDER]);
       setOrders(pending); // Cập nhật state
       console.log(`[OrderShop] Loaded ${pending.length} pending orders.`);
     } catch (error) {
@@ -119,7 +119,7 @@ const OrderShop = () => {
       // Gọi hàm update đã sửa, truyền cartItemId và status COMPLETE
       const backendSuccess = await updateOrderStatusOnBackend(
         cartItemId,
-        OrderStatus.COMPLETE // Trạng thái mới là COMPLETE
+        OrderStatus.TO_RECEIVE // Trạng thái mới là COMPLETE
       );
 
       if (backendSuccess) {
