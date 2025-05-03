@@ -2,7 +2,7 @@ import axios from "./axios";
 
 const API_URL = "/api";
 
-export const addPayment = async (paymentData:any) => {
+export const addPayment = async (paymentData: any) => {
   try {
     // Đảm bảo paymentData có đúng định dạng cần thiết
     const paymentRequest = {

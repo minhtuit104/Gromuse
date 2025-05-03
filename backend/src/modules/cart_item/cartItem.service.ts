@@ -338,6 +338,43 @@ export class CartItemService {
     }
   }
 
+  async clearUserCart(userId: number): Promise<{ affected?: number }> {
+    this.logger.log(
+      `[clearUserCart] Clearing unpaid items for user ID: ${userId}`,
+    );
+
+    // 1. Tìm giỏ hàng của người dùng
+    const cart = await this.cartRepository.findOne({
+      where: { idUser: userId },
+    });
+
+    if (!cart) {
+      this.logger.warn(
+        `[clearUserCart] Cart not found for user ID: ${userId}. Nothing to clear.`,
+      );
+      // Không cần throw lỗi, chỉ cần trả về 0 affected
+      return { affected: 0 };
+    }
+
+    // 2. Gọi hàm clearUnpaidItems với cartId tìm được
+    this.logger.log(
+      `[clearUserCart] Found cart ID: ${cart.id} for user ID: ${userId}. Proceeding to clear.`,
+    );
+    try {
+      // Hàm clearUnpaidItems đã có logic xóa isPaid=false
+      return await this.clearUnpaidItems(cart.id);
+    } catch (error) {
+      // clearUnpaidItems đã có logging và throw HttpException
+      // Chỉ cần log thêm context nếu cần
+      this.logger.error(
+        `[clearUserCart] Error occurred while calling clearUnpaidItems for cart ID ${cart.id}`,
+        error.stack,
+      );
+      // Re-throw lỗi từ clearUnpaidItems
+      throw error;
+    }
+  }
+
   async updateItemsStatus(
     cartId: number,
     isPaid: boolean,
@@ -686,6 +723,46 @@ export class CartItemService {
       throw new HttpException(
         'Could not count unpaid cart items',
         HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findShopOrdersByStatus(
+    statuses: OrderStatus[],
+    requestingShopId: number, // <<< Nhận shopId
+  ): Promise<CartItem[]> {
+    this.logger.log(
+      `[findShopOrdersByStatus] Shop ${requestingShopId} finding paid items with statuses: ${statuses}`,
+    );
+    if (!statuses || statuses.length === 0) {
+      return [];
+    }
+
+    const options: FindManyOptions<CartItem> = {
+      where: {
+        isPaid: true,
+        shop: { id: requestingShopId },
+        status: In(statuses),
+      },
+      relations: ['product', 'cart', 'cart.user', 'shop'],
+      order: {
+        updatedAt: 'DESC', // Hoặc createdAt tùy logic
+      },
+    };
+
+    try {
+      const items = await this.cartItemRepository.find(options);
+      this.logger.log(
+        `[findShopOrdersByStatus] Found ${items.length} items for shop ${requestingShopId}.`,
+      );
+      return items;
+    } catch (error) {
+      this.logger.error(
+        `[findShopOrdersByStatus] Error fetching items for shop ${requestingShopId}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Could not fetch shop orders by status',
       );
     }
   }

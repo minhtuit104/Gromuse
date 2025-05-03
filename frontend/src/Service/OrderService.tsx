@@ -28,6 +28,11 @@ export interface OrderData {
     address: string;
   };
   orderStatus: OrderStatus;
+  shop: {
+    // <<< THÊM TRƯỜNG SHOP
+    id: number;
+    name: string;
+  };
   cancelReason?: string;
   isRated?: boolean;
   cancelledBy?: "shop" | "user";
@@ -99,8 +104,13 @@ export const fetchOrdersByStatus = async (
     // Map dữ liệu backend sang cấu trúc OrderData của frontend
     const frontendOrders: OrderData[] = backendItems
       .map((item) => {
-        // Tạo orderId duy nhất phía frontend dựa trên cartItemId
-        const orderId = `ORD-${item.id}`; // Dùng cartItemId làm định danh chính
+        console.log(`[fetchOrdersByStatus] Processing item ID: ${item.id}`);
+        console.log(`[fetchOrdersByStatus] Product data:`, item.product);
+        console.log(
+          `[fetchOrdersByStatus] Shop data within product:`,
+          item.product?.shop
+        );
+        const orderId = `ORD-${item.id}`;
 
         return {
           orderId: orderId,
@@ -116,9 +126,12 @@ export const fetchOrdersByStatus = async (
             title: item.product?.name, // Hoặc trường title nếu có
           },
           customer: {
-            // Lấy thông tin customer từ cart.user (cần backend trả về)
             name: item.cart?.user?.name || "Khách hàng",
             address: item.cart?.user?.address || "Chưa cung cấp",
+          },
+          shop: {
+            id: item.product?.shop?.id || 0, // Lấy id shop
+            name: item.product?.shop?.name || "Cửa hàng không tên", // Lấy tên shop
           },
           orderStatus: item.status || OrderStatus.TO_RECEIVE,
           cancelReason: item.cancelReason || undefined,
@@ -135,6 +148,110 @@ export const fetchOrdersByStatus = async (
   } catch (error) {
     console.error(`[fetchOrdersByStatus] Critical error:`, error);
     toast.error("Lỗi nghiêm trọng khi tải dữ liệu đơn hàng.");
+    return [];
+  }
+};
+
+export const fetchShopOrdersByStatus = async (
+  statuses: OrderStatus[]
+): Promise<OrderData[]> => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const token = localStorage.getItem("token");
+  const statusQuery = statuses.join(",");
+
+  console.log(
+    `[fetchShopOrdersByStatus] Fetching SHOP orders with statuses: ${statusQuery}`
+  );
+
+  if (!token) {
+    console.error(
+      "[fetchShopOrdersByStatus] No token found. Shop owner might not be logged in."
+    );
+    toast.error("Vui lòng đăng nhập với tài khoản cửa hàng.");
+    return [];
+  }
+
+  try {
+    // Gọi endpoint mới của shop
+    const response = await fetch(
+      `${apiURL}/api/cart-items/shop/by-status?statuses=${statusQuery}`, // <<< ENDPOINT MỚI
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Gửi token để xác thực và lấy shopId
+        },
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(
+        `[fetchShopOrdersByStatus] API Error ${response.status}:`,
+        errorBody
+      );
+      if (response.status === 401 || response.status === 403) {
+        toast.error(
+          "Lỗi xác thực hoặc bạn không có quyền xem đơn hàng của shop."
+        );
+      } else {
+        toast.error(
+          `Lỗi ${response.status} khi tải danh sách đơn hàng của shop.`
+        );
+      }
+      return [];
+    }
+
+    const backendItems: (BackendCartItem & {
+      cart?: { user?: BackendUser };
+      product?: BackendProduct;
+      shop?: { id: number; name: string }; // Đảm bảo shop được load từ relation
+    })[] = await response.json();
+    console.log(`[fetchShopOrdersByStatus] Raw data received:`, backendItems);
+
+    // Map dữ liệu backend sang cấu trúc OrderData (tương tự fetchOrdersByStatus)
+    const frontendOrders: OrderData[] = backendItems
+      .map((item) => {
+        const orderId = `SHOP-ORD-${item.id}`; // Có thể dùng prefix khác
+        return {
+          orderId: orderId,
+          cartItemId: item.id,
+          cartId: item.cart?.id || 0,
+          product: {
+            id: item.product?.id || 0,
+            name: item.product?.name || "N/A",
+            img: item.product?.img || "/placeholder.png",
+            price: Number(item.product?.price) || 0,
+            quantity: Number(item.quantity) || 1,
+            weight: Number(item.product?.weight) || 0,
+            title: item.product?.name,
+          },
+          customer: {
+            // Thông tin người mua
+            name: item.cart?.user?.name || "Khách hàng",
+            address: item.cart?.user?.address || "Chưa cung cấp",
+          },
+          shop: {
+            // Thông tin shop (có thể không cần nếu đã biết là shop của mình)
+            id: item.shop?.id || 0, // Lấy từ relation CartItem -> Shop
+            name: item.shop?.name || "Cửa hàng",
+          },
+          orderStatus: item.status || OrderStatus.TO_RECEIVE,
+          cancelReason: item.cancelReason || undefined,
+          isRated: !!item.rating, // Có thể không liên quan ở view shop
+        };
+      })
+      .filter((order) => order.cartItemId > 0 && order.product.id > 0);
+
+    console.log(
+      `[fetchShopOrdersByStatus] Mapped to frontend orders:`,
+      frontendOrders
+    );
+    return frontendOrders;
+  } catch (error) {
+    console.error(`[fetchShopOrdersByStatus] Critical error:`, error);
+    toast.error("Lỗi nghiêm trọng khi tải dữ liệu đơn hàng của shop.");
     return [];
   }
 };
@@ -271,6 +388,10 @@ export const fetchAndUpdateOrders = async (): Promise<boolean> => {
           // Fetch or use stored customer info
           name: localStorage.getItem("customerName") || "Khách hàng",
           address: localStorage.getItem("customerAddress") || "Chưa cung cấp",
+        },
+        shop: {
+          id: item.product?.shop?.id || 0,
+          name: item.product?.shop?.name || "Cửa hàng không tên",
         },
         orderStatus: item.status as OrderStatus, // Use status from backend
         cancelReason: item.cancelReason, // Use cancelReason from backend

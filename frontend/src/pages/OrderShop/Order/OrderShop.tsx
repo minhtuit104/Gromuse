@@ -10,9 +10,8 @@ import ImgProductDefault from "../../../assets/images/imagePNG/banana 1.png";
 import {
   OrderData,
   OrderStatus,
-  fetchOrdersByStatus,
-  // fetchShopOrdersByStatus,
-  updateOrderStatusOnBackend, // Import hàm update đã sửa
+  fetchShopOrdersByStatus,
+  updateOrderStatusOnBackend,
 } from "../../../Service/OrderService";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -42,7 +41,7 @@ const OrderShop = () => {
     console.log("[OrderShop] Loading TO_RECEIVE orders from API...");
     try {
       // Chỉ fetch các đơn hàng có trạng thái TO_RECEIVE
-      const pending = await fetchOrdersByStatus([OrderStatus.TO_RECEIVE]);
+      const pending = await fetchShopOrdersByStatus([OrderStatus.TO_RECEIVE]);
       setOrders(pending); // Cập nhật state
       console.log(`[OrderShop] Loaded ${pending.length} pending orders.`);
     } catch (error) {

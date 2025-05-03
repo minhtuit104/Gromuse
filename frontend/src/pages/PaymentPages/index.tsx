@@ -261,6 +261,14 @@ export const PaymentPage = () => {
     setPaymentStatus("");
 
     try {
+      // Lấy danh sách cartItemIds từ processedData TRƯỚC khi gọi addPayment
+      const paidCartItemIds = processedData
+        .flatMap(
+          (shop) => shop.products.map((product) => parseInt(product.id, 10)) // product.id bây giờ là cartItemId dạng string
+        )
+        .filter((id) => !isNaN(id) && id > 0); // Lọc ra các ID hợp lệ
+      console.log("[PaymentPage] CartItem IDs to be paid:", paidCartItemIds);
+
       const paymentData = {
         paymentMethod: selectedPayment === 0 ? "online" : "cod",
         subtotal: calculatedValues.subtotal,
@@ -275,17 +283,41 @@ export const PaymentPage = () => {
         name: userAddress.name,
       };
 
-      // Gọi service đã cập nhật
+      // 1. Gọi API tạo Payment record
       const response = (await addPayment(paymentData)) as any;
 
       if (response.message === "success") {
-        // Xử lý khi thanh toán thành công
+        // 2. Gọi hàm cập nhật trạng thái CartItems trên backend (QUAN TRỌNG)
+        const currentCartId = localStorage.getItem("currentCartId"); // Lấy cartId hiện tại
+        if (currentCartId && paidCartItemIds.length > 0) {
+          const updateSuccess = await handleSuccessfulPayment(
+            parseInt(currentCartId, 10),
+            paidCartItemIds
+          );
+          if (!updateSuccess) {
+            // Xử lý nếu cập nhật trạng thái backend thất bại (ví dụ: hiển thị thông báo)
+            console.error(
+              "[PaymentPage] Failed to update cart item statuses on backend after payment."
+            );
+            toast.error(
+              "Thanh toán thành công nhưng có lỗi khi cập nhật trạng thái đơn hàng. Vui lòng liên hệ hỗ trợ."
+            );
+            // Cân nhắc có nên dừng lại ở đây hay không
+          } else {
+            console.log(
+              "[PaymentPage] Successfully updated cart item statuses on backend."
+            );
+          }
+        } else {
+          console.warn(
+            "[PaymentPage] Missing currentCartId or no items to update status for."
+          );
+        }
+
+        // 3. Xử lý phía Frontend (giữ nguyên)
         setIsPaymentComplete(true);
         setPaymentStatus("Thanh toán thành công!");
         localStorage.setItem("paymentComplete", "true");
-        localStorage.removeItem("currentCartId");
-        localStorage.removeItem("buyNowCartItemId");
-        localStorage.removeItem("cartId");
         updateCartCount();
         setTimeout(() => {
           navigate("/order_status", { replace: true });
@@ -381,7 +413,7 @@ export const PaymentPage = () => {
     return (
       <div className="payment-page">
         <Header />
-        <div className="payment_container">
+        <div className="payment_container-message">
           <div className="empty-cart-message">
             <h2>Giỏ hàng của bạn đang trống</h2>
             <p>Hãy thêm sản phẩm vào giỏ trước khi thanh toán nhé!</p>
@@ -398,9 +430,11 @@ export const PaymentPage = () => {
 
   const handleConfirmClearAll = async () => {
     try {
-      // Lấy cartId từ state
-      if (!cartId) {
-        toast.error("Không tìm thấy ID giỏ hàng");
+      // 1. Lấy token để xác thực người dùng
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Vui lòng đăng nhập để xóa giỏ hàng.");
+        navigate("/login"); // Chuyển hướng nếu chưa đăng nhập
         return;
       }
 
@@ -408,26 +442,40 @@ export const PaymentPage = () => {
 
       // Gọi API xóa toàn bộ cart items chưa thanh toán
       const response = await fetch(
-        `http://localhost:3000/api/cart-items/cart/${cartId}`,
+        `http://localhost:3000/api/cart-items/my-cart`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `[PaymentPage] Lỗi API xóa giỏ hàng (${response.status}):`,
+          errorText
+        );
         throw new Error(`Lỗi khi xóa giỏ hàng: ${response.status}`);
       }
 
       const result = await response.json();
       console.log("[PaymentPage] Đã xóa giỏ hàng:", result);
 
-      // Cập nhật UI
-      setProcessedData([]);
+      // 3. Cập nhật UI và localStorage
+      setProcessedData([]); // Xóa dữ liệu hiển thị
+      setCartId(null); // Reset cartId state
+      localStorage.removeItem("currentCartId"); // Xóa cartId khỏi localStorage
+      localStorage.removeItem("buyNowCartId");
+      localStorage.removeItem("cartId"); // Xóa key chung nếu có
       setIsClearAllModalOpen(false);
       toast.success("Đã xóa tất cả sản phẩm khỏi giỏ hàng");
+
+      // Phát sự kiện cập nhật giỏ hàng cho Header
+      window.dispatchEvent(new Event("cartUpdated"));
+      document.dispatchEvent(new Event("cartUpdate"));
 
       setTimeout(() => {
         navigate("/", { replace: true });

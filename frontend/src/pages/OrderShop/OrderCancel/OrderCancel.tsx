@@ -7,8 +7,7 @@ import IconArrowRight from "../../../assets/images/icons/ic_ arrow-right.svg";
 import {
   OrderData,
   OrderStatus,
-  fetchOrdersByStatus,
-  // fetchShopOrdersByStatus,
+  fetchShopOrdersByStatus,
 } from "../../../Service/OrderService";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -28,7 +27,9 @@ const OrderCancel = () => {
     console.log("[OrderCancel] Loading CANCEL_BYSHOP orders from API...");
     try {
       // Fetch các đơn hàng có trạng thái CANCEL_BYSHOP
-      const cancelled = await fetchOrdersByStatus([OrderStatus.CANCEL_BYSHOP]);
+      const cancelled = await fetchShopOrdersByStatus([
+        OrderStatus.CANCEL_BYSHOP,
+      ]);
       setCancelledOrders(cancelled); // Cập nhật state
       console.log(
         `[OrderCancel] Loaded ${cancelled.length} cancelled by shop orders.`

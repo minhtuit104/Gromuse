@@ -86,7 +86,7 @@ export class ProductsController {
       }
 
       // Tìm shop của user
-      const shop = await this.shopRepository.findOneBy({ id: user.id });
+      const shop = await this.shopRepository.findOneBy({ id: user.idUser });
       if (!shop) {
         throw new HttpException(
           'Không tìm thấy thông tin cửa hàng',
@@ -163,7 +163,7 @@ export class ProductsController {
     try {
       const user = req.user;
       console.log(user);
-      
+
       // Kiểm tra quyền truy cập (role = 2 là shop owner)
       if (!user || user.role !== 2) {
         throw new HttpException(

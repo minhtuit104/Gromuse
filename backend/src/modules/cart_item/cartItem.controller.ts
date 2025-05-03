@@ -69,11 +69,11 @@ class UpdateOrderStatusDto {
 }
 
 interface RequestWithUser extends Request {
-  user: { idUser: number };
-  // user: {
-  //   idUser: number;
-  //   role: number;
-  // };
+  // user: { idUser: number };
+  user: {
+    idUser: number;
+    role: number;
+  };
 }
 
 @ApiTags('cart-items')
@@ -106,17 +106,7 @@ export class CartItemController {
     this.logger.log(
       `[POST /cart-items] Received DTO: ${JSON.stringify(addToCartDto)}`,
     );
-    // // Nếu dùng Guard, có thể lấy userId từ req.user và ghi đè DTO
-    // const userIdFromToken = req.user?.idUser;
-    // if (userIdFromToken) {
-    //     addToCartDto.userId = userIdFromToken;
-    //     delete addToCartDto.cartId; // Ưu tiên userId nếu có token
-    // } else if (!addToCartDto.userId && !addToCartDto.cartId) {
-    //     // Nếu không có token và cũng không có userId/cartId trong DTO
-    //     throw new HttpException('userId hoặc cartId là bắt buộc', HttpStatus.BAD_REQUEST);
-    // }
     if (!addToCartDto.userId && !addToCartDto.cartId) {
-      // Nếu không có userId và cartId, CartItemService sẽ tự tạo cart ẩn danh
       this.logger.log(
         '[POST /cart-items] No userId or cartId provided, creating/using anonymous cart.',
       );
@@ -202,6 +192,33 @@ export class CartItemController {
       return { message: 'Item removed successfully' };
     }
     return result;
+  }
+
+  @Delete('my-cart') // <<< ENDPOINT MỚI ĐỂ XÓA GIỎ HÀNG CỦA USER HIỆN TẠI
+  @UseGuards(JwtAuthGuard) // <<< YÊU CẦU XÁC THỰC
+  @ApiBearerAuth() // Swagger annotation for bearer token
+  @ApiOperation({
+    summary:
+      'Xóa tất cả sản phẩm chưa thanh toán khỏi giỏ hàng của người dùng hiện tại',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Đã xóa các sản phẩm chưa thanh toán',
+  })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  async clearMyCart(@Req() req: RequestWithUser) {
+    // <<< Nhận Req để lấy user từ token
+    const userId = req.user.idUser; // Lấy userId từ payload token đã được validate
+    this.logger.log(
+      `[DELETE /cart-items/my-cart] Request from user ID: ${userId}`,
+    );
+
+    // Gọi service mới để xóa dựa trên userId
+    const result = await this.cartItemService.clearUserCart(userId);
+    return {
+      message: `Đã xóa ${result.affected || 0} sản phẩm chưa thanh toán khỏi giỏ hàng của bạn.`,
+      affected: result.affected || 0,
+    };
   }
 
   @Delete('cart/:cartId')
@@ -330,5 +347,50 @@ export class CartItemController {
       message: 'success',
       data: count,
     };
+  }
+  @Get('shop/by-status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Lấy danh sách đơn hàng của shop theo trạng thái (dành cho chủ shop)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách các mục đơn hàng của shop',
+  })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  @ApiResponse({
+    status: 403,
+    description: 'Không có quyền truy cập (không phải shop)',
+  })
+  async getShopOrdersByStatus(
+    @Req() req: RequestWithUser,
+    @Query('statuses', new ParseArrayPipe({ items: String, separator: ',' }))
+    statuses: OrderStatus[],
+  ) {
+    const user = req.user;
+    this.logger.log(
+      `[GET /cart-items/shop/by-status] Request for statuses: ${statuses} by user: ${user.idUser}, role: ${user.role}`,
+    );
+
+    // Kiểm tra quyền: Chỉ chủ shop (role=2) mới được truy cập
+    if (user.role !== 2) {
+      throw new ForbiddenException(
+        'Bạn không có quyền truy cập tài nguyên này.',
+      );
+    }
+
+    // Giả sử idUser của người dùng chính là shopId (cần xem lại cấu trúc DB User/Shop)
+    // Nếu User và Shop là 2 bảng riêng biệt và có liên kết, bạn cần lấy shopId từ user.idUser
+    const shopId = user.idUser; // <<< ĐIỀU CHỈNH NẾU CẦN
+
+    if (!shopId) {
+      throw new InternalServerErrorException(
+        'Không thể xác định ID của cửa hàng.',
+      );
+    }
+
+    return this.cartItemService.findShopOrdersByStatus(statuses, shopId);
   }
 }

@@ -3,30 +3,33 @@
 .order-status-container {
   display: flex;
   width: 100%;
-  height: 100vh;
-  border-radius: 8px;
-  overflow: hidden;
+  min-height: 100vh; /* Changed from height to min-height */
+  overflow-y: auto; /* Changed from overflow: hidden to overflow-y: auto */
   background-color: var(--white100);
   flex-direction: column;
   align-items: center;
   gap: 5px;
+  padding-bottom: 20px; /* Added padding at the bottom for better spacing */
 }
 
 .three-tab-status {
   display: flex;
   width: 94%;
-  height: auto;
   background-color: var(--white50);
-  border-radius: 16px;
+  border-radius: 40px;
   flex-direction: column;
+  flex: 1;
+  padding: 15px;
 }
 
 .tab-header-status {
   display: flex;
   background-color: var(--white50);
   align-items: center;
-  border-radius: 16px;
+  border-radius: 40px;
   box-shadow: 0 0px 5px 0 rgba(0, 0, 0, 0.3);
+  padding: 5px;
+  overflow: hidden;
 }
 
 .tab-item-status {
@@ -34,19 +37,24 @@
   text-align: center;
   padding: 16px;
   cursor: pointer;
-  color: var(--white400);
+  color: #000;
   font-weight: 600;
   font-size: 20px;
+  border-radius: 40px;
+  transition: all 0.3s ease;
 }
 
 .tab-item-status.active {
-  color: var(--mint800);
+  background-color: #38cfa1;
+  color: white;
   font-weight: 600;
   font-size: 20px;
 }
 
 .tab-content-status {
-  padding: 15px 5px;
+  padding: 20px 0 0 0;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .order-list-status {
@@ -61,8 +69,8 @@
   padding: 15px;
   display: flex;
   flex-direction: column;
-  margin: 0 10px;
   position: relative;
+  gap: 10px;
 }
 
 .item-content-status {
@@ -72,8 +80,8 @@
 }
 
 .product-image-status {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   border: 1px solid var(--green900);
   border-radius: 8px;
   display: flex;
@@ -87,6 +95,22 @@
   max-height: 100%;
 }
 
+.Shop-info {
+  display: flex;
+  gap: 8px;
+}
+
+.Shop-info img {
+  filter: invert(52%) sepia(30%) saturate(3351%) hue-rotate(1deg)
+    brightness(101%) contrast(100%);
+}
+
+.Shop-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--orange400);
+}
+
 .product-info-status {
   flex: 1;
   gap: 8px;
@@ -95,7 +119,7 @@
 }
 
 .product-title-status {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--green900);
   margin-bottom: 4px;
@@ -103,13 +127,13 @@
 
 .product-weight-status {
   color: var(--white600);
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 500;
 }
 
 .product-quantity-status {
   color: var(--orange600);
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 600;
 }
 
@@ -216,9 +240,9 @@
   position: absolute;
   right: 30px;
   bottom: 15px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
-  background-color: var(--white50);
   width: 25%;
   gap: 10px;
   border-radius: 8px;
@@ -321,4 +345,20 @@
 
 .view-icon-status img {
   filter: brightness(0) invert(1);
+}
+
+/* CSS cho thông báo không có đơn hàng */
+.no-orders-status {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--white600);
+  font-size: 18px;
+}
+
+/* CSS cho chỉ báo loading */
+.loading-indicator {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--white600);
+  font-size: 18px;
 }

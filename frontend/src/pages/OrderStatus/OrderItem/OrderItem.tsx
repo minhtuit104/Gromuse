@@ -1,26 +1,56 @@
 import { OrderData } from "../../../Service/OrderService";
+import ImgProductDefault from "../../../assets/images/imagePNG/beef 1.png";
+import IconCancel from "../../../assets/images/icons/ic_ close.svg";
+import IconStar from "../../../assets/images/icons/ic_star.svg";
+import IconCart from "../../../assets/images/icons/ic_cart.svg";
+import { OrderStatus } from "../../../Service/OrderService";
+import IconView from "../../../assets/images/icons/ic_eye.svg";
+import IconSend from "../../../assets/images/icons/ic_ send.svg"; // Thêm icon send nếu chuyển input vào đây
+import ImgShop from "../../../assets/images/icons/ic_ shop.svg";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { jwtDecode } from "jwt-decode";
+
+interface DecodedToken {
+  idAccount: number;
+  idUser: number;
+  email: string;
+  phoneNumber: string;
+  name: string;
+  role: number;
+  iat: number;
+  exp: number;
+}
 
 interface OrderItemProps {
   order: OrderData;
   showCancelButton?: boolean;
-  // showRateButton?: boolean;
   showBuyAgainButton?: boolean;
-  onCancelOrder?: (orderId: string) => void;
+  onCancelOrder?: (orderId: string) => void; // Callback khi nhấn nút Cancel gốc
   expanded?: boolean;
+  // Props mới cho input hủy bên trong component:
+  showCancelInput?: boolean;
+  cancelReason?: string;
+  onReasonChange?: (reason: string) => void;
+  onConfirmCancel?: () => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const OrderItem: React.FC<OrderItemProps> = ({
   order,
   showCancelButton,
   // showRateButton,
   showBuyAgainButton,
   onCancelOrder,
-  expanded,
+  expanded, // Vẫn dùng để thêm class 'expanded' nếu cần
+  showCancelInput, // Nhận prop mới
+  cancelReason, // Nhận prop mới
+  onReasonChange, // Nhận prop mới
+  onConfirmCancel, // Nhận prop mới
 }) => {
   const navigate = useNavigate();
   const originalPrice = order.product.price * 1.15 * order.product.quantity;
   const currentPrice = order.product.price * order.product.quantity;
-
 
   const addItemToCartAPI = async (
     userId: number,
@@ -162,6 +192,37 @@ export const OrderItem: React.FC<OrderItemProps> = ({
     }
   };
 
+  const getUserIdFromToken = (): number | null => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Không tìm thấy token trong localStorage.");
+      return null;
+    }
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      const currentTime = Date.now() / 1000;
+      if (decoded.exp < currentTime) {
+        console.error("Token đã hết hạn.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("currentCartId");
+        localStorage.removeItem("buyNowCartId");
+        localStorage.removeItem("isBuyNow");
+        localStorage.removeItem("cartUpdated");
+        return null;
+      }
+      if (typeof decoded.idUser !== "number") {
+        console.error("Token payload không chứa idUser hợp lệ.");
+        localStorage.removeItem("token");
+        return null;
+      }
+      return decoded.idUser;
+    } catch (error) {
+      console.error("Lỗi giải mã token:", error);
+      localStorage.removeItem("token");
+      return null;
+    }
+  };
+
   return (
     <div className={`order-item-status ${expanded ? "expanded" : ""}`}>
       <div className="item-content-status">
@@ -195,7 +256,10 @@ export const OrderItem: React.FC<OrderItemProps> = ({
           <div className="current-price-status">${currentPrice.toFixed(2)}</div>
         </div>
       </div>
-      {/* Phần hiển thị các nút hành động */}
+      <div className="Shop-info">
+        <img src={ImgShop} alt="ImgShop" className="ic_20" />
+        <span className="Shop-name">{order.shop?.name || "Cửa hàng"}</span>{" "}
+      </div>
       <div className="item-actions-status">
         {showCancelButton && (
           <button className="cancel-button-status" onClick={handleCancelClick}>
@@ -256,5 +320,28 @@ export const OrderItem: React.FC<OrderItemProps> = ({
             {order.cancelReason}
           </div>
         )}
+
+      {/* Phần hiển thị input hủy (NẾU chuyển vào đây) */}
+      {showCancelInput && (
+        <div className="cancel-reason-container-status">
+          <input
+            type="text"
+            className="cancel-reason-input-status"
+            placeholder="Nhập lý do hủy đơn hàng"
+            value={cancelReason || ""}
+            onChange={(e) => onReasonChange?.(e.target.value)}
+            autoFocus
+          />
+          <button
+            className="send-reason-button-status"
+            onClick={onConfirmCancel}
+            disabled={!cancelReason?.trim()}
+            title="Gửi lý do và hủy"
+          >
+            <img src={IconSend} alt="Send" className="ic_28" />
+          </button>
+        </div>
+      )}
     </div>
   );
+};

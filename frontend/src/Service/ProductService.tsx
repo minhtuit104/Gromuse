@@ -82,7 +82,7 @@ export const addProduct = async (data: any) => {
     console.error("Error add product:", error);
     throw error;
   }
-}
+};
 
 export const editProduct = async (data: any, id: any) => {
   try {

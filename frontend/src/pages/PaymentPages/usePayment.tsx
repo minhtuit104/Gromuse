@@ -152,14 +152,14 @@ const usePayment = () => {
     }
 
     try {
-      const response = await getAllCartItemInCart() as any;
-      if (response.message !== 'success') {
+      const response = (await getAllCartItemInCart()) as any;
+      if (response.message !== "success") {
         if (response.status === 404) setError("Không tìm thấy giỏ hàng.");
         else setError(`Lỗi API lấy giỏ hàng: ${response.status}`);
         throw new Error(`API thất bại: ${response.status}`);
       }
 
-      const cartData = await response.data as any;
+      const cartData = (await response.data) as any;
 
       if (!Array.isArray(cartData) || cartData.length === 0) {
         setData([]);

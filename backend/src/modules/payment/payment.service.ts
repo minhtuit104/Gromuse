@@ -1,4 +1,3 @@
-// src/modules/payment/payment.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -15,7 +14,7 @@ import { Voucher, VoucherType } from '../../typeorm/entities/Voucher';
 import { Product } from '../../typeorm/entities/Product';
 import { Shop } from '../../typeorm/entities/Shop';
 import { Cart } from '../../typeorm/entities/Cart';
-import { CartItem } from '../../typeorm/entities/CartItem';
+import { CartItem, OrderStatus } from '../../typeorm/entities/CartItem';
 
 @Injectable()
 export class PaymentService {
@@ -361,9 +360,11 @@ export class PaymentService {
       `[updateCartItemsWithPayment] Found ${cartItems.length} items to link.`,
     );
 
+    // Import OrderStatus nếu chưa có: import { OrderStatus } from '../../typeorm/entities/CartItem';
     const updatePromises = cartItems.map(async (cartItem) => {
       cartItem.paymentId = paymentId;
       cartItem.isPaid = true;
+      cartItem.status = OrderStatus.TO_RECEIVE; // <<< THÊM DÒNG NÀY ĐỂ CẬP NHẬT STATUS
       try {
         await this.cartItemRepository.save(cartItem);
         this.logger.log(

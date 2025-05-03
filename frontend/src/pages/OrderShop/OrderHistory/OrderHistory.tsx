@@ -7,8 +7,7 @@ import IconArrowRight from "../../../assets/images/icons/ic_ arrow-right.svg";
 import {
   OrderData,
   OrderStatus,
-  fetchOrdersByStatus,
-  // fetchShopOrdersByStatus,
+  fetchShopOrdersByStatus,
 } from "../../../Service/OrderService";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -28,7 +27,7 @@ const OrderHistory = () => {
     console.log("[OrderHistory] Loading COMPLETE orders from API...");
     try {
       // Fetch các đơn hàng có trạng thái COMPLETE
-      const completed = await fetchOrdersByStatus([OrderStatus.COMPLETE]);
+      const completed = await fetchShopOrdersByStatus([OrderStatus.COMPLETE]);
       setHistoryOrders(completed); // Cập nhật state
       console.log(
         `[OrderHistory] Loaded ${completed.length} completed orders.`

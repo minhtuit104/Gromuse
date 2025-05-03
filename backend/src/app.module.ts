@@ -29,7 +29,7 @@ import { DashboardModule } from './modules/dashboard_shop/dashboard.module';
     TypeOrmModule.forRoot({
       database: 'web_gromuse',
       username: 'root',
-      password: 'luangoc0204',
+      password: '12345',
       port: 3306,
       host: 'localhost',
       type: 'mysql',
