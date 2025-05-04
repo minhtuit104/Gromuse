@@ -3,13 +3,13 @@
 .order-status-container {
   display: flex;
   width: 100%;
-  min-height: 100vh; /* Changed from height to min-height */
-  overflow-y: auto; /* Changed from overflow: hidden to overflow-y: auto */
+  min-height: 100vh;
+  overflow-y: auto;
   background-color: var(--white100);
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  padding-bottom: 20px; /* Added padding at the bottom for better spacing */
+  padding-bottom: 20px;
 }
 
 .three-tab-status {

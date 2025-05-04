@@ -288,10 +288,10 @@ export const PaymentPage = () => {
 
       if (response.message === "success") {
         // 2. Gọi hàm cập nhật trạng thái CartItems trên backend (QUAN TRỌNG)
-        const currentCartId = localStorage.getItem("currentCartId"); // Lấy cartId hiện tại
-        if (currentCartId && paidCartItemIds.length > 0) {
+        // *** SỬA LẠI: Dùng state `cartId` thay vì đọc lại localStorage ***
+        if (cartId && paidCartItemIds.length > 0) {
           const updateSuccess = await handleSuccessfulPayment(
-            parseInt(currentCartId, 10),
+            parseInt(cartId, 10), // <<< Sử dụng state cartId
             paidCartItemIds
           );
           if (!updateSuccess) {

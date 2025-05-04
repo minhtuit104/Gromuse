@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 import "./OrderHistory.css";
 import ImgProductDefault from "../../../assets/images/imagePNG/banana 1.png";
 import IconArrowRight from "../../../assets/images/icons/ic_ arrow-right.svg";
+import OrderEmptyImage from "../../../assets/images/imagePNG/order_empty.png";
 import {
   OrderData,
   OrderStatus,
   fetchShopOrdersByStatus,
+  fetchShopOrderStatusCounts,
 } from "../../../Service/OrderService";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -17,6 +19,11 @@ const OrderHistory = () => {
   // Sử dụng getOrderHistoryFromLocalStorage thay vì lọc ở component
   const [historyOrders, setHistoryOrders] = useState<OrderData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // State to hold counts for all tabs
+  const [statusCounts, setStatusCounts] = useState<{
+    [key in OrderStatus]?: number;
+  }>({});
 
   // State cho phân trang
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -40,16 +47,31 @@ const OrderHistory = () => {
     }
   }, []);
 
+  // Hàm fetch số lượng đơn hàng cho các tab
+  const loadStatusCounts = useCallback(async () => {
+    console.log("[OrderHistory] Loading status counts...");
+    try {
+      const counts = await fetchShopOrderStatusCounts();
+      setStatusCounts(counts);
+      console.log("[OrderHistory] Loaded status counts:", counts);
+    } catch (error) {
+      console.error("[OrderHistory] Error loading status counts:", error);
+      // Toast handled in service
+    }
+  }, []);
+
   useEffect(() => {
     console.log("[OrderHistory] Component mounted. Initial load...");
     loadHistoryOrders();
-  }, [loadHistoryOrders]);
+    loadStatusCounts(); // Load counts on mount
+  }, [loadHistoryOrders, loadStatusCounts]);
 
   useEffect(() => {
     const handleFocus = () => {
       console.log(
         "[OrderHistory] Window focused, reloading completed orders..."
       );
+      loadStatusCounts(); // Reload counts on focus
       loadHistoryOrders(); // Gọi lại hàm fetch
     };
     window.addEventListener("focus", handleFocus);
@@ -61,7 +83,7 @@ const OrderHistory = () => {
       window.removeEventListener("focus", handleFocus); // Remove focus listener
       console.log("[OrderHistory] Removed focus event listener.");
     };
-  }, [loadHistoryOrders]);
+  }, [loadHistoryOrders, loadStatusCounts]);
 
   // Tính toán số trang và đơn hàng hiện tại
   const totalPages = Math.ceil(historyOrders.length / ordersPerPage);
@@ -108,16 +130,17 @@ const OrderHistory = () => {
     <div className="order_container">
       <HeaderDashboard />
       <div className="order_history">
-        {/* Cập nhật tabs để thêm tab OrderCancel */}
+        {/* Update tabs to show counts from statusCounts state */}
         <div className="tabs">
           <div className="tab inactive" onClick={handleOrdersClick}>
-            Orders
+            Orders ({statusCounts[OrderStatus.TO_ORDER] ?? 0})
           </div>
-          <div className="vertical_line">|</div>
-          <div className="tab active">History ({historyOrders.length})</div>
-          <div className="vertical_line">|</div>
+
+          <div className="tab active">
+            History ({statusCounts[OrderStatus.COMPLETE] ?? 0})
+          </div>
           <div className="tab inactive" onClick={handleCancelledClick}>
-            Cancelled
+            Cancelled ({statusCounts[OrderStatus.CANCEL_BYSHOP] ?? 0})
           </div>
         </div>
 
@@ -129,8 +152,13 @@ const OrderHistory = () => {
 
           {/* Hiển thị khi không có đơn hàng */}
           {!isLoading && historyOrders.length === 0 && (
-            <div className="no-orders">
-              <p>Chưa có đơn hàng nào trong lịch sử.</p>
+            <div className="no-orders-status">
+              <img
+                src={OrderEmptyImage}
+                alt="No orders"
+                className="no-orders-image"
+              />
+              <p className="no-orders-message">Have no data!!!</p>
             </div>
           )}
 

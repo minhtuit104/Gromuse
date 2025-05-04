@@ -64,9 +64,9 @@ export const fetchOrdersByStatus = async (
   }
 
   try {
-    const response = await axios.get(
+    const response = (await axios.get(
       `${API_URL}/cart-items/paid/by-status?statuses=${statusQuery}`
-    ) as any;
+    )) as any;
     console.log(`[fetchOrdersByStatus] Raw data received:`, response);
 
     // Map dữ liệu backend sang cấu trúc OrderData của frontend
@@ -137,9 +137,9 @@ export const fetchShopOrdersByStatus = async (
   }
 
   try {
-    const response = await axios.get(
+    const response = (await axios.get(
       `${API_URL}/cart-items/shop/by-status?statuses=${statusQuery}`
-    ) as any;
+    )) as any;
     console.log(`[fetchShopOrdersByStatus] Raw data received:`, response);
 
     // Map dữ liệu backend sang cấu trúc OrderData
@@ -183,6 +183,33 @@ export const fetchShopOrdersByStatus = async (
     console.error(`[fetchShopOrdersByStatus] Critical error:`, error);
     toast.error("Lỗi nghiêm trọng khi tải dữ liệu đơn hàng của shop.");
     return [];
+  }
+};
+
+export const fetchShopOrderStatusCounts = async (): Promise<{
+  [key in OrderStatus]?: number;
+}> => {
+  console.log(`[fetchShopOrderStatusCounts] Fetching SHOP order counts...`);
+
+  if (!localStorage.getItem("token")) {
+    console.error("[fetchShopOrderStatusCounts] No token found.");
+    return {};
+  }
+
+  try {
+    const response = await axios.get(
+      `${API_URL}/cart-items/shop/status-counts`
+    );
+    console.log(`[fetchShopOrderStatusCounts] Raw counts received:`, response);
+
+    return response as { [key in OrderStatus]?: number };
+  } catch (error) {
+    console.error(
+      `[fetchShopOrderStatusCounts] Critical error fetching counts:`,
+      error
+    );
+    toast.error("Lỗi khi tải số lượng đơn hàng.");
+    return {};
   }
 };
 
@@ -417,7 +444,7 @@ export async function updateOrderStatusOnBackend(
     );
     console.log("[updateOrderStatusOnBackend] Backend update successful");
     return true;
-  } catch (error:any) {
+  } catch (error: any) {
     console.error("[updateOrderStatusOnBackend] Error:", error);
 
     if (error.response) {

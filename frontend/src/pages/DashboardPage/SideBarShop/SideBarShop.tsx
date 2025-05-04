@@ -9,6 +9,18 @@ import IconPhone from "../../../assets/images/icons/ic_phone.svg";
 import IconOrder from "../../../assets/images/icons/ic_order.svg";
 import "./sideBarShop.css";
 
+export interface DecodedShopToken {
+  idAccount: number;
+  idUser: number;
+  email: string; // Đảm bảo có email
+  name: string; // Đảm bảo có name
+  phoneNumber: string;
+  role: number;
+  iat: number;
+  exp: number;
+  shopId?: number; // Có thể có nếu là shop
+}
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;

@@ -24,6 +24,13 @@ interface PaginationControlsProps {
   nextPage: () => void;
 }
 
+interface TabCounts {
+  toOrder: number;
+  toReceive: number;
+  completed: number;
+  cancelled: number;
+}
+
 const OrderStatuss = () => {
   const navigate = useNavigate(); // Khởi tạo navigate
   const [activeTab, setActiveTab] = useState<TabType>("toOrder");
@@ -31,6 +38,14 @@ const OrderStatuss = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [ordersPerPage] = useState<number>(5);
+
+  // Thêm state để lưu trữ số lượng đơn hàng cho từng tab
+  const [tabCounts, setTabCounts] = useState<TabCounts>({
+    toOrder: 0,
+    toReceive: 0,
+    completed: 0,
+    cancelled: 0,
+  });
 
   const [showCancelInputs, setShowCancelInputs] = useState<{
     [key: string]: boolean;
@@ -60,6 +75,56 @@ const OrderStatuss = () => {
     // Nếu có token, không làm gì cả, các useEffect khác sẽ chạy để load data
   }, [navigate]); // Thêm navigate vào dependency array
 
+  // Hàm load tất cả dữ liệu cho mỗi tab
+  const loadAllTabData = useCallback(async () => {
+    setIsLoading(true);
+    console.log("[OrderStatus] Loading data for all tabs...");
+
+    try {
+      // Lấy dữ liệu cho tab hiện tại trước để hiển thị
+      let activeTabOrders: OrderData[] = [];
+
+      if (activeTab === "toOrder") {
+        activeTabOrders = await fetchOrdersByStatus([OrderStatus.TO_ORDER]);
+      } else if (activeTab === "toReceive") {
+        activeTabOrders = await fetchOrdersByStatus([OrderStatus.TO_RECEIVE]);
+      } else if (activeTab === "completed") {
+        activeTabOrders = await fetchOrdersByStatus([OrderStatus.COMPLETE]);
+      } else if (activeTab === "cancelled") {
+        activeTabOrders = await fetchOrdersByStatus([
+          OrderStatus.CANCEL_BYUSER,
+          OrderStatus.CANCEL_BYSHOP,
+        ]);
+      }
+
+      setCurrentOrders(activeTabOrders);
+
+      // Sau đó, lấy số lượng cho tất cả các tab
+      const toOrderOrders = await fetchOrdersByStatus([OrderStatus.TO_ORDER]);
+      const toReceiveOrders = await fetchOrdersByStatus([
+        OrderStatus.TO_RECEIVE,
+      ]);
+      const completedOrders = await fetchOrdersByStatus([OrderStatus.COMPLETE]);
+      const cancelledOrders = await fetchOrdersByStatus([
+        OrderStatus.CANCEL_BYUSER,
+        OrderStatus.CANCEL_BYSHOP,
+      ]);
+
+      setTabCounts({
+        toOrder: toOrderOrders.length,
+        toReceive: toReceiveOrders.length,
+        completed: completedOrders.length,
+        cancelled: cancelledOrders.length,
+      });
+
+      console.log("[OrderStatus] Loaded all tab data successfully");
+    } catch (error) {
+      console.error("[OrderStatus] Error loading all tab data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeTab]); // Dependency includes activeTab để load dữ liệu cho tab hiện tại trước
+
   // Hàm fetch dữ liệu cho tab hiện tại từ API
   const loadDataForTab = useCallback(async (tab: TabType) => {
     setIsLoading(true);
@@ -80,6 +145,13 @@ const OrderStatuss = () => {
         ]);
       }
       setCurrentOrders(orders); // Cập nhật state chung
+
+      // Cập nhật số lượng cho tab hiện tại
+      setTabCounts((prev) => ({
+        ...prev,
+        [tab]: orders.length,
+      }));
+
       setCurrentPage(1); // Reset về trang 1 khi đổi tab hoặc load lại
       setShowCancelInputs({}); // Reset trạng thái input hủy
       setCancelReasons({}); // Reset lý do hủy
@@ -97,6 +169,15 @@ const OrderStatuss = () => {
     // Chỉ load data nếu có token (tránh gọi API khi đang chuẩn bị redirect)
     const token = localStorage.getItem("token");
     if (!token) return;
+
+    // Khi component mount, load dữ liệu cho tất cả các tab
+    loadAllTabData();
+  }, [loadAllTabData]); // Chỉ load tất cả dữ liệu khi component mount
+
+  useEffect(() => {
+    // Chỉ load data nếu có token (tránh gọi API khi đang chuẩn bị redirect)
+    const token = localStorage.getItem("token");
+    if (!token) return;
     // console.log(
     //   `[OrderStatus] Tab changed to ${activeTab} or component mounted. Loading data...`
     // );
@@ -106,12 +187,12 @@ const OrderStatuss = () => {
   useEffect(() => {
     const handleFocus = () => {
       console.log(
-        "[OrderStatus] Window focused, reloading data for current tab..."
+        "[OrderStatus] Window focused, reloading data for all tabs..."
       );
       // Chỉ load data nếu có token
       const token = localStorage.getItem("token");
       if (token) {
-        loadDataForTab(activeTab); // Gọi lại hàm fetch
+        loadAllTabData(); // Gọi lại hàm fetch cho tất cả các tab
       }
     };
     window.addEventListener("focus", handleFocus);
@@ -123,7 +204,7 @@ const OrderStatuss = () => {
       window.removeEventListener("focus", handleFocus); // Remove focus listener
       console.log("[OrderStatus] Removed focus event listener.");
     };
-  }, [activeTab, loadDataForTab]); // Phụ thuộc activeTab và loadDataForTab
+  }, [loadAllTabData]); // Phụ thuộc loadAllTabData
 
   const handleTabChange = (tab: TabType) => {
     if (tab === activeTab) return; // Không làm gì nếu click vào tab đang active
@@ -189,10 +270,8 @@ const OrderStatuss = () => {
 
   // --- Logic hủy đơn hàng (cho tab 'toReceive') ---
   const handleOrderUpdate = () => {
-    console.log(
-      "[OrderStatus] Order updated, reloading data for current tab..."
-    );
-    loadDataForTab(activeTab); // Gọi lại hàm fetch cho tab hiện tại
+    console.log("[OrderStatus] Order updated, reloading data for all tabs...");
+    loadAllTabData(); // Gọi lại hàm fetch cho tất cả các tab để cập nhật số lượng
   };
 
   const handleCancelClick = (orderId: string) => {
@@ -316,7 +395,7 @@ const OrderStatuss = () => {
             onClick={() => handleTabChange("toOrder")}
             ref={toOrderTabRef}
           >
-            To Order ({activeTab === "toOrder" ? currentOrders.length : 0})
+            To Order ({tabCounts.toOrder})
           </div>
           <div
             className={`tab-item-status ${
@@ -325,7 +404,7 @@ const OrderStatuss = () => {
             onClick={() => handleTabChange("toReceive")}
             ref={toReceiveTabRef}
           >
-            To Receive ({activeTab === "toReceive" ? currentOrders.length : 0})
+            To Receive ({tabCounts.toReceive})
           </div>
           <div
             className={`tab-item-status ${
@@ -334,7 +413,7 @@ const OrderStatuss = () => {
             onClick={() => handleTabChange("completed")}
             ref={completedTabRef}
           >
-            Completed ({activeTab === "completed" ? currentOrders.length : 0})
+            Completed ({tabCounts.completed})
           </div>
           <div
             className={`tab-item-status ${
@@ -343,7 +422,7 @@ const OrderStatuss = () => {
             onClick={() => handleTabChange("cancelled")}
             ref={cancelledTabRef}
           >
-            Cancelled ({activeTab === "cancelled" ? currentOrders.length : 0})
+            Cancelled ({tabCounts.cancelled})
           </div>
         </div>
         <div className="tab-content-status">

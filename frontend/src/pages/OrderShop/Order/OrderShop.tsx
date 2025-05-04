@@ -6,11 +6,13 @@ import IconArrowRight from "../../../assets/images/icons/ic_ arrow-right.svg";
 import IconCheck from "../../../assets/images/icons/ic_ check.svg";
 import IconClose from "../../../assets/images/icons/ic_ close.svg";
 import IconSend from "../../../assets/images/icons/ic_ send.svg";
+import OrderEmptyImage from "../../../assets/images/imagePNG/order_empty.png";
 import ImgProductDefault from "../../../assets/images/imagePNG/banana 1.png";
 import {
   OrderData,
   OrderStatus,
   fetchShopOrdersByStatus,
+  fetchShopOrderStatusCounts,
   updateOrderStatusOnBackend,
 } from "../../../Service/OrderService";
 import { toast, ToastContainer } from "react-toastify";
@@ -26,6 +28,11 @@ const OrderShop = () => {
     [key: string]: boolean;
   }>({});
   const navigate = useNavigate();
+
+  // State to hold counts for all tabs
+  const [statusCounts, setStatusCounts] = useState<{
+    [key in OrderStatus]?: number;
+  }>({});
 
   // State và logic phân trang giữ nguyên
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -52,16 +59,31 @@ const OrderShop = () => {
     }
   }, []); // useCallback không có dependencies
 
+  // Hàm fetch số lượng đơn hàng cho các tab
+  const loadStatusCounts = useCallback(async () => {
+    console.log("[OrderShop] Loading status counts...");
+    try {
+      const counts = await fetchShopOrderStatusCounts();
+      setStatusCounts(counts);
+      console.log("[OrderShop] Loaded status counts:", counts);
+    } catch (error) {
+      console.error("[OrderShop] Error loading status counts:", error);
+      // Toast handled in service
+    }
+  }, []);
+
   // Load dữ liệu khi component mount
   useEffect(() => {
     console.log("[OrderShop] Component mounted. Initial load...");
     loadPendingOrders();
-  }, [loadPendingOrders]); // Phụ thuộc loadPendingOrders
+    loadStatusCounts(); // Load counts on mount
+  }, [loadPendingOrders, loadStatusCounts]); // Phụ thuộc loadPendingOrders và loadStatusCounts
 
   // Thêm listener để fetch lại khi focus
   useEffect(() => {
     const handleFocus = () => {
       console.log("[OrderShop] Window focused, reloading pending orders...");
+      loadStatusCounts(); // Reload counts on focus
       loadPendingOrders(); // Gọi lại hàm fetch
     };
     window.addEventListener("focus", handleFocus);
@@ -73,7 +95,7 @@ const OrderShop = () => {
       window.removeEventListener("focus", handleFocus); // Remove focus listener
       console.log("[OrderShop] Removed focus event listener.");
     };
-  }, [loadPendingOrders]); // Phụ thuộc loadPendingOrders
+  }, [loadPendingOrders, loadStatusCounts]); // Phụ thuộc loadPendingOrders và loadStatusCounts
 
   // Đảm bảo currentPage không vượt quá totalPages khi orders thay đổi
   useEffect(() => {
@@ -255,15 +277,18 @@ const OrderShop = () => {
       <HeaderDashboard />
       <div className="order_history">
         {/* Phần Tabs (giữ nguyên) */}
+        {/* === ĐẢM BẢO BẠN CẬP NHẬT ĐÚNG PHẦN NÀY === */}
         <div className="tabs">
-          <div className="tab active">Orders ({orders.length})</div>{" "}
-          <div className="vertical_line">|</div>
-          <div className="tab inactive" onClick={handleHistoryClick}>
-            History
+          <div className="tab active">
+            Orders ({statusCounts[OrderStatus.TO_ORDER] ?? 0}) {/* Sửa ở đây */}
           </div>
-          <div className="vertical_line">|</div>
+          <div className="tab inactive" onClick={handleHistoryClick}>
+            History ({statusCounts[OrderStatus.COMPLETE] ?? 0}){" "}
+            {/* Thêm số lượng */}
+          </div>
           <div className="tab inactive" onClick={handleCancelledClick}>
-            Cancelled
+            Cancelled ({statusCounts[OrderStatus.CANCEL_BYSHOP] ?? 0}){" "}
+            {/* Thêm số lượng */}
           </div>
         </div>
 
@@ -276,8 +301,13 @@ const OrderShop = () => {
 
           {/* Hiển thị khi không có đơn hàng */}
           {!isLoading && orders.length === 0 && (
-            <div className="no-orders">
-              <p>Không có đơn hàng nào đang chờ xử lý.</p>
+            <div className="no-orders-status">
+              <img
+                src={OrderEmptyImage}
+                alt="No orders"
+                className="no-orders-image"
+              />
+              <p className="no-orders-message">Have no data!!!</p>
             </div>
           )}
 
@@ -291,7 +321,6 @@ const OrderShop = () => {
                       showCancelInputs[order.orderId] ? "expanded" : ""
                     }`}
                   >
-                    {/* Thông tin sản phẩm (giữ nguyên) */}
                     <div className="product-image">
                       <img
                         src={order.product.img || ImgProductDefault}
@@ -312,15 +341,11 @@ const OrderShop = () => {
                         x{order.product.quantity}
                       </div>
                     </div>
-
-                    {/* Mũi tên (giữ nguyên) */}
                     <img
                       src={IconArrowRight}
                       alt="IconArrowRight"
                       className="ic_20 arrow_right-orderShop"
                     />
-
-                    {/* Thông tin khách hàng (giữ nguyên) */}
                     <div className="customer-info">
                       <div className="customer-name">{order.customer.name}</div>
                       <div className="customer-address">
@@ -328,7 +353,6 @@ const OrderShop = () => {
                       </div>
                     </div>
 
-                    {/* Thông tin giá (giữ nguyên) */}
                     <div className="price-info">
                       <div className="old-price">
                         {formatPrice(
@@ -344,7 +368,6 @@ const OrderShop = () => {
                       </div>
                     </div>
 
-                    {/* Nút hành động */}
                     <div className="action-button">
                       <div
                         className="icon_check"
@@ -357,10 +380,8 @@ const OrderShop = () => {
                           className="ic_28"
                         />
                       </div>
-                      {/* Nút mở/đóng ô hủy */}
                       <div
                         className="icon_close"
-                        // Giữ nguyên dùng orderId cho state toggle input
                         onClick={() => handleCloseClick(order.orderId)}
                         title={
                           showCancelInputs[order.orderId]
@@ -376,7 +397,6 @@ const OrderShop = () => {
                       </div>
                     </div>
 
-                    {/* Ô nhập lý do hủy (chỉ hiển thị khi cần) */}
                     {showCancelInputs[order.orderId] && (
                       <div className="cancel-reason-container">
                         <input
@@ -391,7 +411,6 @@ const OrderShop = () => {
                         />
                         <button
                           className="send-reason-button"
-                          // *** THAY ĐỔI: Truyền cả order object ***
                           onClick={() => handleCancelOrder(order)}
                           title="Gửi lý do và hủy"
                           disabled={!cancelReasons[order.orderId]?.trim()}
@@ -405,14 +424,12 @@ const OrderShop = () => {
                       </div>
                     )}
                   </div>
-                  {/* Đường kẻ phân cách (giữ nguyên) */}
                   {index < currentOrders.length - 1 && (
                     <div className="order-card-line"></div>
                   )}
                 </React.Fragment>
               ))}
 
-              {/* Phân trang (giữ nguyên) */}
               {totalPages > 1 && (
                 <div className="pagination">
                   <button
@@ -452,7 +469,6 @@ const OrderShop = () => {
           )}
         </div>
       </div>
-      {/* Toast Container (giữ nguyên) */}
       <ToastContainer
         position="top-right"
         autoClose={3000}

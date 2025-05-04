@@ -526,14 +526,15 @@ export class CartItemService {
     if (
       (status === OrderStatus.CANCEL_BYUSER ||
         status === OrderStatus.CANCEL_BYSHOP) &&
-      currentStatus !== OrderStatus.TO_RECEIVE
+      currentStatus !== OrderStatus.TO_RECEIVE && // Cho phép hủy từ TO_ORDER
+      currentStatus !== OrderStatus.TO_ORDER
     ) {
       this.logger.warn(
         `[updateItemOrderStatus] Blocked CANCEL: CartItem ID ${cartItem.id}, current status ${currentStatus}.`,
       );
       return {
         success: false,
-        message: `Không thể hủy đơn hàng đang ở trạng thái ${currentStatus}.`,
+        message: `Không thể hủy đơn hàng đang ở trạng thái ${currentStatus}. Chỉ có thể hủy khi đang chờ xử lý hoặc đang giao.`,
         updatedItem: cartItem,
       };
     }
@@ -588,6 +589,7 @@ export class CartItemService {
         } else if (
           (status === OrderStatus.CANCEL_BYSHOP ||
             status === OrderStatus.CANCEL_BYUSER) &&
+          // *** CHỈ GIẢM SOLD KHI HỦY TỪ TO_RECEIVE ***
           currentStatus === OrderStatus.TO_RECEIVE
         ) {
           this.logger.log(
@@ -757,5 +759,49 @@ export class CartItemService {
     );
     console.log('items cart : ', items);
     return items;
+  }
+
+  async getShopOrderStatusCounts(
+    requestingShopId: number,
+  ): Promise<{ [key in OrderStatus]?: number }> {
+    this.logger.log(
+      `[getShopOrderStatusCounts] Shop ${requestingShopId} fetching order status counts.`,
+    );
+
+    try {
+      const countsResult = await this.cartItemRepository
+        .createQueryBuilder('cartItem')
+        .select('cartItem.status', 'status')
+        .addSelect('COUNT(cartItem.id)', 'count')
+        .where('cartItem.shopId = :shopId', { shopId: requestingShopId })
+        .andWhere('cartItem.isPaid = :isPaid', { isPaid: true }) // Chỉ đếm đơn hàng đã thanh toán
+        .andWhere('cartItem.status IS NOT NULL') // Chỉ đếm các trạng thái hợp lệ
+        .groupBy('cartItem.status')
+        .getRawMany();
+
+      this.logger.log(
+        `[getShopOrderStatusCounts] Raw counts result for shop ${requestingShopId}:`,
+        countsResult,
+      );
+
+      const counts: { [key in OrderStatus]?: number } = {};
+      for (const row of countsResult) {
+        counts[row.status as OrderStatus] = parseInt(row.count, 10) || 0;
+      }
+
+      this.logger.log(
+        `[getShopOrderStatusCounts] Processed counts for shop ${requestingShopId}:`,
+        counts,
+      );
+      return counts;
+    } catch (error) {
+      this.logger.error(
+        `[getShopOrderStatusCounts] Error fetching counts for shop ${requestingShopId}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Could not fetch shop order status counts',
+      );
+    }
   }
 }

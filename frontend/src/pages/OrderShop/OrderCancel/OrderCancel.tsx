@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 import "./OrderCancel.css";
 import ImgProductDefault from "../../../assets/images/imagePNG/banana 1.png";
 import IconArrowRight from "../../../assets/images/icons/ic_ arrow-right.svg";
+import OrderEmptyImage from "../../../assets/images/imagePNG/order_empty.png";
 import {
   OrderData,
   OrderStatus,
   fetchShopOrdersByStatus,
+  fetchShopOrderStatusCounts,
 } from "../../../Service/OrderService";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -16,6 +18,11 @@ const OrderCancel = () => {
   const navigate = useNavigate();
   const [cancelledOrders, setCancelledOrders] = useState<OrderData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // State to hold counts for all tabs
+  const [statusCounts, setStatusCounts] = useState<{
+    [key in OrderStatus]?: number;
+  }>({});
 
   // Thêm state cho phân trang
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -45,11 +52,25 @@ const OrderCancel = () => {
     }
   }, []); // useCallback không có dependencies
 
+  // Hàm fetch số lượng đơn hàng cho các tab
+  const loadStatusCounts = useCallback(async () => {
+    console.log("[OrderCancel] Loading status counts...");
+    try {
+      const counts = await fetchShopOrderStatusCounts();
+      setStatusCounts(counts);
+      console.log("[OrderCancel] Loaded status counts:", counts);
+    } catch (error) {
+      console.error("[OrderCancel] Error loading status counts:", error);
+      // Toast handled in service
+    }
+  }, []);
+
   // Load dữ liệu khi component mount
   useEffect(() => {
     console.log("[OrderCancel] Component mounted. Initial load...");
     loadCancelledByShopOrders();
-  }, [loadCancelledByShopOrders]); // Phụ thuộc loadCancelledByShopOrders
+    loadStatusCounts(); // Load counts on mount
+  }, [loadCancelledByShopOrders, loadStatusCounts]); // Phụ thuộc loadCancelledByShopOrders và loadStatusCounts
 
   // Thêm listener để fetch lại khi focus
   useEffect(() => {
@@ -57,6 +78,7 @@ const OrderCancel = () => {
       console.log(
         "[OrderCancel] Window focused, reloading cancelled by shop orders..."
       );
+      loadStatusCounts(); // Reload counts on focus
       loadCancelledByShopOrders(); // Gọi lại hàm fetch
     };
     window.addEventListener("focus", handleFocus);
@@ -68,7 +90,7 @@ const OrderCancel = () => {
       window.removeEventListener("focus", handleFocus); // Remove focus listener
       console.log("[OrderCancel] Removed focus event listener.");
     };
-  }, [loadCancelledByShopOrders]); // Phụ thuộc loadCancelledByShopOrders
+  }, [loadCancelledByShopOrders, loadStatusCounts]); // Phụ thuộc loadCancelledByShopOrders và loadStatusCounts
 
   // Tính toán số trang và đơn hàng hiện tại (giữ nguyên)
   const totalPages = Math.max(
@@ -111,16 +133,18 @@ const OrderCancel = () => {
     <div className="order_container">
       <HeaderDashboard />
       <div className="order_history">
+        {/* Update tabs to show counts from statusCounts state */}
         <div className="tabs">
           <div className="tab inactive" onClick={handleOrdersClick}>
-            Orders
+            Orders ({statusCounts[OrderStatus.TO_ORDER] ?? 0})
           </div>
-          <div className="vertical_line">|</div>
+
           <div className="tab inactive" onClick={handleHistoryClick}>
-            History
+            History ({statusCounts[OrderStatus.COMPLETE] ?? 0})
           </div>
-          <div className="vertical_line">|</div>
-          <div className="tab active">Cancelled ({cancelledOrders.length})</div>
+          <div className="tab active">
+            Cancelled ({statusCounts[OrderStatus.CANCEL_BYSHOP] ?? 0})
+          </div>
         </div>
 
         <div className="order-list-cancel">
@@ -131,8 +155,13 @@ const OrderCancel = () => {
 
           {/* Hiển thị khi không có đơn hàng */}
           {!isLoading && cancelledOrders.length === 0 && (
-            <div className="no-orders">
-              <p>Chưa có đơn hàng nào bị hủy bởi shop.</p>
+            <div className="no-orders-status">
+              <img
+                src={OrderEmptyImage}
+                alt="No orders"
+                className="no-orders-image"
+              />
+              <p className="no-orders-message">Have no data!!!</p>
             </div>
           )}
 

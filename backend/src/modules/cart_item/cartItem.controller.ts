@@ -394,4 +394,37 @@ export class CartItemController {
 
     return this.cartItemService.findShopOrdersByStatus(statuses, shopId);
   }
+
+  @Get('shop/status-counts')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Lấy số lượng đơn hàng của shop theo từng trạng thái (dành cho chủ shop)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Số lượng đơn hàng theo trạng thái',
+    type: Object,
+  })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  @ApiResponse({
+    status: 403,
+    description: 'Không có quyền truy cập (không phải shop)',
+  })
+  async getShopOrderStatusCounts(@Req() req: RequestWithUser) {
+    const user = req.user;
+    this.logger.log(
+      `[GET /cart-items/shop/status-counts] Request by user: ${user.idUser}, role: ${user.role}`,
+    );
+
+    if (user.role !== 2) {
+      throw new ForbiddenException(
+        'Bạn không có quyền truy cập tài nguyên này.',
+      );
+    }
+
+    const shopId = user.idUser;
+    return this.cartItemService.getShopOrderStatusCounts(shopId);
+  }
 }

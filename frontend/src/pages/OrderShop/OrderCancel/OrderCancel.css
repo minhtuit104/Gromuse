@@ -8,7 +8,7 @@
 .order_container {
   display: flex;
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   flex-direction: column;
   align-items: center;
   background-color: var(--white100);
@@ -17,7 +17,6 @@
 .order_history {
   width: 100%;
   display: flex;
-  height: 100%;
   padding: 20px;
   gap: 20px;
   flex-direction: column;
@@ -28,7 +27,7 @@
   display: flex;
   justify-content: space-between;
   box-shadow: 0 0px 5px 1px rgba(0, 0, 0, 0.3);
-  border-radius: 16px;
+  border-radius: 28px;
   background-color: var(--white50);
 }
 
@@ -41,13 +40,15 @@
 }
 
 .tab.active {
+  background-color: var(--green400);
   font-size: 24px;
-  color: var(--mint800);
+  color: white;
+  border-radius: 42px;
 }
 
 .tab.inactive {
   font-size: 24px;
-  color: var(--white400);
+  color: var(--white950);
 }
 
 .vertical_line {
@@ -59,14 +60,16 @@
 }
 
 .order-list-cancel {
-  background-color: var(--white50);
-  border-radius: 16px;
-  height: auto;
-  display: flex;
   flex-direction: column;
   gap: 20px;
   padding: 20px;
-  align-items: center;
+  display: flex;
+  width: 100%;
+  min-height: 75vh;
+  background-color: var(--white50);
+  border-radius: 40px;
+  flex: 1;
+  padding: 15px;
 }
 
 .order-item {
@@ -221,4 +224,43 @@ img.ic_20.arrow_right-orderShop {
 .pagination-button.disabled {
   color: #ccc;
   cursor: not-allowed;
+}
+
+.no-orders-status {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--white600);
+  font-size: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  /* Thêm chiều cao tối thiểu để căn giữa tốt hơn nếu cần */
+  min-height: 300px;
+}
+
+.no-orders-image {
+  width: 150px; /* Điều chỉnh kích thước phù hợp */
+  height: auto;
+  margin-bottom: 10px;
+  opacity: 0.7; /* Làm mờ ảnh một chút */
+}
+
+.no-orders-message {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--white600);
+}
+
+/* CSS cho chỉ báo loading (nếu bạn muốn đồng bộ cả phần này) */
+.loading-indicator {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--white600);
+  font-size: 18px;
+  min-height: 300px; /* Đảm bảo có không gian khi loading */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

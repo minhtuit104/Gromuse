@@ -9,6 +9,18 @@ import SidebarShop from "../SideBarShop/SideBarShop";
 import NotificationDashboard from "../NotificationDashboard/NotificationDashboard";
 import { useNavigate } from "react-router-dom";
 
+export interface DecodedShopToken {
+  idAccount: number;
+  idUser: number;
+  email: string; // Đảm bảo có email
+  name: string; // Đảm bảo có name
+  phoneNumber: string;
+  role: number;
+  iat: number;
+  exp: number;
+  shopId?: number; // Có thể có nếu là shop
+}
+
 function HeaderDashboard() {
   const [search, setSearch] = useState("");
   const [openSideBar, setOpenSideBar] = useState(false);

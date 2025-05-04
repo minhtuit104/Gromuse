@@ -301,19 +301,18 @@ export const OrderItem: React.FC<OrderItemProps> = ({
           </>
         )}
 
-        {/* Nút Buy Again: Hiển thị nếu showBuyAgainButton là true */}
-        {order.orderStatus === OrderStatus.CANCEL_BYSHOP ||
-          (order.orderStatus === OrderStatus.CANCEL_BYUSER && (
-            <button
-              className="buy-again-button-status"
-              onClick={handleBuyAgainClick}
-            >
-              <span className="cart-icon-status">
-                <img src={IconCart} alt="IconCart" className="ic_20" />
-              </span>
-              Buy again
-            </button>
-          ))}
+        {(order.orderStatus === OrderStatus.CANCEL_BYSHOP ||
+          order.orderStatus === OrderStatus.CANCEL_BYUSER) && (
+          <button
+            className="buy-again-button-status"
+            onClick={handleBuyAgainClick}
+          >
+            <span className="cart-icon-status">
+              <img src={IconCart} alt="IconCart" className="ic_20" />
+            </span>
+            Buy again
+          </button>
+        )}
       </div>
       {/* Hiển thị lý do hủy nếu có */}
       {order.cancelReason &&
