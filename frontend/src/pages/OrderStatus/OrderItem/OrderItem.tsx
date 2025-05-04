@@ -34,6 +34,7 @@ interface OrderItemProps {
   cancelReason?: string;
   onReasonChange?: (reason: string) => void;
   onConfirmCancel?: () => void;
+  onCompleteOrder: () => void;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -45,6 +46,7 @@ export const OrderItem: React.FC<OrderItemProps> = ({
   cancelReason, // Nhận prop mới
   onReasonChange, // Nhận prop mới
   onConfirmCancel, // Nhận prop mới
+  onCompleteOrder,
 }) => {
   const navigate = useNavigate();
   const originalPrice = order.product.price * 1.15 * order.product.quantity;
@@ -267,7 +269,7 @@ export const OrderItem: React.FC<OrderItemProps> = ({
         {order.orderStatus === OrderStatus.TO_RECEIVE && (
           <button
             className="to-receive-button-status"
-            onClick={handleCancelClick}
+            onClick={onCompleteOrder}
           >
             <span className="cancel-icon-status">
               <img src={IconChecked} alt="IconCancel" className="ic_20" />

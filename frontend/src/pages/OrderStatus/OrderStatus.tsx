@@ -210,6 +210,45 @@ const OrderStatuss = () => {
     }
   };
 
+  const handleReceivedClick = async (cartItemId: number) => {
+    const toastId = toast.loading(
+      "Being confirmed to have received the cave..."
+    );
+    try {
+      const backendSuccess = await updateOrderStatusOnBackend(
+        cartItemId,
+        OrderStatus.COMPLETE
+      );
+      if (backendSuccess) {
+        toast.update(toastId, {
+          render: "Confirmation of successful goods",
+          type: "info",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        handleOrderUpdate(); // Load lại dữ liệu sau khi hủy thành công
+      } else {
+        toast.update(toastId, {
+          render: "Error occurs when confirming the goods!",
+          type: "error",
+          isLoading: false,
+          autoClose: 4000,
+        });
+      }
+    } catch (error) {
+      console.error(
+        "[OrderStatus] Unexpected error during cancellation:",
+        error
+      );
+      toast.update(toastId, {
+        render: "Lỗi không mong muốn khi hủy đơn hàng!",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
+
   const handleReasonChange = (orderId: string, reason: string) => {
     setCancelReasons((prev) => ({
       ...prev,
@@ -330,6 +369,9 @@ const OrderStatuss = () => {
                         ? () => handleCancelClick(order.orderId)
                         : undefined
                     }
+                    onCompleteOrder={() => {
+                      handleReceivedClick(+order.cartItemId);
+                    }}
                     expanded={
                       activeTab === "toOrder" || activeTab === "toReceive"
                         ? !!showCancelInputs[order.orderId]
