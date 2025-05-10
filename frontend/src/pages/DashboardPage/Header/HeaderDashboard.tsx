@@ -63,6 +63,10 @@ function HeaderDashboard() {
     navigate("/loginShop");
   };
 
+  const goToShopMessages = () => {
+    navigate("/messager_shop"); // Điều hướng đến trang MessagerShop
+  };
+
   return (
     <div className="header_main">
       <div className="header_main_left">
@@ -91,7 +95,12 @@ function HeaderDashboard() {
       <div className="header_main_right">
         <div className="header_right_left">
           <NotificationDashboard />
-          <div className="header_right_icon">
+          <div
+            className="header_right_icon"
+            onClick={goToShopMessages}
+            style={{ cursor: "pointer" }}
+            title="Messages"
+          >
             <img src={IconMess} alt="icon_mess" className="ic_24 icon_mess" />
             <span className="quantity_mess">20</span>
           </div>

@@ -345,6 +345,12 @@
   cursor: pointer;
 }
 
+.add-product .required-asterisk {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--red600);
+}
+
 .add-product .action-buttons {
   display: flex;
   justify-content: flex-end;
@@ -362,34 +368,28 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--green800);
+  transition: all 0.3s ease;
 }
 
 .add-product .cancel-button:hover {
-  background-color: var(--white50) !important;
-  color: var(--green800) !important;
-  border-color: var(--green800) !important;
+  background-color: var(--white100);
+}
+
+.add-product .cancel-button:disabled {
+  opacity: 0.8;
+  cursor: wait;
 }
 
 .add-product .add-button {
   width: 100px;
   height: 40px;
   background-color: var(--lime300);
-  border: 1px solid var(--white50);
+  border: 1px solid var(--lime300);
   border-radius: 32px;
   cursor: pointer;
   font-size: 15px;
   font-weight: 700;
   color: var(--green800);
-}
-
-.add-product .add-button:hover {
-  background-color: var(--lime300) !important;
-  color: var(--green800) !important;
-  border-color: var(--lime300) !important;
-}
-
-.add-product .required-asterisk {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--red600);
+  transition: all 0.3s ease;
+  position: relative;
 }

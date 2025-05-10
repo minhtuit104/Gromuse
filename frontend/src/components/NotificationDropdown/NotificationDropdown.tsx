@@ -3,10 +3,12 @@ import "./NotificationDropdown.css";
 import ImgSP from "../../assets/images/imagePNG/lays_4.png";
 import IconNotification from "../../assets/images/icons/ic_notification.svg";
 import Iconpolygon from "../../assets/images/icons/ic_polygon.svg";
+import { useNavigate } from "react-router-dom"; // <<< THÊM DÒNG NÀY
 
 function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate(); // <<< KHỞI TẠO NAVIGATE
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -26,6 +28,11 @@ function NotificationDropdown() {
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
+  };
+
+  const handleSeeAllClick = () => {
+    navigate("/notification");
+    setIsOpen(false);
   };
 
   return (
@@ -75,7 +82,11 @@ function NotificationDropdown() {
               </div>
             </div>
             <div className="notification-header-cpn">
-              <span className="see-all">See all</span>
+              <span className="see-all" onClick={handleSeeAllClick}>
+                {" "}
+                {/* <<< THÊM onClick */}
+                See all
+              </span>
             </div>
           </div>
         </>

@@ -1,28 +1,31 @@
 @import url(../../assets/css/styles.css);
 
-.chatOnlineFriend{
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 10px;
-    background-color: var(--grey1);
-    height: 70px;
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
+.chatOnlineFriend {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px;
+  background-color: var(--green700);
+  height: 70px;
+  border-radius: 12px;
 }
 
-.chatOnlineImg{
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    border: 1px solid white;
-    object-fit: cover;
+.chatOnlineImg {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid white;
+  border: 2px solid var(--lime300);
+  object-fit: cover;
 }
-.chatOnlineName{
-    font-size: 18px;
-    font-weight: 550;
-    opacity: 0.9;
-    margin-left: 10px;
-    color: var(--white2);
+.chatOnlineName {
+  font-size: 18px;
+  font-weight: 550;
+  margin-left: 10px;
+  color: var(--white1);
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

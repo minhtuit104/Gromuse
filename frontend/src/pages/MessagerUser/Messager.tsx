@@ -7,10 +7,10 @@ import { useWebSocket } from "../../WebSocket/WebSocketProvider";
 import { getMessageWithUser } from "../../Service/MessageService";
 import InfiniteScroll from "react-infinite-scroll-component";
 import Header from "../../layouts/Header/Header";
-import ChatOnline from "../../components/chatOnline/ChatOnline";
 import Conversation from "../../components/Conversation/Conversation";
+import IconSend from "../../assets/images/icons/ic_ send.svg";
 
-//hàm giải mã lấy idUser
+// Decode user from token
 const getUserFromToken = () => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -32,17 +32,17 @@ const getUserFromToken = () => {
 
 const Messager = () => {
   const { socket, isConnected } = useWebSocket();
-  const [user, setUser] = useState([]); //khởi tạo danh sách user
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null); //lưu idUser của ngyời nhận
-  const [selectedUserInfo, setSelectedUserInfo] = useState<any>(null); //lưu thông tin của người nhận
-  const [message, setMessage] = useState<any[]>([]); //lưu message
-  const [newMessage, setNewMessage] = useState<string>(""); //lưu message mới
+  const [user, setUser] = useState([]); // User list
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // ID of receiver
+  const [selectedUserInfo, setSelectedUserInfo] = useState<any>(null); // Info of receiver
+  const [message, setMessage] = useState<any[]>([]); // Messages
+  const [newMessage, setNewMessage] = useState<string>(""); // New message content
   const [avarta, setAvarta] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
-  // const chatBoxTopRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const userInfo = getUserFromToken();
   const currentUserId = userInfo?.idUser;
@@ -57,15 +57,15 @@ const Messager = () => {
     getUser();
   }, [currentUserId]);
 
-  //hàm gửi tin nhắn
+  // Send message function
   const sendMessage = () => {
     if (selectedUserId && newMessage.trim() && isConnected) {
       socket?.emit("sendMessage", {
         receiverId: selectedUserId,
         content: newMessage,
       });
-      console.log("message gửi: ", newMessage);
-      //thêm tin nhắn vào danh sách hiển thị tạm thời (người gửi)
+
+      // Add message to display list temporarily (sender)
       setMessage((prevMessages) => [
         ...prevMessages,
         {
@@ -75,14 +75,22 @@ const Messager = () => {
           time: new Date().toISOString(),
         },
       ]);
-      setNewMessage(""); //Reset phần nhập message mới
+      setNewMessage(""); // Reset message input
     }
   };
-  //lắng nghe sự kiện nhận tin nhắn từ socket
+
+  // Handle Enter key press to send message
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  // Listen for receiving messages from socket
   useEffect(() => {
     if (socket && socket.connected) {
       socket?.on("receiveMessage", (message: any) => {
-        console.log("message nhận: ", message);
         setMessage((prevMessages) => [
           ...prevMessages,
           {
@@ -94,14 +102,15 @@ const Messager = () => {
           },
         ]);
       });
-      // Cleanup sự kiện khi component unmount
+
+      // Cleanup when component unmounts
       return () => {
         socket?.off("receiveMessage");
       };
     }
   }, [socket, selectedUserId]);
 
-  //gọi API lấy danh sách user
+  // Fetch user list
   useEffect(() => {
     getUser();
   }, []);
@@ -112,21 +121,20 @@ const Messager = () => {
       if (res && res.data) {
         setUser(res.data);
       } else {
-        console.error("No user data not found");
+        console.error("No user data found");
       }
     } catch (error) {
       console.error("Failed to fetch user name:", error);
     }
   };
 
-  //hàm fetch message với pagination
+  // Fetch messages with pagination
   const fetchMessages = async (
     userId1: number,
     userId2: number,
     page: number
   ) => {
     if (!userId1 || !userId2 || loading) {
-      console.log("lỗi ở đây...");
       return;
     }
     try {
@@ -146,13 +154,12 @@ const Messager = () => {
         }));
 
         if (page === 1) {
-          // sắp xếp tin nhắn theo thời gian mới nhất
+          // Sort messages by time
           const sortedMessages = updateMessage.sort(
             (a: any, b: any) =>
               new Date(a.time).getTime() - new Date(b.time).getTime()
           );
           setMessage(sortedMessages);
-          //setTimeout(scrollToBottom, 100); //scroll xuống tin nhắn mới nhất
         } else {
           setMessage((prevMessages) => {
             const allMessages = [...prevMessages, ...updateMessage];
@@ -178,15 +185,15 @@ const Messager = () => {
     }
   };
 
-  //hàm chọn người nhận
+  // Select a user to chat with
   const handleSelectUserId = async (idUser: number) => {
     setSelectedUserId(idUser);
-    console.log("idUser người nhận---------->: ", idUser);
 
-    setPage(1); //reset page về 1 khi chọn người nhận
-    setHasMore(true); //reset có thêm tin nhắn hay không
-    setMessage([]); //reset tin nhắn
-    //lấy thông tin người nhận
+    setPage(1); // Reset page to 1 when selecting a user
+    setHasMore(true); // Reset has more messages flag
+    setMessage([]); // Reset messages
+
+    // Get receiver information
     const selectUser = user.find((user: any) => user.idUser === idUser);
     setSelectedUserInfo(selectUser);
 
@@ -199,6 +206,12 @@ const Messager = () => {
     }
   };
 
+  // Filter users based on search query
+  const filteredUsers = user.filter(
+    (u: any) =>
+      u.name && u.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   useEffect(() => {
     if (currentUserId && selectedUserId && page > 1) {
       fetchMessages(currentUserId, selectedUserId, page);
@@ -206,11 +219,50 @@ const Messager = () => {
   }, [page, currentUserId, selectedUserId]);
 
   return (
-    <>
-      <div className="messager">
-        <Header />
+    <div className="messager_user">
+      <Header />
+      <div className="messager-container">
+        <div className="chatMenu">
+          <div className="chatMenuWrapper">
+            <img src={IconSearch} alt="" className="ic_28 ic-search" />
+            <input
+              type="text"
+              placeholder="Search for friends"
+              className="chatMenuInput"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {filteredUsers.map((user: any) => (
+              <Conversation
+                key={user.idUser}
+                user={user}
+                onClick={() => handleSelectUserId(user.idUser)}
+                isSelected={selectedUserId === user.idUser}
+              />
+            ))}
+          </div>
+        </div>
+
         <div className="chatBox">
           <div className="chatBoxWrapper">
+            {selectedUserInfo && (
+              <div className="chatHeader">
+                <div className="chatOnlineFriend">
+                  <img
+                    src={
+                      selectedUserInfo.avarta ??
+                      "https://www.gravatar.com/avatar/?d=mp"
+                    }
+                    alt=""
+                    className="chatOnlineImg"
+                  />
+                  <span className="chatOnlineName">
+                    {selectedUserInfo.name ?? "Loading..."}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="chatBoxTop" id="chatBoxTop">
               <InfiniteScroll
                 dataLength={message.length}
@@ -226,7 +278,6 @@ const Messager = () => {
                 inverse={true}
                 scrollableTarget="chatBoxTop"
                 style={{ display: "flex", flexDirection: "column-reverse" }}
-                //height={window.innerHeight - 200}
               >
                 {Array.isArray(message) && message.length > 0 ? (
                   [...message]
@@ -243,7 +294,9 @@ const Messager = () => {
                       />
                     ))
                 ) : (
-                  <p>No messages</p>
+                  <p style={{ textAlign: "center", color: "#888" }}>
+                    No messages yet
+                  </p>
                 )}
               </InfiniteScroll>
             </div>
@@ -253,47 +306,16 @@ const Messager = () => {
                 placeholder="write something..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
               ></textarea>
               <button className="chatSubmitButton" onClick={sendMessage}>
-                Send
+                <img src={IconSend} alt="Send" className="ic_32" />
               </button>
             </div>
           </div>
         </div>
-        <div className="chatOnline">
-          <div className="chatOnlineWrapper">
-            {selectedUserInfo && (
-              <ChatOnline
-                name={selectedUserInfo.name}
-                avarta={
-                  selectedUserInfo.avarta ??
-                  "https://www.gravatar.com/avatar/?d=mp"
-                }
-              />
-            )}
-          </div>
-        </div>
-        <div className="chatMenu">
-          <div className="chatMenuWrapper">
-            <img src={IconSearch} alt="" className="ic-22 ic-search" />
-            <input
-              type="text"
-              placeholder="Search for friends"
-              className="chatMenuInput"
-            />
-            {/* Map qua danh sách user và render Conversation */}
-            {user.map((user: any) => (
-              <Conversation
-                key={user.idUser}
-                user={user}
-                onClick={() => handleSelectUserId(user.idUser)}
-                isSelected={selectedUserId === user.idUser}
-              /> //kiểm tra xem user có được chọn hay không
-            ))}
-          </div>
-        </div>
       </div>
-    </>
+    </div>
   );
 };
 

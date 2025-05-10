@@ -74,11 +74,11 @@ const SidebarShop: React.FC<SidebarProps> = ({ open, onClose }) => {
             <img src={IconOrder} alt="IconOrder" className="ic_24 order" />{" "}
             Orders
           </li>
-          <li onClick={() => handleNavigation("/discounts")}>
+          <li>
             <img src={IconDiscount} alt="discount" className="ic_24" />{" "}
             Discounts
           </li>
-          <li onClick={() => handleNavigation("/support")}>
+          <li>
             <img src={IconPhone} alt="phone" className="ic_24" /> Support
           </li>
         </ul>

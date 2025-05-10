@@ -71,6 +71,15 @@ const LoginShop = () => {
       console.log("API login: ", res);
       if (res && res.data.access_token) {
         localStorage.setItem("token", res.data.access_token);
+        // Nếu là shop (role=2), lưu thêm thông tin shop
+        if (res.data.role === 2 && res.data.shop) {
+          localStorage.setItem("shopName", res.data.shop.name);
+          localStorage.setItem("shopEmail", res.data.email); // Email của chủ shop
+        } else if (res.data.role === 2 && !res.data.shop) {
+          // Trường hợp role là shop nhưng không có object shop trả về (ít khả năng)
+          localStorage.setItem("shopName", res.data.name); // Dùng tạm tên user nếu không có shop.name
+          localStorage.setItem("shopEmail", res.data.email);
+        }
         localStorage.setItem("userRole", "shop");
         setTimeout(() => {
           setIsLoading(false);

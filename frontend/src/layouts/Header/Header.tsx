@@ -64,6 +64,10 @@ function Header() {
     setShowDropdown(!showDropdown);
   };
 
+  const goToMessages = () => {
+    navigate("/messager_user");
+  };
+
   return (
     <div className="header">
       <div className="header-left">
@@ -82,7 +86,12 @@ function Header() {
       <div className="header-right">
         <NotificationDropdown />
 
-        <div className="header-right-message">
+        <div
+          className="header-right-message"
+          onClick={goToMessages}
+          style={{ cursor: "pointer" }}
+          title="Messages"
+        >
           <img src={IconMessage} alt="icon-message" className="ic_16" />
           <span className="quantity">{messageCount}</span>
         </div>

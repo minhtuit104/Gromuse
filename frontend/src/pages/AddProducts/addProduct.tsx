@@ -829,7 +829,6 @@ const AddProduct = () => {
               />
             </div>
 
-            {/* Action Buttons */}
             <div className="action-buttons">
               <button
                 type="button"
@@ -837,17 +836,21 @@ const AddProduct = () => {
                 onClick={() =>
                   navigate(isEditMode ? `/add_product/${id}` : "/add_product")
                 }
+                disabled={loading}
               >
                 Cancel
               </button>
-              <button type="submit" className="add-button" disabled={loading}>
-                {loading
-                  ? isEditMode
-                    ? "Updating..."
-                    : "Adding..."
-                  : isEditMode
-                  ? "Update"
-                  : "Add"}
+              <button
+                type="submit"
+                className={`add-button ${loading ? "loading" : ""}`}
+                disabled={loading}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {isEditMode ? "Update" : "Add"}
               </button>
             </div>
           </div>

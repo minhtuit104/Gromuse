@@ -32,7 +32,7 @@
   align-items: center;
 }
 
-.search{
+.search {
   border-width: 0px !important;
   border-radius: 16px !important;
 }
@@ -110,11 +110,13 @@
   gap: 10px;
   align-items: center;
   cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .header_right_avatar img {
-  width: 45px;
-  height: 45px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
 }
 

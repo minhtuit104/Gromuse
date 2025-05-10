@@ -1,45 +1,45 @@
 @import url(../../assets/css/styles.css);
 
-
-.conversation{
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    cursor: pointer;
-    margin-top: 8px;
+.conversation {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  cursor: pointer;
+  margin-top: 8px;
 }
 
 .conversation:hover,
-.conversation.selectedUser{
-    background-color: rgb(245, 243, 243);
-    border-radius: 10px;
+.conversation.selectedUser {
+  background-color: var(--lime100); /* Màu nền khi hover/chọn */
+  border-radius: 10px;
+  /* color: var(--green800); */ /* Có thể thêm màu chữ khi hover/chọn nếu muốn */
 }
 
-.conversationImgContainer{
-    position: relative;
-    margin-right: 10px;
+.conversationImgContainer {
+  position: relative;
+  margin-right: 10px;
 }
 
-.conversationBadge{
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: limegreen;
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
+.conversationBadge {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%; /* Trạng thái online */
+  background-color: var(--green400);
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
 }
 
-.conversationImg{
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid white;
-    object-fit: cover;
+.conversationImg {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--white300);
+  object-fit: cover;
 }
 
-.conversationName{
-    font-weight: 500;
+.conversationName {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--green900);
 }
-
-
