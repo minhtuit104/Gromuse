@@ -516,7 +516,7 @@ export const confirmPaymentAndUpdateBackend = async (
   };
 
   try {
-    await axios.put(`${API_URL}/cart-items/cart/${cartId}/status`, payload);
+    await axios.put(`${API_URL}/cart-items/cart/payment-status`, payload);
     console.log("[confirmPaymentAndUpdateBackend] Backend update successful");
 
     // Xóa cartId hiện tại sau khi thanh toán thành công

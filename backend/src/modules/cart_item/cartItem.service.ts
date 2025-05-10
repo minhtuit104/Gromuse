@@ -400,9 +400,12 @@ export class CartItemService {
       const cartItems = await this.cartItemRepository.find({
         where: {
           cart: { id: cartId },
-          id: In(cartItemIds), // <<< Lọc theo mảng cartItemIds
+          id: In(cartItemIds), 
+          // isPaid: false
         },
       });
+
+      console.log("cartItems payment",cartItems);
 
       if (cartItems.length === 0) {
         this.logger.warn(
@@ -425,17 +428,9 @@ export class CartItemService {
         );
 
         // Chỉ cập nhật nếu trạng thái isPaid thay đổi hoặc nếu đang set isPaid=true
-        if (cartItem.isPaid !== isPaid || isPaid) {
+        if (!cartItem.isPaid) {
           cartItem.isPaid = isPaid;
-          if (isPaid) {
-            // Nếu đánh dấu là đã thanh toán, đặt trạng thái là TO_RECEIVE
-            cartItem.status = OrderStatus.TO_RECEIVE;
-          } else {
-            // Nếu đánh dấu là chưa thanh toán (trường hợp hiếm), reset status
-            cartItem.status = null;
-            cartItem.cancelReason = null;
-            // Cân nhắc giảm 'sold' nếu cần logic hoàn tiền/hủy sau thanh toán
-          }
+          cartItem.status = OrderStatus.TO_ORDER;
           itemsToSave.push(cartItem);
         }
       }

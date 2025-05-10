@@ -39,6 +39,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
+import { CartService } from '../cart/cart.service';
 // import { UserService } from '../users/user.service';
 
 class UpdateQuantityDto {
@@ -81,7 +82,10 @@ interface RequestWithUser extends Request {
 export class CartItemController {
   private readonly logger = new Logger(CartItemController.name);
 
-  constructor(private readonly cartItemService: CartItemService) {}
+  constructor(
+    private readonly cartItemService: CartItemService,
+    private cartService: CartService,
+  ) {}
 
   // constructor(
   //   private readonly cartItemService: CartItemService,
@@ -240,22 +244,22 @@ export class CartItemController {
     };
   }
 
-  @Put('cart/:cartId/status')
+  @Put('cart/payment-status')
   @ApiOperation({
     summary:
       'Cập nhật trạng thái thanh toán (isPaid) và số lượng bán (sold) cho các sản phẩm trong giỏ hàng',
   })
   @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
   @ApiResponse({ status: 404, description: 'Giỏ hàng không tồn tại' })
+  @UseGuards(JwtAuthGuard)
   async updateCartItemsStatus(
-    @Param('cartId', ParseIntPipe) cartId: number,
     @Body() updateDto: UpdateCartItemsStatusDto,
+    @Req() req,
   ) {
-    this.logger.log(
-      `[PUT /cart-items/cart/:cartId/status] cartId=${cartId}, isPaid=${updateDto.isPaid}, cartItemIds=${JSON.stringify(updateDto.cartItemIds)}`,
-    );
+    const user = req.user;
+    const cart = await this.cartService.getCartByIdUser(user.idUser);
     return this.cartItemService.updateItemsStatus(
-      cartId,
+      cart.id,
       updateDto.isPaid,
       updateDto.cartItemIds,
     );
@@ -349,6 +353,7 @@ export class CartItemController {
       data: count,
     };
   }
+
   @Get('shop/by-status')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

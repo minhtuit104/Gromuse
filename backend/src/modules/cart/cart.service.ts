@@ -136,7 +136,6 @@ export class CartService {
     this.logger.log(`[getCartByIdUser] Finding cart for user ID: ${userId}`);
     const cart = await this.cartRepository.findOne({
       where: { idUser: userId },
-      relations: ['items', 'items.product'],
     });
     if (cart) {
       this.logger.log(`[getCartByIdUser] Found cart for user ID: ${userId}`);
