@@ -289,30 +289,30 @@ export const PaymentPage = () => {
       if (response.message === "success") {
         // 2. Gọi hàm cập nhật trạng thái CartItems trên backend (QUAN TRỌNG)
         // *** SỬA LẠI: Dùng state `cartId` thay vì đọc lại localStorage ***
-        if (cartId && paidCartItemIds.length > 0) {
-          const updateSuccess = await handleSuccessfulPayment(
-            parseInt(cartId, 10), // <<< Sử dụng state cartId
-            paidCartItemIds
-          );
-          if (!updateSuccess) {
-            // Xử lý nếu cập nhật trạng thái backend thất bại (ví dụ: hiển thị thông báo)
-            console.error(
-              "[PaymentPage] Failed to update cart item statuses on backend after payment."
-            );
-            toast.error(
-              "Thanh toán thành công nhưng có lỗi khi cập nhật trạng thái đơn hàng. Vui lòng liên hệ hỗ trợ."
-            );
-            // Cân nhắc có nên dừng lại ở đây hay không
-          } else {
-            console.log(
-              "[PaymentPage] Successfully updated cart item statuses on backend."
-            );
-          }
-        } else {
-          console.warn(
-            "[PaymentPage] Missing currentCartId or no items to update status for."
-          );
-        }
+        // if (cartId && paidCartItemIds.length > 0) {
+        //   const updateSuccess = await handleSuccessfulPayment(
+        //     parseInt(cartId, 10), // <<< Sử dụng state cartId
+        //     paidCartItemIds
+        //   );
+        //   if (!updateSuccess) {
+        //     // Xử lý nếu cập nhật trạng thái backend thất bại (ví dụ: hiển thị thông báo)
+        //     console.error(
+        //       "[PaymentPage] Failed to update cart item statuses on backend after payment."
+        //     );
+        //     toast.error(
+        //       "Thanh toán thành công nhưng có lỗi khi cập nhật trạng thái đơn hàng. Vui lòng liên hệ hỗ trợ."
+        //     );
+        //     // Cân nhắc có nên dừng lại ở đây hay không
+        //   } else {
+        //     console.log(
+        //       "[PaymentPage] Successfully updated cart item statuses on backend."
+        //     );
+        //   }
+        // } else {
+        //   console.warn(
+        //     "[PaymentPage] Missing currentCartId or no items to update status for."
+        //   );
+        // }
 
         // 3. Xử lý phía Frontend (giữ nguyên)
         setIsPaymentComplete(true);

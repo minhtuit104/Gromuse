@@ -346,6 +346,7 @@ export class PaymentService {
         cart: { id: cartId },
         // isPaid: true,
         paymentId: null,
+        isPaid: false,
       },
     });
 
