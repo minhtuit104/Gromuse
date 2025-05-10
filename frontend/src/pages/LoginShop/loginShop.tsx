@@ -191,7 +191,7 @@ const LoginShop = () => {
 
         {/* Form đăng kí */}
         <div className="form-boxx register">
-          <h2>Sing up</h2>
+          <h2>Sign up</h2>
           <Formik<RegisterFormValues>
             initialValues={{
               name: "",

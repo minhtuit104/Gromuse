@@ -317,6 +317,7 @@ export const PaymentPage = () => {
         // 3. Xử lý phía Frontend (giữ nguyên)
         setIsPaymentComplete(true);
         setPaymentStatus("Thanh toán thành công!");
+        toast.success("Thanh toán thành công!");
         localStorage.setItem("paymentComplete", "true");
         updateCartCount();
         setTimeout(() => {

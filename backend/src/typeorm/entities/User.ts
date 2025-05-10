@@ -8,6 +8,7 @@ import {
 import { Account } from './Account';
 import { Cart } from './Cart';
 import { Rating } from './Rating';
+import { Messager } from './Messager';
 
 @Entity({ name: 'user' })
 export class User {
@@ -34,6 +35,12 @@ export class User {
 
   @Column({ nullable: true, type: 'varchar', length: 20 })
   sex: string;
+
+  @OneToMany(() => Messager, (messager) => messager.sender)
+  sentMessagers: Messager[];
+
+  @OneToMany(() => Messager, (messager) => messager.receiver)
+  receivedMessagers: Messager[];
 
   @OneToOne(() => Account, (account) => account.user)
   accounts: Account[];

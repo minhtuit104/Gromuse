@@ -158,16 +158,16 @@ export const PaymentItem = ({
                   target.src = ImgDetailLays;
                 }}
               />
-              <div className="product-info-item">
-                <h2 className="product-name">
+              <div className="product-info-item-payment">
+                <h2 className="product-name-payment">
                   {product.title || product.name}
                 </h2>
-                <p className="product-weight">
+                <p className="product-weight-payment">
                   {product.weight ? `${product.weight}g` : ""}
                 </p>
-                <p className="product-price">{`${product.price}$`}</p>
+                <p className="product-price-payment">{`${product.price}$`}</p>
               </div>
-              <div className="custom-counter-wrapper">
+              <div className="custom-counter-wrapper-payment">
                 <Counter
                   initialCount={product.quantity || 1}
                   onChange={(newCount) =>

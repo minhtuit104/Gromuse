@@ -20,9 +20,14 @@ import { Rating } from './typeorm/entities/Rating';
 import { PaymentModule } from './modules/payment/payment.module';
 import { Payment } from './typeorm/entities/Payment';
 import { Voucher } from './typeorm/entities/Voucher';
+import { Notification } from './typeorm/entities/Notification';
+import { NotificationModule } from './modules/notification/notification.module';
+import { Messager } from './typeorm/entities/Messager';
+import { MessagerModule } from './modules/messager/messager.module';
 import { CartItemModule } from './modules/cart_item/cartItem.module';
 import { RatingsModule } from './modules/rating/ratings.module';
 import { DashboardModule } from './modules/dashboard_shop/dashboard.module';
+import { GatewayModule } from './modules/gateway/gateway.module';
 
 @Module({
   imports: [
@@ -47,6 +52,8 @@ import { DashboardModule } from './modules/dashboard_shop/dashboard.module';
         Payment,
         Voucher,
         Rating,
+        Notification,
+        Messager,
       ],
       synchronize: true,
     }),
@@ -60,6 +67,9 @@ import { DashboardModule } from './modules/dashboard_shop/dashboard.module';
     CartItemModule,
     RatingsModule,
     DashboardModule,
+    MessagerModule,
+    NotificationModule,
+    GatewayModule,
   ],
   controllers: [AppController],
   providers: [AppService],
