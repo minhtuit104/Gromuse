@@ -17,7 +17,7 @@ import ListProduct from "./pages/ListProduct/ListProduct";
 import OrderStatuss from "./pages/OrderStatus/OrderStatus";
 import Notification from "./pages/Notification/Notification";
 import ListProductUser from "./pages/ListProductUser/ListProductUser";
-import Messeager from "./pages/Messeager/Messeager";
+import Messager from "./pages/Messager/Messager";
 import { WebSocketProvider } from "./WebSocket/WebSocketProvider";
 
 function App() {
@@ -70,12 +70,12 @@ function App() {
               </PrivateRoute>
             }
           />
-          {/* Thêm tuyến đường cho trang Messeager */}
+          {/* Thêm tuyến đường cho trang Messager */}
           <Route
-            path="/messeager"
+            path="/messager"
             element={
               <PrivateRoute>
-                <Messeager />
+                <Messager />
               </PrivateRoute>
             }
           />

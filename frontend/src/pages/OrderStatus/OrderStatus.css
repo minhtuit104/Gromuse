@@ -73,7 +73,6 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  gap: 10px;
 }
 
 .item-content-status {
@@ -101,6 +100,7 @@
 .Shop-info {
   display: flex;
   gap: 8px;
+  margin-top: 10px;
 }
 
 .Shop-info img {

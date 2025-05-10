@@ -25,6 +25,7 @@ interface RatingLocationState {
   weight?: number;
   quantity?: number;
   price?: number;
+  shopName?: string; // <<< THÊM DÒNG NÀY
 }
 
 const RatingProduct = () => {
@@ -47,6 +48,7 @@ const RatingProduct = () => {
     weight,
     quantity,
     price,
+    shopName, // <<< LẤY shopName TỪ STATE
   } = (location.state as RatingLocationState) || {};
 
   const uploadImagesToSupabase = async (files: File[]): Promise<string[]> => {
@@ -286,7 +288,7 @@ const RatingProduct = () => {
           {/* Tên cửa hàng (có thể lấy từ state nếu được truyền) */}
           <div className="store-name">
             <img src={ImgStore} alt="ImgStore" />
-            Lays Việt Nam
+            {shopName || "Cửa hàng"} {/* <<< SỬ DỤNG shopName */}
           </div>
         </div>
 

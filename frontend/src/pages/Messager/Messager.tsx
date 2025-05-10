@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "./Messeager.css";
+import "./Messager.css";
 import IconSearch from "../../assets/images/icons/ic_ search.svg";
 import Message from "../../components/Message/Message";
 import { fectchUserName, fetchAllUser } from "../../Service/UserService";
@@ -30,7 +30,7 @@ const getUserFromToken = () => {
   return null;
 };
 
-const Messeager = () => {
+const Messager = () => {
   const { socket, isConnected } = useWebSocket();
   const [user, setUser] = useState([]); //khởi tạo danh sách user
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); //lưu idUser của ngyời nhận
@@ -297,4 +297,4 @@ const Messeager = () => {
   );
 };
 
-export default Messeager;
+export default Messager;

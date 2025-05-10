@@ -123,6 +123,7 @@ export const OrderItem: React.FC<OrderItemProps> = ({
         productName: order.product.name,
         productImg: order.product.img,
         weight: order.product.weight,
+        shopName: order.shop?.name, // <<< THÊM DÒNG NÀY
         quantity: order.product.quantity,
         price: currentPrice,
       },
