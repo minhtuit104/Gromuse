@@ -34,7 +34,7 @@ import { GatewayModule } from './modules/gateway/gateway.module';
     TypeOrmModule.forRoot({
       database: 'web_gromuse',
       username: 'root',
-      password: '12345',
+      password: 'luangoc0204',
       port: 3306,
       host: 'localhost',
       type: 'mysql',

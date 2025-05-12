@@ -5,7 +5,6 @@ import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create.dto';
 import { UpdateUserDto } from './dto/update.dto';
 import { UpdateAvatarDto } from './dto/updateAvatar.dto';
-import { log } from 'console';
 
 @Injectable()
 export class UserService {
@@ -19,6 +18,10 @@ export class UserService {
 
   async findOne(id: number) {
     return await this.userRepository.findOne({ where: { idUser: id } });
+  }
+
+  async findUserById(id: number) {
+    return await this.findOne(id);
   }
 
   async remove(id: number) {

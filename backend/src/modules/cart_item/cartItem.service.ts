@@ -1,20 +1,22 @@
 import {
-  Injectable,
-  NotFoundException,
+  forwardRef,
   HttpException,
   HttpStatus,
-  Logger,
   Inject,
-  forwardRef,
+  Injectable,
   InternalServerErrorException,
+  Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, FindManyOptions } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Cart } from '../../typeorm/entities/Cart';
 import { CartItem, OrderStatus } from '../../typeorm/entities/CartItem';
+import { NotificationContentType } from '../../typeorm/entities/Notification';
 import { Product } from '../../typeorm/entities/Product';
 import { CartService } from '../cart/cart.service';
 import { AddToCartDto } from '../cart/dtos/add-to-cart.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class CartItemService {
@@ -29,6 +31,7 @@ export class CartItemService {
     private cartRepository: Repository<Cart>,
     @Inject(forwardRef(() => CartService))
     private cartService: CartService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async getCartById(idUser: number): Promise<Cart | null> {
@@ -400,12 +403,12 @@ export class CartItemService {
       const cartItems = await this.cartItemRepository.find({
         where: {
           cart: { id: cartId },
-          id: In(cartItemIds), 
+          id: In(cartItemIds),
           // isPaid: false
         },
       });
 
-      console.log("cartItems payment",cartItems);
+      console.log('cartItems payment', cartItems);
 
       if (cartItems.length === 0) {
         this.logger.warn(
@@ -554,6 +557,51 @@ export class CartItemService {
       this.logger.log(
         `[updateItemOrderStatus] Successfully saved CartItem ID: ${savedItem.id} to status: ${savedItem.status}`,
       );
+
+      // Gửi thông báo dựa trên trạng thái mới
+      let notificationType: NotificationContentType;
+      let notificationMessage: string;
+
+      switch (status) {
+        case OrderStatus.TO_ORDER:
+          notificationType = NotificationContentType.NEW_ORDER_FOR_SHOP;
+          notificationMessage = `Đơn hàng #${savedItem.id} đã được đặt thành công`;
+          break;
+        case OrderStatus.TO_RECEIVE:
+          notificationType = NotificationContentType.ORDER_SHIPPED;
+          notificationMessage = `Đơn hàng #${savedItem.id} đang được giao`;
+          break;
+        case OrderStatus.COMPLETE:
+          notificationType = NotificationContentType.ORDER_COMPLETED;
+          notificationMessage = `Đơn hàng #${savedItem.id} đã hoàn thành`;
+          break;
+        case OrderStatus.CANCEL_BYUSER:
+          notificationType = NotificationContentType.ORDER_CANCELLED_BY_USER;
+          notificationMessage = `Đơn hàng #${savedItem.id} đã bị hủy bởi người mua`;
+          break;
+        case OrderStatus.CANCEL_BYSHOP:
+          notificationType = NotificationContentType.ORDER_CANCELLED_BY_SHOP;
+          notificationMessage = `Đơn hàng #${savedItem.id} đã bị hủy bởi người bán`;
+          break;
+        default:
+          break;
+      }
+
+      if (notificationType && notificationMessage) {
+        try {
+          await this.notificationService.createOrderNotification(
+            savedItem,
+            notificationType,
+            notificationMessage,
+          );
+        } catch (notificationError) {
+          this.logger.error(
+            `[updateItemOrderStatus] Error creating notification for CartItem ID: ${savedItem.id}`,
+            notificationError.stack,
+          );
+        }
+      }
+
       const quantity = savedItem.quantity;
       const productId = savedItem.productId;
 

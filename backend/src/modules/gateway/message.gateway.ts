@@ -1,17 +1,17 @@
+import { UseGuards } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import {
-  WebSocketGateway,
-  WebSocketServer,
-  SubscribeMessage,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { MessagerService } from '../messager/messager.service';
-import { JwtService } from '@nestjs/jwt';
-import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
+import { MessagerService } from '../messager/messager.service';
 import { UserService } from '../users/user.service';
 
 @WebSocketGateway({
@@ -31,20 +31,38 @@ export class MyGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // Hàm này sẽ được gọi khi client kết nối
   @UseGuards(JwtAuthGuard)
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     try {
       //lấy token từ client
       const token = client.handshake.auth.token;
       if (!token) {
-        throw new Error('Invalid token');
+        throw new Error('Token không tồn tại');
       }
-      //Giải mã token lấy thông tin user
-      const decodedToken = this.jwtService.verify(token);
-      const idUser = decodedToken.idUser;
-      client.data.idUser = idUser;
-      console.log(`User ${idUser} connected`);
+
+      try {
+        //Giải mã token lấy thông tin user
+        const decodedToken = this.jwtService.verify(token);
+        const idUser = decodedToken.idUser;
+
+        // Kiểm tra user có tồn tại không
+        const user = await this.userService.findUserById(idUser);
+        if (!user) {
+          throw new Error('User không tồn tại');
+        }
+
+        client.data.idUser = idUser;
+        console.log(`User ${idUser} connected`);
+      } catch (tokenError) {
+        if (tokenError.name === 'TokenExpiredError') {
+          // Thông báo cho client token hết hạn
+          client.emit('tokenExpired', {
+            message: 'Token đã hết hạn, vui lòng đăng nhập lại',
+          });
+        }
+        throw tokenError;
+      }
     } catch (error) {
-      console.log('Invalid token', error);
+      console.log('Lỗi xác thực:', error.message);
       client.disconnect();
     }
   }

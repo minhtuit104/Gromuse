@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+import { CartItem } from '../../typeorm/entities/CartItem';
+import {
+  Notification,
+  NotificationContentType,
+  NotificationRecipientType,
+} from '../../typeorm/entities/Notification';
 import { User } from '../../typeorm/entities/User';
-import { Notification } from '../../typeorm/entities/Notification';
-import { NotificationRecipientType } from '../../typeorm/entities/Notification';
+import { MyGateway } from '../gateway/message.gateway';
 import { PaginatedResponse } from '../pagination/pagination.interface';
 
 @Injectable()
@@ -13,6 +18,7 @@ export class NotificationService {
     private notificationRepository: Repository<Notification>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private readonly gateway: MyGateway,
   ) {}
 
   //lấy tất cả thông báo của một người dùng
@@ -64,5 +70,41 @@ export class NotificationService {
       throw new Error('Notification not found');
     }
     await this.notificationRepository.delete(id);
+  }
+
+  // Tạo thông báo cho đơn hàng
+  async createOrderNotification(
+    cartItem: CartItem,
+    type: NotificationContentType,
+    message: string,
+  ): Promise<Notification> {
+    // Tạo thông báo cho user
+    const userNotification = this.notificationRepository.create({
+      recipientId: cartItem.cart.idUser,
+      recipientType: NotificationRecipientType.USER,
+      type: type,
+      message: message,
+      title: 'Cập nhật đơn hàng',
+      redirectUrl: `/order/${cartItem.id}`,
+      relatedCartItemId: cartItem.id,
+      relatedShopId: cartItem.shop?.id,
+      relatedProductId: cartItem.product?.id,
+    });
+
+    const savedNotification =
+      await this.notificationRepository.save(userNotification);
+
+    // Gửi thông báo qua WebSocket
+    const userSocket = this.gateway.getSocketByUserId(cartItem.cart.idUser);
+    if (userSocket) {
+      this.gateway.server.to(userSocket.id).emit('orderNotification', {
+        type: type,
+        message: message,
+        cartItemId: cartItem.id,
+        notification: savedNotification,
+      });
+    }
+
+    return savedNotification;
   }
 }

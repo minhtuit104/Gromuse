@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import "../MessagerUser/Messager.css";
-import IconSearch from "../../assets/images/icons/ic_ search.svg";
-import Message from "../../components/Message/Message";
-import { fectchUserName, fetchAllUser } from "../../Service/UserService";
-import { useWebSocket } from "../../WebSocket/WebSocketProvider";
-import { getMessageWithUser } from "../../Service/MessageService";
 import InfiniteScroll from "react-infinite-scroll-component";
-import ChatOnline from "../../components/chatOnline/ChatOnline";
-import Conversation from "../../components/Conversation/Conversation";
+import IconSearch from "../../assets/images/icons/ic_ search.svg";
 import IconSend from "../../assets/images/icons/ic_ send.svg";
+import Conversation from "../../components/Conversation/Conversation";
+import Message from "../../components/Message/Message";
+import { useWebSocket } from "../../contexts/WebSocketContext";
+import { getMessageWithUser } from "../../Service/MessageService";
+import { fectchUserName, fetchAllUser } from "../../Service/UserService";
 import HeaderDashboard from "../DashboardPage/Header/HeaderDashboard";
+import "../MessagerUser/Messager.css";
 
 // Decode user from token
 const getUserFromToken = () => {
