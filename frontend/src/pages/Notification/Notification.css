@@ -38,18 +38,62 @@
   border-radius: 6px;
   align-items: center;
   gap: 15px;
+  width: 100%; /* Take full width */
+  min-height: 70px; /* Minimum height, can grow if content is long */
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease,
+    box-shadow 0.2s ease; /* Added transform and box-shadow */
+  border-bottom: 1px solid var(--white200); /* Add a subtle separator */
+  position: relative; /* Cho unread-indicator */
 }
 
+.notification-item:last-child {
+  border-bottom: none; /* Remove border for the last item */
+}
+
+.notification-item:hover {
+  background-color: var(--white100); /* Slightly darker on hover */
+  transform: translateY(-2px); /* Subtle lift effect */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06); /* Softer shadow on hover */
+}
+
+/* Cập nhật style cho đơn hàng đã hoàn thành - ORDER_COMPLETED */
 .notification-item.success {
   background-color: var(--green100);
+  border-left: 4px solid var(--green500);
 }
 
+/* Cập nhật style cho đơn hàng đã bị hủy - ORDER_CANCELLED */
 .notification-item.error {
   background-color: var(--red100);
+  border-left: 4px solid var(--red500);
 }
 
-.notification-item.pending {
+/* Cập nhật style cho đơn hàng đang được giao và các thông báo thông tin - ORDER_SHIPPED */
+.notification-item.info {
   background-color: var(--white100);
+  border-left: 4px solid var(--white500);
+}
+
+/* Thêm style cho các loại thông báo khác */
+.notification-item.new-order {
+  background-color: var(--white100);
+  border-left: 4px solid var(--orange400);
+}
+
+.notification-item.message {
+  background-color: var(--white100);
+  border-left: 4px solid var(--blue400);
+}
+
+.notification-item.promotion {
+  background-color: var(--white100);
+  border-left: 4px solid var(--purple400);
+}
+
+.notification-item.default {
+  background-color: var(--white100);
+  border-left: 4px solid var(--white500);
 }
 
 .notification-logo {
@@ -77,7 +121,7 @@
 .store-name-product {
   font-weight: 700;
   color: var(--white950);
-  font-size: 20px;
+  font-size: 24px;
 }
 
 .product-status {
@@ -111,4 +155,81 @@
   width: 120px;
   height: 20px;
   background-color: var(--white200);
+}
+
+.notification-time {
+  font-weight: 500;
+  color: var(--white950);
+  font-size: 20px;
+}
+
+.pagination {
+  display: flex !important;
+  justify-content: center !important;
+  margin-top: 20px !important;
+  margin-bottom: 10px !important;
+  gap: 5px !important;
+}
+
+.pagination-notification {
+  display: flex !important;
+  justify-content: center !important;
+  margin-top: 20px !important;
+  margin-bottom: 10px !important;
+  gap: 8px !important; /* Khoảng cách giữa các nút */
+}
+
+.pagination-button {
+  background-color: var(--white100) !important;
+  border: 1px solid var(--white50) !important;
+  color: var(--white900) !important;
+  cursor: pointer !important;
+  padding: 8px 16px !important;
+  margin: 0 4px !important;
+  border-radius: 4px !important;
+  transition: all 0.3s !important;
+}
+
+.pagination-button.active {
+  background-color: #ff5722 !important;
+  color: white !important;
+  border-color: #ff5722 !important;
+}
+
+.pagination-button.disabled {
+  color: #999 !important;
+  cursor: not-allowed !important;
+}
+
+.unread-indicator {
+  position: absolute;
+  left: 5px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--red500);
+  border-radius: 50%;
+}
+
+.notification-item.unread {
+  background-color: var(--white100);
+  font-weight: 500;
+}
+
+.notification-item.read {
+  opacity: 0.6;
+}
+
+.notification-item.success.read {
+  background-color: var(--green100) !important;
+  opacity: 0.6;
+}
+
+.notification-item.error.read {
+  background-color: var(--red100) !important;
+  opacity: 0.6;
+}
+
+.notification-item.info.read {
+  background-color: var(--white100) !important;
+  opacity: 0.6;
 }

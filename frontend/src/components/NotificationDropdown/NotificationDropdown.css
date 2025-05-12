@@ -36,6 +36,58 @@
   height: 15px;
 }
 
+.notification-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px 5px 20px;
+  border-bottom: 1px solid var(--white200);
+}
+
+.notification-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--white900);
+}
+
+/* Cải thiện CSS cho thông báo đã đọc */
+.notification-item-cpn.read-dropdown {
+  background-color: var(--white50) !important;
+  opacity: 0.8;
+  border-left-width: 1px !important;
+}
+
+.notification-item-cpn.read-dropdown .store-name-cpn {
+  font-weight: normal;
+  color: var(--white700);
+}
+
+.notification-item-cpn.read-dropdown .notification-text-cpn {
+  font-weight: normal;
+  color: var(--white600);
+}
+
+.notification-item-cpn.read-dropdown .notification-time-dropdown {
+  color: var(--white500);
+}
+
+/* Cải thiện CSS cho thông báo chưa đọc */
+.notification-item-cpn.unread-dropdown {
+  background-color: #f0f7ff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border-left-width: 3px !important;
+}
+
+.notification-item-cpn.unread-dropdown .store-name-cpn {
+  font-weight: 700;
+  color: var(--white900);
+}
+
+.notification-item-cpn.unread-dropdown .notification-text-cpn {
+  font-weight: 500;
+  color: var(--white800);
+}
+
 .notification-list-cpn {
   overflow-y: auto;
   width: 100%;
@@ -46,6 +98,51 @@
   gap: 10px;
 }
 
+.notification-list-cpn::-webkit-scrollbar {
+  width: 8px;
+}
+
+.notification-list-cpn::-webkit-scrollbar-track {
+  background: var(--white100);
+  border-radius: 10px;
+}
+
+.notification-list-cpn::-webkit-scrollbar-thumb {
+  background: var(--orange300);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+.notification-list-cpn::-webkit-scrollbar-thumb:hover {
+  background: var(--orange500);
+}
+
+/* Firefox */
+.notification-list-cpn {
+  scrollbar-width: none;
+}
+
+/* Add smooth scrolling behavior */
+.notification-dropdown {
+  scroll-behavior: smooth;
+}
+
+/* Improve visibility of scroll track when hovering over list */
+.notification-list-cpn:hover::-webkit-scrollbar-track {
+  background: var(--white200);
+}
+
+/* Make scrollbar more visible when hovering over list */
+.notification-list-cpn:hover::-webkit-scrollbar-thumb {
+  background: var(--orange400);
+}
+
+/* Class for fewer items to avoid empty space */
+.notification-list-cpn.few-items {
+  height: auto;
+  max-height: 450px;
+}
+
 .notification-item-cpn {
   display: flex;
   padding: 15px;
@@ -53,17 +150,74 @@
   align-items: center;
   gap: 15px;
   width: 100%;
-  height: 70px;
+  min-height: 75px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease-in-out;
+}
+
+.notification-item-cpn:hover {
+  background-color: var(--white100);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Cải thiện chỉ báo chưa đọc */
+.unread-indicator {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--orange500);
+  box-shadow: 0 0 5px rgba(255, 114, 0, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 114, 0, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(255, 114, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 114, 0, 0);
+  }
 }
 
 .notification-item-cpn.accepted {
-  background-color: var(--green100);
+  border-left: 3px solid var(--green500);
+  background-color: var(--green50);
 }
 
 .notification-item-cpn.canceled {
-  background-color: var(--red100);
+  border-left: 3px solid var(--red500);
+  background-color: var(--red50);
 }
 
+.notification-item-cpn.shipped {
+  border-left: 3px solid var(--white500);
+}
+
+.notification-item-cpn.rated {
+  border-left: 3px solid var(--orange400);
+  background-color: var(--orange50);
+}
+
+.notification-item-cpn.message {
+  border-left: 3px solid var(--purple400);
+  background-color: var(--blue50, #eef7ff);
+}
+
+.notification-item-cpn.default {
+  border-left: 3px solid var(--green500);
+  background-color: var(--green50);
+}
+
+/* Cải thiện khung ảnh thông báo */
 .notification-icon {
   width: 50px;
   height: 50px;
@@ -72,6 +226,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .notification-icon img {
@@ -84,14 +241,26 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 1;
+  overflow: hidden;
 }
 
 .notification-text-cpn {
   line-height: 1.4;
+  font-size: 17px;
+  color: var(--white800);
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .store-name-cpn {
   font-weight: 600;
+}
+
+.notification-time-dropdown {
+  font-size: 12px;
+  color: var(--white600);
+  font-style: italic;
 }
 
 @keyframes slideDown {
@@ -149,6 +318,7 @@
   justify-content: center;
   width: 100%;
   height: 50px;
+  border-top: 1px solid var(--white200);
 }
 
 .see-all {

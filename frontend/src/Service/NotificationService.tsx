@@ -22,25 +22,44 @@ const fetchNotificationsByIdUser = async (
       }
     );
     return response;
-    // return response.data.map((notification: any) => ({
-    //     id: notification.id,
-    //     message: notification.message,
-    //     updatedAt: notification.updatedAt,
-    //     sender: {
-    //         avarta: notification.sender.avarta,
-    //         name: notification.sender.name
-    //     },
-    //     post: notification.post ? {
-    //         idPost: notification.post.idPost,
-    //         title: notification.post.title,
-    //         privacy: notification.post.privacy,
-    //         createAt: notification.post.createAt || new Date().toISOString(),
-    //         image: notification.post.image
-    //     } : null
-    // }));
   } catch (error) {
     console.error("Error fetching notifications:", error);
-    throw error; // Ném lỗi để xử lý sau này
+    throw error;
+  }
+};
+
+export const markNotificationAsRead = async (notificationId: number) => {
+  try {
+    return await axios.patch(
+      `/api/v1/notifications/${notificationId}/read`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    throw error;
+  }
+};
+
+// Thêm hàm để đánh dấu tất cả thông báo đã đọc
+export const markAllNotificationsAsRead = async (userId: number) => {
+  try {
+    return await axios.put(
+      `/api/v1/notifications/mark-all-as-read/${userId}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+    throw error;
   }
 };
 

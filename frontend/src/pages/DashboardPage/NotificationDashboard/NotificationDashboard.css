@@ -12,13 +12,13 @@
 .notification-dropdown-dashboard {
   position: absolute;
   top: 56px;
-  right: -30px;
+  right: 0;
   width: 350px;
   background-color: var(--white50);
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 1500;
-  overflow: visible;
+  overflow: hidden;
   border: 1px solid var(--green200);
   padding-top: 5px;
 }
@@ -29,11 +29,11 @@
 
 .notification-arrow-dashboard {
   position: absolute;
-  top: 37.5px;
-  right: 8px;
+  top: 37px;
+  right: 15px;
   z-index: 1501;
-  width: 26px;
-  height: 15px;
+  width: 20px;
+  height: 10px;
 }
 
 .notification-list-dashboard {
@@ -44,6 +44,33 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styles (Webkit) */
+.notification-list-dashboard::-webkit-scrollbar {
+  width: 6px;
+}
+.notification-list-dashboard::-webkit-scrollbar-track {
+  background: var(--white100);
+  border-radius: 10px;
+}
+.notification-list-dashboard::-webkit-scrollbar-thumb {
+  background: var(--orange300);
+  border-radius: 10px;
+}
+.notification-list-dashboard::-webkit-scrollbar-thumb:hover {
+  background: var(--orange500);
+}
+/* Scrollbar styles (Firefox) */
+.notification-list-dashboard {
+  scrollbar-width: thin;
+  scrollbar-color: var(--orange300) var(--white100);
+}
+
+.notification-list-dashboard.few-items {
+  height: auto; /* Adjust height if few items */
+  max-height: 450px;
 }
 
 .notification-item-dashboard {
@@ -53,22 +80,111 @@
   align-items: center;
   gap: 15px;
   width: 100%;
-  height: 70px;
+  min-height: 75px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease-in-out;
+}
+
+.notification-item-dashboard:hover {
+  background-color: var(--white100);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Unread Indicator */
+.unread-indicator-dashboard {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--orange500);
+  box-shadow: 0 0 5px rgba(255, 114, 0, 0.5);
+  animation: pulse-dashboard 2s infinite;
+}
+
+@keyframes pulse-dashboard {
+  /* Renamed to avoid conflict if Notification.css is also loaded */
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 114, 0, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(255, 114, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 114, 0, 0);
+  }
+}
+
+/* Styles for different notification types */
+.notification-item-dashboard.new-order {
+  /* For NEW_ORDER_FOR_SHOP */
+  border-left: 3px solid var(--orange500);
+  background-color: var(--orange50);
 }
 
 .notification-item-dashboard.accepted {
-  background-color: var(--green100);
+  border-left: 3px solid var(--green500);
+  background-color: var(--green50);
 }
 
 .notification-item-dashboard.canceled {
-  background-color: var(--red100);
+  border-left: 3px solid var(--red500);
+  background-color: var(--red50);
 }
 
 .notification-item-dashboard.rated {
-  background-color: var(--orange100);
+  border-left: 3px solid var(--orange400);
+  background-color: var(--orange50);
 }
 
-.notification-icon {
+.notification-item-dashboard.message {
+  border-left: 3px solid var(--purple400);
+  background-color: var(
+    --blue50,
+    #eef7ff
+  ); /* Using blue as an example for messages */
+}
+
+.notification-item-dashboard.default {
+  border-left: 3px solid var(--grey3);
+  background-color: var(--white100);
+}
+
+/* Read/Unread Styles */
+.notification-item-dashboard.read-dashboard {
+  background-color: var(
+    --white50
+  ) !important; /* Ensure it overrides type-specific backgrounds */
+  opacity: 0.8;
+  border-left-width: 1px !important; /* Make border thinner for read items */
+}
+.notification-item-dashboard.read-dashboard .store-name-dashboard,
+.notification-item-dashboard.read-dashboard .notification-text-dashboard {
+  font-weight: normal;
+  color: var(--white700);
+}
+.notification-item-dashboard.read-dashboard .notification-time-dashboard {
+  color: var(--white500);
+}
+
+.notification-item-dashboard.unread-dashboard {
+  /* background-color: #f0f7ff; */ /* Optional: specific background for unread */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+.notification-item-dashboard.unread-dashboard .store-name-dashboard {
+  font-weight: 700;
+  color: var(--white900);
+}
+.notification-item-dashboard.unread-dashboard .notification-text-dashboard {
+  font-weight: 500;
+  color: var(--white800);
+}
+
+.notification-icon-dashboard {
   width: 50px;
   height: 50px;
   border: 1px solid var(--orange500);
@@ -78,7 +194,7 @@
   justify-content: center;
 }
 
-.notification-icon img {
+.notification-icon-dashboard img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -87,15 +203,34 @@
 .notification-content-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
 }
 
 .notification-text-dashboard {
   line-height: 1.4;
+  font-size: 14px; /* Consistent size */
+  color: var(--white800);
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .store-name-dashboard {
   font-weight: 600;
+  color: var(--green900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline;
+  margin-right: 4px;
+}
+
+.notification-time-dashboard {
+  font-size: 12px;
+  color: var(--white600);
+  font-style: italic;
+  margin-top: 2px;
 }
 
 @keyframes slideDown {
@@ -147,18 +282,34 @@
   background-color: var(--white200);
 }
 
-.notification-header-dashboard {
+.notification-header-top-dashboard {
+  /* For the "Notifications" title */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px 10px 20px; /* Adjusted padding */
+  border-bottom: 1px solid var(--white200);
+}
+
+.notification-title-dashboard {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--white900);
+}
+
+.notification-footer-dashboard {
+  /* For "See all" link */
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 50px;
+  border-top: 1px solid var(--white200);
 }
 
-.see-all-dashboard {
-  color: var(--orange600);
-  font-size: 20px;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
+.error-text-dashboard,
+.no-notifications-text-dashboard {
+  padding: 10px;
+  text-align: center;
+  color: var(--white600);
 }

@@ -12,6 +12,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { OrderItem } from "./OrderItem/OrderItem";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import OrderEmptyImage from "../../assets/images/imagePNG/order_empty.png";
 
 type TabType = "toOrder" | "toReceive" | "completed" | "cancelled";
@@ -32,8 +33,17 @@ interface TabCounts {
 }
 
 const OrderStatuss = () => {
-  const navigate = useNavigate(); // Khởi tạo navigate
-  const [activeTab, setActiveTab] = useState<TabType>("toOrder");
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Sử dụng state để theo dõi xem đã sử dụng targetTab chưa
+  const [hasUsedLocationState, setHasUsedLocationState] = useState(false);
+
+  // Đặt activeTab ban đầu dựa trên state từ navigation, nếu không có thì mặc định là "toOrder"
+  const [activeTab, setActiveTab] = useState<TabType>(
+    location.state?.targetTab || "toOrder"
+  );
+
   const [currentOrders, setCurrentOrders] = useState<OrderData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -74,6 +84,17 @@ const OrderStatuss = () => {
     }
     // Nếu có token, không làm gì cả, các useEffect khác sẽ chạy để load data
   }, [navigate]); // Thêm navigate vào dependency array
+
+  // Xử lý targetTab từ location state chỉ MỘT LẦN khi component mount
+  useEffect(() => {
+    if (location.state?.targetTab && !hasUsedLocationState) {
+      setActiveTab(location.state.targetTab);
+      setHasUsedLocationState(true); // Đánh dấu đã sử dụng location state
+      console.log(
+        `[OrderStatus] Initial tab set from location state: ${location.state.targetTab}`
+      );
+    }
+  }, [location.state?.targetTab, hasUsedLocationState]);
 
   // Hàm load tất cả dữ liệu cho mỗi tab
   const loadAllTabData = useCallback(async () => {
@@ -166,13 +187,90 @@ const OrderStatuss = () => {
   }, []); // Dependency rỗng vì hàm này không dùng state/prop nào bên ngoài scope của nó
 
   useEffect(() => {
-    // Chỉ load data nếu có token (tránh gọi API khi đang chuẩn bị redirect)
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // Khi component mount, load dữ liệu cho tất cả các tab
     loadAllTabData();
   }, [loadAllTabData]); // Chỉ load tất cả dữ liệu khi component mount
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(currentOrders.length / ordersPerPage)
+  );
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const currentPagedOrders = currentOrders.slice(
+    indexOfFirstOrder,
+    indexOfLastOrder
+  );
+
+  // useEffect để xử lý focus vào đơn hàng cụ thể
+  useEffect(() => {
+    const orderIdToFocus = location.state?.orderIdToFocus as number | undefined;
+
+    if (!orderIdToFocus || currentOrders.length === 0 || isLoading) {
+      // Không có ID để focus, đơn hàng chưa tải, hoặc đang tải
+      return;
+    }
+
+    const targetOrderIndex = currentOrders.findIndex(
+      (order) => order.cartItemId === orderIdToFocus
+    );
+
+    if (targetOrderIndex === -1) {
+      console.warn(
+        `[OrderStatus] Order with cartItemId ${orderIdToFocus} not found in currentOrders for tab ${activeTab}.`
+      );
+      return;
+    }
+
+    const targetPage = Math.floor(targetOrderIndex / ordersPerPage) + 1;
+
+    if (currentPage !== targetPage) {
+      console.log(
+        `[OrderStatus] Order ${orderIdToFocus} is on page ${targetPage}. Current page is ${currentPage}. Switching page.`
+      );
+      setCurrentPage(targetPage);
+      // Effect sẽ chạy lại sau khi currentPage và currentPagedOrders được cập nhật.
+      return;
+    }
+
+    // Nếu đã ở đúng trang, tiến hành focus
+    // Đảm bảo rằng currentPagedOrders đã được cập nhật với trang mới
+    const orderInPagedList = currentPagedOrders.find(
+      (order) => order.cartItemId === orderIdToFocus
+    );
+
+    if (orderInPagedList) {
+      const elementId = `order-item-${orderIdToFocus}`;
+      // Sử dụng requestAnimationFrame để đảm bảo DOM đã được cập nhật
+      requestAnimationFrame(() => {
+        const orderElement = document.getElementById(elementId);
+        if (orderElement) {
+          console.log(`[OrderStatus] Focusing on order element: ${elementId}`);
+          orderElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center", // Các tùy chọn khác: 'start', 'end', 'nearest'
+          });
+
+          // Thêm class để làm nổi bật tạm thời
+          orderElement.classList.add("focused-order");
+        } else {
+          console.warn(
+            `[OrderStatus] Element with ID ${elementId} not found for focusing, even after page switch.`
+          );
+        }
+      });
+    }
+  }, [
+    location.state?.orderIdToFocus,
+    currentOrders,
+    currentPage,
+    ordersPerPage,
+    currentPagedOrders,
+    isLoading,
+    activeTab,
+  ]);
 
   useEffect(() => {
     // Chỉ load data nếu có token (tránh gọi API khi đang chuẩn bị redirect)
@@ -208,6 +306,7 @@ const OrderStatuss = () => {
 
   const handleTabChange = (tab: TabType) => {
     if (tab === activeTab) return; // Không làm gì nếu click vào tab đang active
+    console.log(`[OrderStatus] User changed tab from ${activeTab} to ${tab}`);
     setActiveTab(tab);
   };
 
@@ -240,19 +339,6 @@ const OrderStatuss = () => {
     window.addEventListener("resize", updateIndicator);
     return () => window.removeEventListener("resize", updateIndicator);
   }, [activeTab]);
-
-  // --- Logic phân trang ---
-  const totalPages = Math.max(
-    1,
-    Math.ceil(currentOrders.length / ordersPerPage)
-  );
-  const indexOfLastOrder = currentPage * ordersPerPage;
-  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-  const currentPagedOrders = currentOrders.slice(
-    indexOfFirstOrder,
-    indexOfLastOrder
-  );
-
   // Đảm bảo currentPage không vượt quá totalPages khi orders thay đổi (ví dụ sau khi hủy)
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -440,7 +526,11 @@ const OrderStatuss = () => {
           {!isLoading && currentOrders.length > 0 && (
             <div className="order-list-status">
               {currentPagedOrders.map((order) => (
-                <div key={order.orderId} className="order-wrapper">
+                <div
+                  key={order.orderId}
+                  id={`order-item-${order.cartItemId}`}
+                  className="order-wrapper"
+                >
                   <OrderItem
                     order={order}
                     onCancelOrder={

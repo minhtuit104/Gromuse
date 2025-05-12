@@ -13,7 +13,6 @@ import SignUpLogInForm from "./pages/LoginPage/singUpLoginForm";
 import LoginShop from "./pages/LoginShop/loginShop";
 import MessagerShop from "./pages/MessagerShop/MessagerShop";
 import Messager from "./pages/MessagerUser/Messager";
-import Notification from "./pages/Notification/Notification";
 import OrderShop from "./pages/OrderShop/Order/OrderShop";
 import OrderCancel from "./pages/OrderShop/OrderCancel/OrderCancel";
 import OrderHistory from "./pages/OrderShop/OrderHistory/OrderHistory";
@@ -21,6 +20,7 @@ import OrderStatuss from "./pages/OrderStatus/OrderStatus";
 import RatingProduct from "./pages/OrderStatus/RatingProduct/RatingProduct";
 import { PaymentPage } from "./pages/PaymentPages/index";
 import { AuthRoute, PrivateRoute, ShopRoute } from "./router/protectRouter";
+import NotificationPage from "./pages/Notification/Notification";
 
 function App() {
   return (
@@ -206,7 +206,7 @@ function App() {
               path="/notification"
               element={
                 <PrivateRoute>
-                  <Notification />
+                  <NotificationPage />
                 </PrivateRoute>
               }
             />
