@@ -11,16 +11,20 @@ import { UserModule } from '../users/user.module';
 import { UserService } from '../users/user.service';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
+import { AccountService } from '../account/account.service';
+import { AccountModule } from '../account/account.module';
+import { Account } from 'src/typeorm/entities/Account';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Notification, User, Messager]),
+    TypeOrmModule.forFeature([Notification, User, Messager, Account]),
     forwardRef(() => GatewayModule),
     forwardRef(() => MessagerModule),
     forwardRef(() => UserModule),
+    forwardRef(() => AccountModule),
   ],
   controllers: [NotificationController],
-  providers: [NotificationService, MyGateway, MessagerService, UserService],
+  providers: [NotificationService, MyGateway, MessagerService, UserService, AccountService],
   exports: [NotificationService],
 })
 export class NotificationModule {}

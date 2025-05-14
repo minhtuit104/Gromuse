@@ -6,13 +6,15 @@ import {
   ParseIntPipe,
   Patch,
   Query,
+  Req,
   Response,
   UseGuards,
 } from '@nestjs/common';
-import { NotificationService } from './notification.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { UserService } from '../users/user.service';
+import { NotificationRecipientType } from 'src/typeorm/entities/Notification';
+import { AccountService } from '../account/account.service';
 import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
+import { NotificationService } from './notification.service';
 
 @ApiBearerAuth()
 @ApiTags('Notifications')
@@ -20,7 +22,7 @@ import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
 export class NotificationController {
   constructor(
     private readonly notificationService: NotificationService,
-    // private readonly userService: UserService
+    private readonly accountService: AccountService, 
   ) {}
 
   //lấy tất cả thông báo của một người dùng
@@ -31,11 +33,31 @@ export class NotificationController {
     @Response() res,
     @Query('page', ParseIntPipe) page: number = 1,
     @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    @Req() req,
   ) {
+    const user = req.user;
+
+    if (user.idUser !== id) {
+      // Hoặc trả lỗi Forbidden, hoặc xử lý theo logic của bạn
+      return res.status(403).json({
+        code: 403,
+        success: false,
+        message: 'Forbidden: You can only access your own notifications.',
+      });
+    }
+
+    // Dòng này để tìm account theo yêu cầu của bạn
+    const account = await this.accountService.findByUserId(user.idUser);
+    const role =
+      account.role === 1
+        ? NotificationRecipientType.USER
+        : NotificationRecipientType.SHOP;
+
     const notifications = await this.notificationService.findAll(
-      id,
+      id, // id này là recipientId của notification
       page,
       pageSize,
+      role,
     );
     return res.status(200).json({
       code: 200,

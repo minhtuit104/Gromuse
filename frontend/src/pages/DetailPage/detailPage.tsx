@@ -1,20 +1,21 @@
-import { useEffect, useState } from "react";
-import "./detailPage.css";
-import Header from "../../layouts/Header/Header";
-import Counter from "../../components/CountBtn/CountBtn";
-import Img1 from "../../assets/images/imagePNG/lays_1 1.png";
-import DefaultAvatar from "../../assets/images/imagePNG/Avatar.png";
-import ImgDescription from "../../assets/images/imagePNG/image 1.png";
-import IconClock from "../../assets/images/icons/ic_ clock.svg";
-import IconCart from "../../assets/images/icons/ic_cart.svg";
-import IconSold from "../../assets/images/icons/ic_ flame.svg";
-import shopIcon from "../../assets/images/icons/ic_ shop.svg";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import iconStarFill from "../../assets/images/icons/ic_star_fill.svg";
-import iconStarEmpty from "../../assets/images/icons/ic_star_orange.svg";
 import { jwtDecode } from "jwt-decode";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import IconClock from "../../assets/images/icons/ic_ clock.svg";
+import IconSold from "../../assets/images/icons/ic_ flame.svg";
+import shopIcon from "../../assets/images/icons/ic_ shop.svg";
+import IconCart from "../../assets/images/icons/ic_cart.svg";
+import iconStarFill from "../../assets/images/icons/ic_star_fill.svg";
+import iconStarEmpty from "../../assets/images/icons/ic_star_orange.svg";
+import DefaultAvatar from "../../assets/images/imagePNG/Avatar.png";
+import ImgDescription from "../../assets/images/imagePNG/image 1.png";
+import Img1 from "../../assets/images/imagePNG/lays_1 1.png";
+import Counter from "../../components/CountBtn/CountBtn";
+import Header from "../../layouts/Header/Header";
+import HeaderDashboard from "../DashboardPage/Header/HeaderDashboard";
+import "./detailPage.css";
 
 interface DecodedToken {
   idAccount: number;
@@ -91,6 +92,8 @@ const DetailPage = () => {
   const [currentTime, setCurrentTime] = useState<string>("");
 
   const INITIAL_RATINGS_TO_SHOW = 2;
+
+  const userRole = localStorage.getItem("userRole");
 
   // useEffect để cập nhật thời gian mỗi giây
   useEffect(() => {
@@ -462,7 +465,7 @@ const DetailPage = () => {
   // --- JSX ---
   return (
     <div className="detail-page">
-      <Header />
+      {userRole === "shop" ? <HeaderDashboard /> : <Header />}
       <div className="detail-product-page">
         {/* --- Phần Thông tin Sản phẩm --- */}
         <div className="detail-product-information">
@@ -537,19 +540,23 @@ const DetailPage = () => {
               )}
             </div>
             <span className="line"></span>
-            <Counter
-              initialCount={quantity}
-              onChange={(newCount) => setQuantity(newCount)}
-            />
-            <div className="detail-product-info-btn">
-              <button className="btn-add-cart" onClick={handleAddToCart}>
-                <img src={IconCart} alt="add cart" className="ic_28" />
-                Add to bucket
-              </button>
-              <button className="btn-buy-now" onClick={handleBuyNow}>
-                Buy now
-              </button>
-            </div>
+            {userRole !== "shop" && (
+              <>
+                <Counter
+                  initialCount={quantity}
+                  onChange={(newCount) => setQuantity(newCount)}
+                />
+                <div className="detail-product-info-btn">
+                  <button className="btn-add-cart" onClick={handleAddToCart}>
+                    <img src={IconCart} alt="add cart" className="ic_28" />
+                    Add to bucket
+                  </button>
+                  <button className="btn-buy-now" onClick={handleBuyNow}>
+                    Buy now
+                  </button>
+                </div>
+              </>
+            )}
             <div className="detail-product-info-footer">
               <div className="sold">
                 <img src={IconSold} alt="sold" className="ic_28" />

@@ -491,8 +491,10 @@ export class CartItemService {
         id: cartItemId,
         isPaid: true,
       },
-      relations: ['product', 'cart'],
+      relations: ['product', 'cart', 'cart.user', 'shop'],
     });
+
+    // console.log('cartItem update status', cartItem);
 
     if (!cartItem) {
       this.logger.warn(
@@ -562,26 +564,32 @@ export class CartItemService {
       let notificationType: NotificationContentType;
       let notificationMessage: string;
 
+      let notificationMessageForShop: string;
       switch (status) {
         case OrderStatus.TO_ORDER:
           notificationType = NotificationContentType.NEW_ORDER_FOR_SHOP;
           notificationMessage = `Đơn hàng #${savedItem.id} đã được đặt thành công`;
+          notificationMessageForShop = `Bạn có đơn hàng mới #${savedItem.id} từ khách hàng ${savedItem.cart.user?.name || 'Không xác định'}`;
           break;
         case OrderStatus.TO_RECEIVE:
           notificationType = NotificationContentType.ORDER_SHIPPED;
           notificationMessage = `Đơn hàng #${savedItem.id} đang được giao`;
+          notificationMessageForShop = `Đơn hàng #${savedItem.id} đã được gửi đi và đang trong quá trình vận chuyển`;
           break;
         case OrderStatus.COMPLETE:
           notificationType = NotificationContentType.ORDER_COMPLETED;
           notificationMessage = `Đơn hàng #${savedItem.id} đã hoàn thành`;
+          notificationMessageForShop = `Đơn hàng #${savedItem.id} đã được giao thành công cho khách hàng`;
           break;
         case OrderStatus.CANCEL_BYUSER:
           notificationType = NotificationContentType.ORDER_CANCELLED_BY_USER;
           notificationMessage = `Đơn hàng #${savedItem.id} đã bị hủy bởi người mua`;
+          notificationMessageForShop = `Khách hàng ${savedItem.cart.user?.name || 'Không xác định'} đã hủy đơn hàng #${savedItem.id}`;
           break;
         case OrderStatus.CANCEL_BYSHOP:
           notificationType = NotificationContentType.ORDER_CANCELLED_BY_SHOP;
           notificationMessage = `Đơn hàng #${savedItem.id} đã bị hủy bởi người bán`;
+          notificationMessageForShop = `Bạn đã hủy đơn hàng #${savedItem.id}`;
           break;
         default:
           break;
@@ -593,6 +601,7 @@ export class CartItemService {
             savedItem,
             notificationType,
             notificationMessage,
+            notificationMessageForShop,
           );
         } catch (notificationError) {
           this.logger.error(

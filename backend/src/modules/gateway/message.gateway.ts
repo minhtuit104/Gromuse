@@ -101,6 +101,13 @@ export class MyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
+  //lấy socket theo id shop
+  getSocketByShopId(shopId: number): Socket | undefined {
+    return [...this.server.sockets.sockets.values()].find(
+      (socket) => socket.data.idUser === shopId,
+    );
+  }
+
   // Khi user tham gia room
   @SubscribeMessage('joinRoom')
   handleJoinRoom(
