@@ -38,8 +38,20 @@
   object-fit: cover;
 }
 
+.wrapperConversation {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .conversationName {
   font-weight: 700;
   font-size: 18px;
   color: var(--green900);
+}
+
+.conversationMessage {
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--white400);
 }

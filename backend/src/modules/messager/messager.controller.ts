@@ -1,21 +1,19 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
   Param,
-  Delete,
-  Put,
-  UseGuards,
-  Response,
-  Req,
-  Query,
   ParseIntPipe,
+  Post,
+  Query,
+  Req,
+  Response,
+  UseGuards,
 } from '@nestjs/common';
-import { MessagerService } from './messager.service';
-import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
 import { CreateMessageDto } from './dto/createdMessage.dto';
+import { MessagerService } from './messager.service';
 
 @ApiBearerAuth()
 @ApiTags('Messagers')
@@ -59,21 +57,11 @@ export class MessagerController {
     }
   }
 
-  //tạo mới một tin nhắn từ API HTTP (không dùng websocket)
-  @Post()
-  // @UseGuards(JwtAuthGuard)
-  async createMessage(@Body() createMessageDto: CreateMessageDto) {
-    return this.messagerService.createMessage(
-      createMessageDto.senderId,
-      createMessageDto.receiverId,
-      createMessageDto.content,
-    );
-  }
-
   // Lấy danh sách các cuộc trò chuyện của người dùng
-  @Get('/user/:userId/conversations')
-  // @UseGuards(JwtAuthGuard)
-  async getUserConversations(@Param('userId') userId: number) {
-    return this.messagerService.getUserConversations(userId);
+  @Get('/conversations')
+  @UseGuards(JwtAuthGuard)
+  async getUserConversations(@Req() req) {
+    const user = req.user;
+    return this.messagerService.getUserConversations(user.idUser);
   }
 }

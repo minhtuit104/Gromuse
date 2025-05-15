@@ -80,17 +80,27 @@ export class MyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     const senderId = client.data.idUser;
-    console.log('data---------->: ', data);
-    // // Lưu tin nhắn vào cơ sở dữ liệu
-    const message = await this.messageService.createMessage(
-      senderId,
-      data.receiverId,
-      data.content,
-    );
-    //gửi tin nhắn đến người nhận
-    const receiverSocket = this.getSocketByUserId(data.receiverId);
-    if (receiverSocket) {
-      this.server.to(receiverSocket.id).emit('receiveMessage', message);
+    // console.log('data---------->: ', data);
+    
+    try {
+      // Lưu tin nhắn vào cơ sở dữ liệu
+      const message = await this.messageService.createMessage(
+        senderId,
+        data.receiverId,
+        data.content,
+      );
+  
+      // Chỉ gửi tin nhắn đến người nhận
+      const receiverSocket = this.getSocketByUserId(data.receiverId);
+      if (receiverSocket) {
+        this.server.to(receiverSocket.id).emit('receiveMessage', message);
+      }
+  
+      // Trả về tin nhắn đã lưu cho người gửi qua acknowledgement
+      return { status: 'success', message };
+    } catch (error) {
+      console.error('Lỗi khi gửi tin nhắn:', error);
+      return { status: 'error', message: 'Không thể gửi tin nhắn' };
     }
   }
 

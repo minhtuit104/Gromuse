@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import IconSearch from "../../assets/images/icons/ic_ search.svg";
 import IconSend from "../../assets/images/icons/ic_ send.svg";
 import Conversation from "../../components/Conversation/Conversation";
 import Message from "../../components/Message/Message";
 import { useWebSocket } from "../../contexts/WebSocketContext";
-import { getMessageWithUser } from "../../Service/MessageService";
-import { fectchUserName, fetchAllUser } from "../../Service/UserService";
+import {
+  getAllMessages,
+  getMessageWithUser,
+} from "../../Service/MessageService";
+import { fectchUserName } from "../../Service/UserService";
 import HeaderDashboard from "../DashboardPage/Header/HeaderDashboard";
 import "../MessagerUser/Messager.css";
+import { toast } from "react-toastify";
 
 // Decode user from token
 const getUserFromToken = () => {
@@ -32,7 +35,7 @@ const getUserFromToken = () => {
 
 const Messager = () => {
   const { socket, isConnected } = useWebSocket();
-  const [user, setUser] = useState([]); // User list
+  const [conversations, setConversations] = useState<any>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // ID of receiver
   const [selectedUserInfo, setSelectedUserInfo] = useState<any>(null); // Info of receiver
   const [message, setMessage] = useState<any[]>([]); // Messages
@@ -42,7 +45,6 @@ const Messager = () => {
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const userInfo = getUserFromToken();
   const currentUserId = userInfo?.idUser;
@@ -57,27 +59,60 @@ const Messager = () => {
     getUser();
   }, [currentUserId]);
 
-  // Send message function
+  // Trong hàm sendMessage
   const sendMessage = () => {
     if (selectedUserId && newMessage.trim() && isConnected) {
-      socket?.emit("sendMessage", {
-        receiverId: selectedUserId,
-        content: newMessage,
-      });
-
-      // Add message to display list temporarily (sender)
-      setMessage((prevMessages) => [
-        ...prevMessages,
+      socket?.emit(
+        "sendMessage",
         {
+          receiverId: selectedUserId,
           content: newMessage,
-          own: true,
-          avarta: avarta ?? "https://www.gravatar.com/avatar/?d=mp",
-          time: new Date().toISOString(),
         },
-      ]);
+        (response: any) => {
+          if (response.status === 'success') {
+            setMessage((prevMessages) => [
+              ...prevMessages,
+              {
+                content: newMessage,
+                own: true,
+                avarta: avarta ?? "https://www.gravatar.com/avatar/?d=mp",
+                time: new Date().toISOString(),
+                ...response.message,
+              },
+            ]);
+          } else {
+            toast.error('Không thể gửi tin nhắn');
+          }
+        }
+      );
+  
       setNewMessage(""); // Reset message input
     }
   };
+  
+  // Trong useEffect lắng nghe receiveMessage
+  useEffect(() => {
+    if (socket && socket.connected) {
+      socket?.on("receiveMessage", (message: any) => {
+        // Chỉ thêm tin nhắn vào state nếu là tin nhắn từ người khác gửi đến
+        if (message.sender.idUser !== currentUserId) {
+          setMessage((prevMessages) => [
+            ...prevMessages,
+            {
+              avarta: message.sender.avarta ?? "https://www.gravatar.com/avatar/?d=mp",
+              content: message.content,
+              own: false,
+              time: new Date(message.createAt).toISOString(),
+            },
+          ]);
+        }
+      });
+  
+      return () => {
+        socket?.off("receiveMessage");
+      };
+    }
+  }, [socket, currentUserId]);
 
   // Handle Enter key press to send message
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -110,16 +145,16 @@ const Messager = () => {
     }
   }, [socket, selectedUserId]);
 
-  // Fetch user list
+  // Fetch all conversations
   useEffect(() => {
-    getUser();
+    getAllConversations();
   }, []);
 
-  const getUser = async () => {
+  const getAllConversations = async () => {
     try {
-      const res = await fetchAllUser();
-      if (res && res.data) {
-        setUser(res.data);
+      const res = await getAllMessages();
+      if (res) {
+        setConversations(res);
       } else {
         console.error("No user data found");
       }
@@ -194,7 +229,9 @@ const Messager = () => {
     setMessage([]); // Reset messages
 
     // Get receiver information
-    const selectUser = user.find((user: any) => user.idUser === idUser);
+    const selectUser = conversations.find(
+      (user: any) => user.idUser === idUser
+    );
     setSelectedUserInfo(selectUser);
 
     if (currentUserId) {
@@ -205,12 +242,6 @@ const Messager = () => {
       }
     }
   };
-
-  // Filter users based on search query
-  const filteredUsers = user.filter(
-    (u: any) =>
-      u.name && u.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   useEffect(() => {
     if (currentUserId && selectedUserId && page > 1) {
@@ -224,20 +255,12 @@ const Messager = () => {
       <div className="messager-container">
         <div className="chatMenu">
           <div className="chatMenuWrapper">
-            <img src={IconSearch} alt="" className="ic_28 ic-search" />
-            <input
-              type="text"
-              placeholder="Search for friends"
-              className="chatMenuInput"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {filteredUsers.map((user: any) => (
+            {conversations.map((data: any) => (
               <Conversation
-                key={user.idUser}
-                user={user}
-                onClick={() => handleSelectUserId(user.idUser)}
-                isSelected={selectedUserId === user.idUser}
+                key={data.idUser}
+                data={data}
+                onClick={() => handleSelectUserId(data.idUser)}
+                isSelected={selectedUserId === data.idUser}
               />
             ))}
           </div>

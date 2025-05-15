@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Messager } from '../../typeorm/entities/Messager';
 import { User } from 'src/typeorm/entities/User';
+import { MoreThanOrEqual, Repository } from 'typeorm';
+import { Messager } from '../../typeorm/entities/Messager';
 import { PaginatedResponse } from '../pagination/pagination.interface';
 
 @Injectable()
@@ -69,12 +69,47 @@ export class MessagerService {
 
   // Lấy danh sách các cuộc trò chuyện của người dùng
   async getUserConversations(userId: number): Promise<any[]> {
-    return this.messagerRepository
+    // Tạo subquery để lấy ID tin nhắn cuối cùng của mỗi cuộc trò chuyện
+    const lastMessageIds = await this.messagerRepository
+      .createQueryBuilder('msg')
+      .select('MAX(msg.idMessager)', 'maxId')
+      .where('msg.sender.idUser = :userId OR msg.receiver.idUser = :userId', {
+        userId,
+      })
+      .groupBy(
+        'LEAST(COALESCE(msg.sender.idUser, 0), COALESCE(msg.receiver.idUser, 0))',
+      )
+      .addGroupBy(
+        'GREATEST(COALESCE(msg.sender.idUser, 0), COALESCE(msg.receiver.idUser, 0))',
+      )
+      .getRawMany();
+
+    // Lấy chi tiết tin nhắn cuối cùng và thông tin người dùng
+    const conversations = await this.messagerRepository
       .createQueryBuilder('messager')
       .leftJoinAndSelect('messager.sender', 'sender')
       .leftJoinAndSelect('messager.receiver', 'receiver')
-      .where('sender.idUser = :userId', { userId })
-      .orWhere('receiver.idUser = :userId', { userId })
+      .where('messager.idMessager IN (:...ids)', {
+        ids: lastMessageIds.map((msg) => msg.maxId),
+      })
+      .orderBy('messager.createAt', 'DESC')
       .getMany();
+
+    // Xử lý và trả về kết quả
+    return conversations.map((conversation) => {
+      const otherUser =
+        conversation.sender.idUser === userId
+          ? conversation.receiver
+          : conversation.sender;
+
+      return {
+        idUser: otherUser.idUser,
+        name: otherUser.name,
+        avarta: otherUser.avarta,
+        lastMessage: conversation.content,
+        createAt: conversation.createAt,
+        isLastMessageMine: conversation.sender.idUser === userId, // Thêm trường này để biết tin nhắn cuối là của ai
+      };
+    });
   }
 }

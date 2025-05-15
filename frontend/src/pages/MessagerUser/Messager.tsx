@@ -6,9 +6,13 @@ import Conversation from "../../components/Conversation/Conversation";
 import Message from "../../components/Message/Message";
 import { useWebSocket } from "../../contexts/WebSocketContext";
 import Header from "../../layouts/Header/Header";
-import { getMessageWithUser } from "../../Service/MessageService";
-import { fectchUserName, fetchAllUser } from "../../Service/UserService";
+import {
+  getAllMessages,
+  getMessageWithUser,
+} from "../../Service/MessageService";
+import { fectchUserName } from "../../Service/UserService";
 import "./Messager.css";
+import { toast } from "react-toastify";
 
 // Decode user from token
 const getUserFromToken = () => {
@@ -32,7 +36,7 @@ const getUserFromToken = () => {
 
 const Messager = () => {
   const { socket, isConnected } = useWebSocket();
-  const [user, setUser] = useState([]); // User list
+  const [conversations, setConversations] = useState<any>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // ID of receiver
   const [selectedUserInfo, setSelectedUserInfo] = useState<any>(null); // Info of receiver
   const [message, setMessage] = useState<any[]>([]); // Messages
@@ -60,21 +64,30 @@ const Messager = () => {
   // Send message function
   const sendMessage = () => {
     if (selectedUserId && newMessage.trim() && isConnected) {
-      socket?.emit("sendMessage", {
-        receiverId: selectedUserId,
-        content: newMessage,
-      });
-
-      // Add message to display list temporarily (sender)
-      setMessage((prevMessages) => [
-        ...prevMessages,
+      socket?.emit(
+        "sendMessage",
         {
+          receiverId: selectedUserId,
           content: newMessage,
-          own: true,
-          avarta: avarta ?? "https://www.gravatar.com/avatar/?d=mp",
-          time: new Date().toISOString(),
         },
-      ]);
+        (response: any) => {
+          if (response.status === "success") {
+            setMessage((prevMessages) => [
+              ...prevMessages,
+              {
+                content: newMessage,
+                own: true,
+                avarta: avarta ?? "https://www.gravatar.com/avatar/?d=mp",
+                time: new Date().toISOString(),
+                ...response.message,
+              },
+            ]);
+          } else {
+            toast.error("Không thể gửi tin nhắn");
+          }
+        }
+      );
+
       setNewMessage(""); // Reset message input
     }
   };
@@ -110,16 +123,16 @@ const Messager = () => {
     }
   }, [socket, selectedUserId]);
 
-  // Fetch user list
+  // Fetch conversations
   useEffect(() => {
-    getUser();
+    getAllConversations();
   }, []);
 
-  const getUser = async () => {
+  const getAllConversations = async () => {
     try {
-      const res = await fetchAllUser();
-      if (res && res.data) {
-        setUser(res.data);
+      const res = await getAllMessages();
+      if (res) {
+        setConversations(res);
       } else {
         console.error("No user data found");
       }
@@ -194,7 +207,9 @@ const Messager = () => {
     setMessage([]); // Reset messages
 
     // Get receiver information
-    const selectUser = user.find((user: any) => user.idUser === idUser);
+    const selectUser = conversations.find(
+      (user: any) => user.idUser === idUser
+    );
     setSelectedUserInfo(selectUser);
 
     if (currentUserId) {
@@ -205,12 +220,6 @@ const Messager = () => {
       }
     }
   };
-
-  // Filter users based on search query
-  const filteredUsers = user.filter(
-    (u: any) =>
-      u.name && u.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   useEffect(() => {
     if (currentUserId && selectedUserId && page > 1) {
@@ -232,12 +241,12 @@ const Messager = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            {filteredUsers.map((user: any) => (
+            {conversations.map((data: any) => (
               <Conversation
-                key={user.idUser}
-                user={user}
-                onClick={() => handleSelectUserId(user.idUser)}
-                isSelected={selectedUserId === user.idUser}
+                key={data.idUser}
+                data={data}
+                onClick={() => handleSelectUserId(data.idUser)}
+                isSelected={selectedUserId === data.idUser}
               />
             ))}
           </div>
