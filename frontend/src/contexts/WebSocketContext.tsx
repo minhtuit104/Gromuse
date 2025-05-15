@@ -72,7 +72,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             // Chỉ hiển thị toast khi component đã mount
             setTimeout(() => {
               if (mounted) {
-                toast.success("Đã kết nối tới server!");
+                // toast.success("Đã kết nối tới server!");
               }
             }, 100);
           }
@@ -82,7 +82,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           if (mounted) {
             console.error("[WebSocket] Lỗi kết nối:", error.message);
             setIsConnected(false);
-            toast.error("Không thể kết nối tới server!");
+            // toast.error("Không thể kết nối tới server!");
           }
         });
 
@@ -90,7 +90,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           if (mounted) {
             console.log("[WebSocket] Ngắt kết nối, lý do:", reason);
             setIsConnected(false);
-            toast.warning("Mất kết nối tới server!");
+            // toast.warning("Mất kết nối tới server!");
           }
         });
 

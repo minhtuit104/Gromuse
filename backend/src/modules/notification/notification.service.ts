@@ -26,12 +26,13 @@ export class NotificationService {
     id: number,
     page: number = 1,
     pageSize: number = 10,
+    role: NotificationRecipientType,
   ): Promise<PaginatedResponse<Notification>> {
     const [notifications, total] =
       await this.notificationRepository.findAndCount({
         where: {
           recipientId: id,
-          recipientType: NotificationRecipientType.USER,
+          recipientType: role,
         },
         relations: [
           'relatedUser',
@@ -82,7 +83,10 @@ export class NotificationService {
     cartItem: CartItem,
     type: NotificationContentType,
     message: string,
-  ): Promise<Notification> {
+    messageForShop?: string,
+  ): Promise<Notification[]> {
+    const notifications: Notification[] = [];
+
     // Tạo thông báo cho user
     const userNotification = this.notificationRepository.create({
       recipientId: cartItem.cart.idUser,
@@ -97,20 +101,71 @@ export class NotificationService {
       relatedProductId: cartItem.product?.id,
     });
 
-    const savedNotification =
+    const savedUserNotification =
       await this.notificationRepository.save(userNotification);
+    notifications.push(savedUserNotification);
 
-    // Gửi thông báo qua WebSocket
+    // Gửi thông báo qua WebSocket cho user
     const userSocket = this.gateway.getSocketByUserId(cartItem.cart.idUser);
     if (userSocket) {
       this.gateway.server.to(userSocket.id).emit('orderNotification', {
         type: type,
         message: message,
         cartItemId: cartItem.id,
-        notification: savedNotification,
+        notification: savedUserNotification,
       });
     }
 
-    return savedNotification;
+    let redirectUrl = ``;
+    switch (type) {
+      case NotificationContentType.NEW_ORDER_FOR_SHOP:
+        redirectUrl = `/order_shop`;
+        break;
+      case NotificationContentType.ORDER_COMPLETED:
+        redirectUrl = `/order_history`;
+        break;
+      case NotificationContentType.ORDER_CANCELLED_BY_USER:
+        redirectUrl = `/order_cancel`;
+        break;
+      case NotificationContentType.PRODUCT_RATED:
+        redirectUrl = `/product/` + cartItem.product?.id;
+        break;
+      default:
+        break;
+    }
+
+    // Tạo và gửi thông báo cho shop nếu có shop ID
+    if (cartItem.shop?.id) {
+      const shopNotification = this.notificationRepository.create({
+        recipientId: cartItem.shop.id,
+        recipientType: NotificationRecipientType.SHOP,
+        type: type,
+        message: messageForShop,
+        title: 'Cập nhật đơn hàng',
+        imageUrl: cartItem.product?.img || null,
+        redirectUrl: redirectUrl,
+        relatedCartItemId: cartItem.id,
+        relatedProductId: cartItem.product?.id,
+        relatedUserId: cartItem.cart.idUser,
+      });
+
+      const savedShopNotification =
+        await this.notificationRepository.save(shopNotification);
+      notifications.push(savedShopNotification);
+
+      // Gửi thông báo qua WebSocket cho shop
+      const shopSocket = this.gateway.getSocketByShopId(cartItem.shop.id);
+      console.log('shopSocket---------->: ', shopSocket);
+      if (shopSocket) {
+        this.gateway.server.to(shopSocket.id).emit('orderNotification', {
+          type: type,
+          message: shopNotification.message,
+          cartItemId: cartItem.id,
+          notification: savedShopNotification,
+        });
+      }
+    }
+
+    return notifications;
   }
 }

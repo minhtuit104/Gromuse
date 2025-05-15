@@ -1,27 +1,27 @@
-import React, { useState, useEffect } from "react";
-import HeaderDashboard from "../DashboardPage/Header/HeaderDashboard";
-import "./ListProduct.css";
-import ImgProductsAll from "../../assets/images/imagePNG/vegetable_bag.png";
-import ImgProducts1 from "../../assets/images/imagePNG/vegetables_icon 1.png";
-import ImgProducts2 from "../../assets/images/imagePNG/fruits_icon 1.png";
-import ImgProducts3 from "../../assets/images/imagePNG/meats_icon 1.png";
-import ImgProducts4 from "../../assets/images/imagePNG/Dairy & Eggs.png";
-import ImgProducts5 from "../../assets/images/imagePNG/milks_icon 1.png";
-import ImgProducts6 from "../../assets/images/imagePNG/bread_icon 1.png";
-import ImgProducts7 from "../../assets/images/imagePNG/Grains & Cereals.png";
-import ImgProducts8 from "../../assets/images/imagePNG/Spices & Condiments.png";
-import ImgProducts9 from "../../assets/images/imagePNG/Frozen Foods.png";
-import ImgProducts10 from "../../assets/images/imagePNG/Organic & Healthy Foods.png";
-import ImgProducts11 from "../../assets/images/imagePNG/Canned & Preserved Foods.png";
-import ImgProducts12 from "../../assets/images/imagePNG/Nuts & Seeds.png";
-import ImgProducts13 from "../../assets/images/imagePNG/Oils & Vinegars.png";
-import ImgProducts14 from "../../assets/images/imagePNG/Ready-to-Eat Meals.png";
-import ImgProducts15 from "../../assets/images/imagePNG/Beverages & Juices.png";
-import ImgProducts16 from "../../assets/images/imagePNG/Herbs & Mushrooms.png";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import IconEditBtn from "../../assets/images/icons/ic_ edit.svg";
 import IconAdd from "../../assets/images/icons/ic_add.svg";
-import { getAllProducts, getAllCategories } from "../../Service/ProductService";
-import { useNavigate } from "react-router-dom";
+import ImgProducts15 from "../../assets/images/imagePNG/Beverages & Juices.png";
+import ImgProducts6 from "../../assets/images/imagePNG/bread_icon 1.png";
+import ImgProducts11 from "../../assets/images/imagePNG/Canned & Preserved Foods.png";
+import ImgProducts4 from "../../assets/images/imagePNG/Dairy & Eggs.png";
+import ImgProducts9 from "../../assets/images/imagePNG/Frozen Foods.png";
+import ImgProducts2 from "../../assets/images/imagePNG/fruits_icon 1.png";
+import ImgProducts7 from "../../assets/images/imagePNG/Grains & Cereals.png";
+import ImgProducts16 from "../../assets/images/imagePNG/Herbs & Mushrooms.png";
+import ImgProducts3 from "../../assets/images/imagePNG/meats_icon 1.png";
+import ImgProducts5 from "../../assets/images/imagePNG/milks_icon 1.png";
+import ImgProducts12 from "../../assets/images/imagePNG/Nuts & Seeds.png";
+import ImgProducts13 from "../../assets/images/imagePNG/Oils & Vinegars.png";
+import ImgProducts10 from "../../assets/images/imagePNG/Organic & Healthy Foods.png";
+import ImgProducts14 from "../../assets/images/imagePNG/Ready-to-Eat Meals.png";
+import ImgProducts8 from "../../assets/images/imagePNG/Spices & Condiments.png";
+import ImgProductsAll from "../../assets/images/imagePNG/vegetable_bag.png";
+import ImgProducts1 from "../../assets/images/imagePNG/vegetables_icon 1.png";
+import { getAllCategories, getAllProducts } from "../../Service/ProductService";
+import HeaderDashboard from "../DashboardPage/Header/HeaderDashboard";
+import "./ListProduct.css";
 
 interface Product {
   id: number;
@@ -239,7 +239,12 @@ const ListProduct: React.FC = () => {
         : ImgProducts1);
 
     return (
-      <div className="product-card-list-info">
+      <div
+        className="product-card-list-info"
+        onClick={() => {
+          navigate("/product/" + product.id);
+        }}
+      >
         <div className="product-image">
           <img
             src={productImage}

@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import IconSearch from "../../assets/images/icons/ic_ search.svg";
 import IconSend from "../../assets/images/icons/ic_ send.svg";
 import Conversation from "../../components/Conversation/Conversation";
 import Message from "../../components/Message/Message";
@@ -94,7 +93,7 @@ const MessagerShop = () => {
     getUser();
   }, [currentUserId]);
 
-  // Send message function
+  // Trong hàm sendMessage
   const sendMessage = () => {
     // Kiểm tra socket và isConnected trước khi gửi
     if (selectedUserId && newMessage.trim() && socket && isConnected) {
@@ -118,6 +117,32 @@ const MessagerShop = () => {
       setNewMessage(""); // Reset message input
     }
   };
+
+  // Trong useEffect lắng nghe receiveMessage
+  useEffect(() => {
+    if (socket && socket.connected) {
+      socket?.on("receiveMessage", (message: any) => {
+        // Chỉ thêm tin nhắn vào state nếu là tin nhắn từ người khác gửi đến
+        if (message.sender.idUser !== currentUserId) {
+          setMessage((prevMessages) => [
+            ...prevMessages,
+            {
+              avarta:
+                message.sender.avarta ??
+                "https://www.gravatar.com/avatar/?d=mp",
+              content: message.content,
+              own: false,
+              time: new Date(message.createAt).toISOString(),
+            },
+          ]);
+        }
+      });
+
+      return () => {
+        socket?.off("receiveMessage");
+      };
+    }
+  }, [socket, currentUserId]);
 
   // Handle Enter key press to send message
   const handleKeyPress = (e: React.KeyboardEvent) => {
