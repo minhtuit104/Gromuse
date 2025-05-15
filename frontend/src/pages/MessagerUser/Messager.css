@@ -30,11 +30,15 @@
   position: relative;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   border-radius: 20px;
+  overflow: hidden; /* Ngăn nội dung tràn ra ngoài container */
 }
 
 .chatMenu {
   flex: 3;
   order: 1;
+  min-width: 250px; /* Đặt chiều rộng tối thiểu */
+  max-width: 320px; /* Đặt chiều rộng tối đa */
+  border-right: 1px solid var(--grey3);
 }
 
 .chatMenuWrapper {
@@ -67,12 +71,11 @@
 }
 
 .chatBox {
-  flex: 5.5;
+  flex: 7; /* Tăng tỷ lệ để chatBox chiếm nhiều không gian hơn */
   order: 2;
-  border-left: 1px solid var(--grey3);
   display: flex;
   flex-direction: column;
-  height: 86vh;
+  min-width: 0; /* Quan trọng: cho phép chatBox thu nhỏ khi cần thiết */
 }
 
 .chatBoxWrapper {
@@ -82,11 +85,9 @@
   height: 100%;
 }
 
-/* Chat Online header inside chatBox */
 .chatHeader {
   padding: 10px;
-  border-bottom: 1px solid var(--grey3);
-  border-top-right-radius: 20px; /* Đổi từ left sang right */
+  border-top-right-radius: 20px;
 }
 
 .chatBoxTop {
@@ -102,6 +103,7 @@
   display: flex;
   flex-direction: column-reverse !important;
   overflow-x: hidden !important;
+  width: 100%; /* Đảm bảo component có chiều rộng 100% */
 }
 
 .chatBoxTop::-webkit-scrollbar {
@@ -182,6 +184,7 @@
   display: flex;
   flex-direction: column;
   margin: 15px 0;
+  max-width: 100%; /* Giới hạn chiều rộng tin nhắn */
 }
 
 .message.own {
@@ -191,6 +194,7 @@
 .messageTop {
   display: flex;
   align-items: flex-end;
+  max-width: 100%; /* Giới hạn chiều rộng phần trên của tin nhắn */
 }
 
 .message.own .messageTop {
@@ -200,6 +204,7 @@
 .messageImg {
   width: 32px;
   height: 32px;
+  min-width: 32px; /* Đảm bảo avatar không bị co lại */
   border-radius: 50%;
   object-fit: cover;
   margin: 0 10px;
@@ -208,11 +213,12 @@
 .messageText {
   padding: 10px;
   border-radius: 20px;
-  background-color: #f0f0f0;
   background-color: var(--white200); /* Nền tin nhắn của người khác */
   max-width: 70%;
   font-size: 15px;
   color: var(--green900); /* Màu chữ tin nhắn của người khác */
+  word-wrap: break-word; /* Cho phép từ dài được xuống dòng */
+  overflow-wrap: break-word;
 }
 
 .message.own .messageText {
@@ -236,11 +242,13 @@
   background-color: var(--green700);
   height: 70px;
   border-radius: 12px;
+  overflow: hidden; /* Ngăn nội dung tràn ra */
 }
 
 .chatOnlineImg {
   width: 50px;
   height: 50px;
+  min-width: 50px; /* Đảm bảo ảnh không bị co lại */
   border-radius: 50%;
   border: 2px solid var(--lime300);
   object-fit: cover;
@@ -255,4 +263,34 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Responsive styles for different screen sizes */
+@media screen and (max-width: 992px) {
+  .chatMenu {
+    flex: 2;
+  }
+
+  .chatBox {
+    flex: 8;
+  }
+
+  .chatMessageInput {
+    width: 90%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .chatMenu {
+    min-width: 200px;
+  }
+
+  .chatOnlineName {
+    max-width: 150px;
+  }
+}
+
+/* Sửa lỗi overflow */
+.infinite-scroll-component__outerdiv {
+  width: 100%;
 }

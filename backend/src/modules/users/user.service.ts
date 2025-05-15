@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/typeorm/entities/User';
 import { Repository } from 'typeorm';
+import { Account } from 'src/typeorm/entities/Account';
 import { CreateUserDto } from './dto/create.dto';
 import { UpdateUserDto } from './dto/update.dto';
 import { UpdateAvatarDto } from './dto/updateAvatar.dto';
@@ -10,10 +11,75 @@ import { UpdateAvatarDto } from './dto/updateAvatar.dto';
 export class UserService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Account) private accountRepository: Repository<Account>, // Inject AccountRepository
   ) {}
 
   async findAll() {
-    return await this.userRepository.find();
+    // Lấy tất cả user và join với account để lấy role
+    return await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.accounts', 'account') // Giả sử quan hệ tên là 'accounts'
+      .getMany();
+  }
+
+  async findAllCustomers(): Promise<User[]> {
+    return this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin('user.accounts', 'account', 'account.role = :role', {
+        role: 1,
+      })
+      .select([
+        'user.idUser',
+        'user.name',
+        'user.avarta',
+        'user.email',
+        'user.phoneNumber',
+      ]) // Chọn các trường cần thiết
+      .getMany();
+  }
+
+  async findAllShops(): Promise<User[]> {
+    console.log('[UserService.findAllShops] Fetching shops (role=2)...');
+    try {
+      const query = this.userRepository
+        .createQueryBuilder('user')
+        .innerJoin(
+          'account',
+          'account',
+          'account.idUser = user.idUser AND account.role = :role',
+          {
+            role: 2,
+          },
+        )
+        .select([
+          'user.idUser',
+          'user.name',
+          'user.avarta',
+          'user.email',
+          'user.phoneNumber',
+        ]);
+
+      console.log(
+        '[UserService.findAllShops] Executing query:',
+        query.getSql(),
+      );
+
+      const shops = await query.getMany();
+      console.log(`[UserService.findAllShops] Found ${shops.length} shops`);
+      console.log(
+        '[UserService.findAllShops] Shop data:',
+        JSON.stringify(shops.map((s) => ({ id: s.idUser, name: s.name }))),
+      );
+
+      return shops;
+    } catch (error) {
+      console.error('[UserService.findAllShops] Error fetching shops:', error);
+      throw new HttpException(
+        'Failed to fetch shops',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: error },
+      );
+    }
   }
 
   async findOne(id: number) {
