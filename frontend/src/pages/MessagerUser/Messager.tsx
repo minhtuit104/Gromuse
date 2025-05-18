@@ -121,7 +121,7 @@ const Messager = () => {
         socket?.off("receiveMessage");
       };
     }
-  }, [socket, selectedUserId]);
+  }, [socket, selectedUserId, currentUserId]);
 
   // Fetch conversations
   useEffect(() => {

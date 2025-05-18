@@ -9,6 +9,7 @@ import fetchNotificationsByIdUser, {
   markNotificationAsRead,
 } from "../../Service/NotificationService";
 import { NotificationContentType } from "../../pages/Notification/Notification";
+import useNotification from "../../pages/Notification/useNotification";
 
 interface DecodedToken {
   idUser: number;
@@ -43,6 +44,8 @@ function NotificationDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
   const notificationListRef = useRef<HTMLDivElement>(null);
+
+  const { handleRedirectNotification } = useNotification();
 
   // Get user ID from token
   useEffect(() => {
@@ -166,17 +169,15 @@ function NotificationDropdown() {
   // Notification type display properties
   const getNotificationDisplayProps = (type: NotificationContentType) => {
     switch (type) {
-      case NotificationContentType.ORDER_ACCEPTED:
+      case NotificationContentType.COMPLETE:
         return { styleClass: "accepted", defaultTitle: "Order Accepted" };
-      case NotificationContentType.ORDER_SHIPPED:
+      case NotificationContentType.TO_RECEIVE:
         return { styleClass: "shipped", defaultTitle: "Order Shipped" };
-      case NotificationContentType.ORDER_CANCELLED_BY_SHOP:
-      case NotificationContentType.ORDER_CANCELLED_BY_USER:
+      case NotificationContentType.CANCEL_BYUSER:
+      case NotificationContentType.CANCEL_BYSHOP:
         return { styleClass: "canceled", defaultTitle: "Order Cancelled" };
       case NotificationContentType.PRODUCT_RATED:
         return { styleClass: "rated", defaultTitle: "Product Rated" };
-      case NotificationContentType.NEW_MESSAGE:
-        return { styleClass: "message", defaultTitle: "New Message" };
       default:
         return { styleClass: "default", defaultTitle: "Notification" };
     }
@@ -207,42 +208,6 @@ function NotificationDropdown() {
     }
   };
 
-  // Handle notification item click - mark as read and navigate
-  const handleNotificationItemClick = async (
-    notification: NotificationData
-  ) => {
-    // Mark as read first if not already read
-    if (!notification.isRead) {
-      await handleMarkAsRead(notification.id);
-    }
-
-    // Then navigate based on notification type
-    if (notification.redirectUrl) {
-      if (notification.type.startsWith("ORDER_")) {
-        navigate("/order_status", {
-          state: {
-            targetTab:
-              notification.type === NotificationContentType.ORDER_COMPLETED
-                ? "completed"
-                : notification.type ===
-                    NotificationContentType.ORDER_CANCELLED_BY_SHOP ||
-                  notification.type ===
-                    NotificationContentType.ORDER_CANCELLED_BY_USER
-                ? "cancelled"
-                : "toReceive",
-            orderIdToFocus: notification.relatedCartItemId,
-          },
-        });
-      } else if (notification.type === NotificationContentType.NEW_MESSAGE) {
-        navigate(notification.redirectUrl || "/messager_user");
-      } else {
-        navigate(notification.redirectUrl);
-      }
-    } else {
-      navigate("/notification");
-    }
-    setIsOpen(false); // Close dropdown after click
-  };
 
   // Format notification time display
   const formatNotificationTime = (dateString: string) => {
@@ -357,7 +322,7 @@ function NotificationDropdown() {
                           ? "read-dropdown"
                           : "unread-dropdown"
                       }`}
-                      onClick={() => handleNotificationItemClick(notification)}
+                      onClick={() => handleRedirectNotification(notification)}
                     >
                       {!notification.isRead && (
                         <div className="unread-indicator"></div>

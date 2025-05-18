@@ -1,20 +1,22 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
+  Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, LessThanOrEqual, In } from 'typeorm';
-import { CreatePaymentDto } from './dtos/create-payment.dto';
-import { UpdatePaymentDto } from './dtos/update-payment.dto';
-import { Payment, PaymentStatus } from '../../typeorm/entities/Payment';
-import { Voucher, VoucherType } from '../../typeorm/entities/Voucher';
-import { Product } from '../../typeorm/entities/Product';
-import { Shop } from '../../typeorm/entities/Shop';
+import { NotificationContentType } from 'src/typeorm/entities/Notification';
+import { LessThanOrEqual, MoreThan, Repository } from 'typeorm';
 import { Cart } from '../../typeorm/entities/Cart';
 import { CartItem, OrderStatus } from '../../typeorm/entities/CartItem';
+import { Payment, PaymentStatus } from '../../typeorm/entities/Payment';
+import { Product } from '../../typeorm/entities/Product';
+import { Shop } from '../../typeorm/entities/Shop';
+import { Voucher, VoucherType } from '../../typeorm/entities/Voucher';
+import { NotificationService } from '../notification/notification.service';
+import { CreatePaymentDto } from './dtos/create-payment.dto';
+import { UpdatePaymentDto } from './dtos/update-payment.dto';
 
 @Injectable()
 export class PaymentService {
@@ -27,6 +29,7 @@ export class PaymentService {
     @InjectRepository(Cart) private cartRepository: Repository<Cart>,
     @InjectRepository(CartItem)
     private cartItemRepository: Repository<CartItem>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
@@ -337,9 +340,6 @@ export class PaymentService {
     cartId: number,
     paymentId: number,
   ): Promise<void> {
-    this.logger.log(
-      `[updateCartItemsWithPayment] Attempting to link items from cartId: ${cartId} to paymentId: ${paymentId}`,
-    );
     // Tìm tất cả CartItem thuộc cart đã thanh toán
     const cartItems = await this.cartItemRepository.find({
       where: {
@@ -348,6 +348,7 @@ export class PaymentService {
         paymentId: null,
         isPaid: false,
       },
+      relations: ['product', 'cart', 'cart.user', 'shop'],
     });
 
     if (cartItems.length === 0) {
@@ -357,19 +358,22 @@ export class PaymentService {
       return; // Không có gì để cập nhật
     }
 
-    this.logger.log(
-      `[updateCartItemsWithPayment] Found ${cartItems.length} items to link.`,
-    );
-
     // Import OrderStatus nếu chưa có: import { OrderStatus } from '../../typeorm/entities/CartItem';
     const updatePromises = cartItems.map(async (cartItem) => {
       cartItem.paymentId = paymentId;
       cartItem.isPaid = true;
-      cartItem.status = OrderStatus.TO_ORDER; // <<< THÊM DÒNG NÀY ĐỂ CẬP NHẬT STATUS
+      cartItem.status = OrderStatus.TO_ORDER;
       try {
         await this.cartItemRepository.save(cartItem);
-        this.logger.log(
-          `[updateCartItemsWithPayment] Successfully linked cartItemId: ${cartItem.id} to paymentId: ${paymentId}`,
+        console.log('cartItem new: ', cartItem);
+        const notificationType = NotificationContentType.TO_ORDER;
+        const notificationMessage = `Đơn hàng #${cartItem.id} đã được đặt thành công`;
+        const notificationMessageForShop = `Bạn có đơn hàng mới #${cartItem.id} từ khách hàng ${cartItem.cart.user?.name || 'Không xác định'}`;
+        await this.notificationService.createOrderNotification(
+          cartItem,
+          notificationType,
+          notificationMessage,
+          notificationMessageForShop,
         );
       } catch (error) {
         this.logger.error(
@@ -380,7 +384,6 @@ export class PaymentService {
         // throw new InternalServerErrorException(`Failed to update cartItem ${cartItem.id}`);
       }
     });
-
     try {
       await Promise.all(updatePromises);
       this.logger.log(

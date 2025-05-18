@@ -99,7 +99,7 @@ const OrderStatuss = () => {
   // Hàm load tất cả dữ liệu cho mỗi tab
   const loadAllTabData = useCallback(async () => {
     setIsLoading(true);
-    console.log("[OrderStatus] Loading data for all tabs...");
+    // console.log("[OrderStatus] Loading data for all tabs...");
 
     try {
       // Lấy dữ liệu cho tab hiện tại trước để hiển thị
@@ -218,9 +218,9 @@ const OrderStatuss = () => {
     );
 
     if (targetOrderIndex === -1) {
-      console.warn(
-        `[OrderStatus] Order with cartItemId ${orderIdToFocus} not found in currentOrders for tab ${activeTab}.`
-      );
+      // console.warn(
+      //   `[OrderStatus] Order with cartItemId ${orderIdToFocus} not found in currentOrders for tab ${activeTab}.`
+      // );
       return;
     }
 
@@ -281,28 +281,6 @@ const OrderStatuss = () => {
     // );
     loadDataForTab(activeTab);
   }, [activeTab, loadDataForTab]);
-
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log(
-        "[OrderStatus] Window focused, reloading data for all tabs..."
-      );
-      // Chỉ load data nếu có token
-      const token = localStorage.getItem("token");
-      if (token) {
-        loadAllTabData(); // Gọi lại hàm fetch cho tất cả các tab
-      }
-    };
-    window.addEventListener("focus", handleFocus);
-    console.log("[OrderStatus] Added focus event listener.");
-
-    // Cleanup function
-    return () => {
-      console.log("[OrderStatus] Component unmounting.");
-      window.removeEventListener("focus", handleFocus); // Remove focus listener
-      console.log("[OrderStatus] Removed focus event listener.");
-    };
-  }, [loadAllTabData]); // Phụ thuộc loadAllTabData
 
   const handleTabChange = (tab: TabType) => {
     if (tab === activeTab) return; // Không làm gì nếu click vào tab đang active
@@ -585,17 +563,6 @@ const OrderStatuss = () => {
           )}
         </div>
       </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
     </div>
   );
 };

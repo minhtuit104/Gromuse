@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { toast } from "react-toastify";
 import IconSend from "../../assets/images/icons/ic_ send.svg";
 import Conversation from "../../components/Conversation/Conversation";
 import Message from "../../components/Message/Message";
@@ -11,7 +12,6 @@ import {
 import { fectchUserName } from "../../Service/UserService";
 import HeaderDashboard from "../DashboardPage/Header/HeaderDashboard";
 import "../MessagerUser/Messager.css";
-import { toast } from "react-toastify";
 
 // Decode user from token
 const getUserFromToken = () => {
@@ -145,7 +145,7 @@ const Messager = () => {
         socket?.off("receiveMessage");
       };
     }
-  }, [socket, selectedUserId]);
+  }, [socket, selectedUserId, currentUserId]);
 
   // Fetch all conversations
   useEffect(() => {

@@ -8,13 +8,17 @@ import { NotificationModule } from '../notification/notification.module';
 import { UserModule } from '../users/user.module';
 import { CartItemController } from './cartItem.controller';
 import { CartItemService } from './cartItem.service';
+import { MessagerModule } from '../messager/messager.module';
+import { GatewayModule } from '../gateway/gateway.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CartItem, Product, Cart]),
     forwardRef(() => CartModule),
+    forwardRef(() => GatewayModule),
     UserModule,
     NotificationModule,
+    MessagerModule,
   ],
   controllers: [CartItemController],
   providers: [CartItemService],

@@ -16,6 +16,8 @@ import { NotificationContentType } from '../../typeorm/entities/Notification';
 import { Product } from '../../typeorm/entities/Product';
 import { CartService } from '../cart/cart.service';
 import { AddToCartDto } from '../cart/dtos/add-to-cart.dto';
+import { MyGateway } from '../gateway/message.gateway';
+import { MessagerService } from '../messager/messager.service';
 import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
@@ -32,6 +34,8 @@ export class CartItemService {
     @Inject(forwardRef(() => CartService))
     private cartService: CartService,
     private readonly notificationService: NotificationService,
+    private readonly messageService: MessagerService,
+    private readonly gateway: MyGateway,
   ) {}
 
   async getCartById(idUser: number): Promise<Cart | null> {
@@ -559,6 +563,40 @@ export class CartItemService {
       this.logger.log(
         `[updateItemOrderStatus] Successfully saved CartItem ID: ${savedItem.id} to status: ${savedItem.status}`,
       );
+      // Gửi tin nhắn lý do cancel nếu cần
+      if (status === OrderStatus.CANCEL_BYUSER) {
+        // Tạo tin nhắn trong database
+        const message = await this.messageService.createMessage(
+          cartItem.cart.idUser,
+          cartItem.shop.id,
+          cancelReason,
+        );
+
+        // Gửi tin nhắn qua socket cho shop
+        const receiverSocket = this.gateway.getSocketByShopId(cartItem.shop.id);
+        if (receiverSocket) {
+          this.gateway.server
+            .to(receiverSocket.id)
+            .emit('receiveMessage', message);
+        }
+      } else if (status === OrderStatus.CANCEL_BYSHOP) {
+        // Tạo tin nhắn trong database
+        const message = await this.messageService.createMessage(
+          cartItem.shop.id,
+          cartItem.cart.idUser,
+          cancelReason,
+        );
+
+        // Gửi tin nhắn qua socket cho user
+        const receiverSocket = this.gateway.getSocketByUserId(
+          cartItem.cart.idUser,
+        );
+        if (receiverSocket) {
+          this.gateway.server
+            .to(receiverSocket.id)
+            .emit('receiveMessage', message);
+        }
+      }
 
       // Gửi thông báo dựa trên trạng thái mới
       let notificationType: NotificationContentType;
@@ -567,27 +605,27 @@ export class CartItemService {
       let notificationMessageForShop: string;
       switch (status) {
         case OrderStatus.TO_ORDER:
-          notificationType = NotificationContentType.NEW_ORDER_FOR_SHOP;
+          notificationType = NotificationContentType.TO_ORDER;
           notificationMessage = `Đơn hàng #${savedItem.id} đã được đặt thành công`;
           notificationMessageForShop = `Bạn có đơn hàng mới #${savedItem.id} từ khách hàng ${savedItem.cart.user?.name || 'Không xác định'}`;
           break;
         case OrderStatus.TO_RECEIVE:
-          notificationType = NotificationContentType.ORDER_SHIPPED;
+          notificationType = NotificationContentType.TO_RECEIVE;
           notificationMessage = `Đơn hàng #${savedItem.id} đang được giao`;
           notificationMessageForShop = `Đơn hàng #${savedItem.id} đã được gửi đi và đang trong quá trình vận chuyển`;
           break;
         case OrderStatus.COMPLETE:
-          notificationType = NotificationContentType.ORDER_COMPLETED;
+          notificationType = NotificationContentType.COMPLETE;
           notificationMessage = `Đơn hàng #${savedItem.id} đã hoàn thành`;
           notificationMessageForShop = `Đơn hàng #${savedItem.id} đã được giao thành công cho khách hàng`;
           break;
         case OrderStatus.CANCEL_BYUSER:
-          notificationType = NotificationContentType.ORDER_CANCELLED_BY_USER;
+          notificationType = NotificationContentType.CANCEL_BYUSER;
           notificationMessage = `Đơn hàng #${savedItem.id} đã bị hủy bởi người mua`;
           notificationMessageForShop = `Khách hàng ${savedItem.cart.user?.name || 'Không xác định'} đã hủy đơn hàng #${savedItem.id}`;
           break;
         case OrderStatus.CANCEL_BYSHOP:
-          notificationType = NotificationContentType.ORDER_CANCELLED_BY_SHOP;
+          notificationType = NotificationContentType.CANCEL_BYSHOP;
           notificationMessage = `Đơn hàng #${savedItem.id} đã bị hủy bởi người bán`;
           notificationMessageForShop = `Bạn đã hủy đơn hàng #${savedItem.id}`;
           break;

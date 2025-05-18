@@ -16,7 +16,6 @@ import {
   updateOrderStatusOnBackend,
 } from "../../../Service/OrderService";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 const OrderShop = () => {
   const [orders, setOrders] = useState<OrderData[]>([]); // State chứa đơn hàng TO_RECEIVE
@@ -79,23 +78,6 @@ const OrderShop = () => {
     loadStatusCounts(); // Load counts on mount
   }, [loadPendingOrders, loadStatusCounts]); // Phụ thuộc loadPendingOrders và loadStatusCounts
 
-  // Thêm listener để fetch lại khi focus
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log("[OrderShop] Window focused, reloading pending orders...");
-      loadStatusCounts(); // Reload counts on focus
-      loadPendingOrders(); // Gọi lại hàm fetch
-    };
-    window.addEventListener("focus", handleFocus);
-    console.log("[OrderShop] Added focus event listener.");
-
-    // Cleanup function
-    return () => {
-      console.log("[OrderShop] Component unmounting.");
-      window.removeEventListener("focus", handleFocus); // Remove focus listener
-      console.log("[OrderShop] Removed focus event listener.");
-    };
-  }, [loadPendingOrders, loadStatusCounts]); // Phụ thuộc loadPendingOrders và loadStatusCounts
 
   // Đảm bảo currentPage không vượt quá totalPages khi orders thay đổi
   useEffect(() => {
@@ -469,17 +451,6 @@ const OrderShop = () => {
           )}
         </div>
       </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
     </div>
   );
 };

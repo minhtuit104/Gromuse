@@ -9,11 +9,13 @@ import { Shop } from '../../typeorm/entities/Shop';
 import { Cart } from '../../typeorm/entities/Cart';
 import { CartItem } from '../../typeorm/entities/CartItem';
 import { CartModule } from '../cart/cart.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Payment, Voucher, Product, Shop, Cart, CartItem]),
     CartModule,
+    NotificationModule
   ],
   controllers: [PaymentController],
   providers: [PaymentService],

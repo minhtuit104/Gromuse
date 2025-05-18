@@ -18,7 +18,7 @@ export class NotificationService {
     private notificationRepository: Repository<Notification>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private readonly gateway: MyGateway,
+    private gateway: MyGateway,
   ) {}
 
   //lấy tất cả thông báo của một người dùng
@@ -86,7 +86,7 @@ export class NotificationService {
     messageForShop?: string,
   ): Promise<Notification[]> {
     const notifications: Notification[] = [];
-
+    console.log('cartItem', cartItem);
     // Tạo thông báo cho user
     const userNotification = this.notificationRepository.create({
       recipientId: cartItem.cart.idUser,
@@ -95,7 +95,6 @@ export class NotificationService {
       message: message,
       title: 'Cập nhật đơn hàng',
       imageUrl: cartItem.product?.img || null,
-      redirectUrl: `/order/${cartItem.id}`,
       relatedCartItemId: cartItem.id,
       relatedShopId: cartItem.shop?.id,
       relatedProductId: cartItem.product?.id,
@@ -109,29 +108,8 @@ export class NotificationService {
     const userSocket = this.gateway.getSocketByUserId(cartItem.cart.idUser);
     if (userSocket) {
       this.gateway.server.to(userSocket.id).emit('orderNotification', {
-        type: type,
-        message: message,
-        cartItemId: cartItem.id,
         notification: savedUserNotification,
       });
-    }
-
-    let redirectUrl = ``;
-    switch (type) {
-      case NotificationContentType.NEW_ORDER_FOR_SHOP:
-        redirectUrl = `/order_shop`;
-        break;
-      case NotificationContentType.ORDER_COMPLETED:
-        redirectUrl = `/order_history`;
-        break;
-      case NotificationContentType.ORDER_CANCELLED_BY_USER:
-        redirectUrl = `/order_cancel`;
-        break;
-      case NotificationContentType.PRODUCT_RATED:
-        redirectUrl = `/product/` + cartItem.product?.id;
-        break;
-      default:
-        break;
     }
 
     // Tạo và gửi thông báo cho shop nếu có shop ID
@@ -143,7 +121,6 @@ export class NotificationService {
         message: messageForShop,
         title: 'Cập nhật đơn hàng',
         imageUrl: cartItem.product?.img || null,
-        redirectUrl: redirectUrl,
         relatedCartItemId: cartItem.id,
         relatedProductId: cartItem.product?.id,
         relatedUserId: cartItem.cart.idUser,
@@ -158,9 +135,6 @@ export class NotificationService {
       console.log('shopSocket---------->: ', shopSocket);
       if (shopSocket) {
         this.gateway.server.to(shopSocket.id).emit('orderNotification', {
-          type: type,
-          message: shopNotification.message,
-          cartItemId: cartItem.id,
           notification: savedShopNotification,
         });
       }
