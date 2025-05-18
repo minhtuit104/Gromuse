@@ -4,7 +4,10 @@ import TextInput from "../../../components/TextInput/TextInput";
 import IconMenu from "../../../assets/images/icons/ic_menu.svg";
 import IconSearch from "../../../assets/images/icons/ic_ search.svg";
 import IconMess from "../../../assets/images/icons/ic_message.svg";
+import IconProfile from "../../../assets/images/icons/ic_profile.svg";
+import IconSetting from "../../../assets/images/icons/ic_setting.svg";
 import ImgAvatar from "../../../assets/images/imagePNG/Avatar.png";
+import IconLogOut from "../../../assets/images/icons/ic_logout.svg";
 import SidebarShop from "../SideBarShop/SideBarShop";
 import NotificationDashboard from "../NotificationDashboard/NotificationDashboard";
 import { useNavigate } from "react-router-dom";
@@ -115,12 +118,21 @@ function HeaderDashboard() {
           </div>
           {showDropdown && (
             <div className="avatar_dropdown">
-              <div className="avatar_dropdown_item">Profile</div>
-              <div className="avatar_dropdown_item">Settings</div>
+              <div className="avatar_dropdown_item">
+                {" "}
+                <img src={IconProfile} alt="phone" className="ic_20" />
+                Profile
+              </div>
+              <div className="avatar_dropdown_item">
+                {" "}
+                <img src={IconSetting} alt="phone" className="ic_20" />
+                Settings
+              </div>
               <div
                 className="avatar_dropdown_item logout"
                 onClick={handleLogout}
               >
+                <img src={IconLogOut} alt="phone" className="ic_20" />
                 Log out
               </div>
             </div>

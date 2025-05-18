@@ -3,6 +3,11 @@ import IconList from "../../assets/images/icons/ic_ list.svg";
 import IconSearch from "../../assets/images/icons/ic_ search.svg";
 import IconCart from "../../assets/images/icons/ic_cart.svg";
 import IconMessage from "../../assets/images/icons/ic_message.svg";
+import IconLogOut from "../../assets/images/icons/ic_logout.svg";
+import IconProduct from "../../assets/images/icons/ic_food.svg";
+import IconOrder from "../../assets/images/icons/ic_order.svg";
+import IconProfile from "../../assets/images/icons/ic_profile.svg";
+import IconSetting from "../../assets/images/icons/ic_setting.svg";
 import ImgAvatar from "../../assets/images/avt.jpg";
 import { useNavigate } from "react-router-dom";
 import NotificationDropdown from "../../components/NotificationDropdown/NotificationDropdown";
@@ -68,6 +73,14 @@ function Header() {
     navigate("/messager_user");
   };
 
+  const goToProductList = () => {
+    navigate("/list_product_User");
+  };
+
+  const goToOrderStatus = () => {
+    navigate("/order_status");
+  };
+
   return (
     <div className="header">
       <div className="header-left">
@@ -110,12 +123,31 @@ function Header() {
           </div>
           {showDropdown && (
             <div className="avatar-dropdown">
-              <div className="avatar-dropdown-item">Profile</div>
-              <div className="avatar-dropdown-item">Settings</div>
+              <div className="avatar_dropdown_item">
+                {" "}
+                <img src={IconProfile} alt="phone" className="ic_20" />
+                Profile
+              </div>
+              <div className="avatar_dropdown_item">
+                {" "}
+                <img src={IconSetting} alt="phone" className="ic_20" />
+                Settings
+              </div>
+              <div className="avatar-dropdown-item" onClick={goToProductList}>
+                {" "}
+                <img src={IconProduct} alt="product" className="ic_20" />
+                Products
+              </div>
+              <div className="avatar-dropdown-item" onClick={goToOrderStatus}>
+                {" "}
+                <img src={IconOrder} alt="IconOrder" className="ic_20" />
+                Orders
+              </div>
               <div
                 className="avatar-dropdown-item logout"
                 onClick={handleLogout}
               >
+                <img src={IconLogOut} alt="phone" className="ic_20" />
                 Log out
               </div>
             </div>
