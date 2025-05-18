@@ -156,8 +156,6 @@ export class PaymentController {
         throw new NotFoundException('Không tìm thấy giỏ hàng cho người dùng.');
       }
 
-      console.log(`Using cart ID ${userCart.id} for user ID ${userId}`);
-
       // Tạo một phiên bản DTO với cartId
       const paymentDtoWithCartId = {
         ...createPaymentDto,
@@ -166,16 +164,16 @@ export class PaymentController {
 
       const payment =
         await this.paymentService.createDirectPayment(paymentDtoWithCartId);
-      console.log('Payment record created:', payment);
+      // console.log('Payment record created:', payment);
 
       // Cập nhật các cartItem với payment mới
       await this.paymentService.updateCartItemsWithPayment(
         userCart.id,
         payment.id,
       );
-      console.log(
-        `Associated cart items from cart ${userCart.id} with payment ${payment.id}`,
-      );
+      // console.log(
+      //   `Associated cart items from cart ${userCart.id} with payment ${payment.id}`,
+      // );
 
       return {
         statusCode: HttpStatus.CREATED,

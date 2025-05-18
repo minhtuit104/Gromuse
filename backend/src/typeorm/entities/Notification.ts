@@ -1,30 +1,28 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
   DeleteDateColumn,
+  Entity,
   JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { User } from './User';
-import { Shop } from './Shop';
+import { CartItem, OrderStatus } from './CartItem';
 import { Product } from './Product';
-import { CartItem } from './CartItem';
 import { Rating } from './Rating';
+import { Shop } from './Shop';
+import { User } from './User';
 
 // Định nghĩa các loại nội dung thông báo
 export enum NotificationContentType {
-  ORDER_ACCEPTED = 'ORDER_ACCEPTED',
-  ORDER_SHIPPED = 'ORDER_SHIPPED',
-  ORDER_COMPLETED = 'ORDER_COMPLETED',
-  ORDER_CANCELLED_BY_USER = 'ORDER_CANCELLED_BY_USER',
-  ORDER_CANCELLED_BY_SHOP = 'ORDER_CANCELLED_BY_SHOP',
-  NEW_ORDER_FOR_SHOP = 'NEW_ORDER_FOR_SHOP',
   PRODUCT_RATED = 'PRODUCT_RATED',
-  NEW_MESSAGE = 'NEW_MESSAGE',
-  PROMOTION = 'PROMOTION',
+  // Kế thừa từ OrderStatus
+  TO_ORDER = OrderStatus.TO_ORDER,
+  TO_RECEIVE = OrderStatus.TO_RECEIVE,
+  COMPLETE = OrderStatus.COMPLETE,
+  CANCEL_BYSHOP = OrderStatus.CANCEL_BYSHOP,
+  CANCEL_BYUSER = OrderStatus.CANCEL_BYUSER,
 }
 
 export enum NotificationRecipientType {
@@ -61,9 +59,6 @@ export class Notification {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   title: string | null;
-
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  redirectUrl: string | null;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
   imageUrl: string | null;

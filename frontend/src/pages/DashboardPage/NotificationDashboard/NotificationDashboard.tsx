@@ -1,14 +1,15 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import "./NotificationDashboard.css";
-import ImgSP from "../../../assets/images/imagePNG/lays_4.png";
-import Iconpolygon from "../../../assets/images/icons/ic_polygon.svg";
-import IconNotifi from "../../../assets/images/icons/ic_notification.svg";
-import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import fetchNotificationsByIdUser, {
   markNotificationAsRead,
 } from "../../../Service/NotificationService"; // Import service
+import IconNotifi from "../../../assets/images/icons/ic_notification.svg";
+import Iconpolygon from "../../../assets/images/icons/ic_polygon.svg";
+import ImgSP from "../../../assets/images/imagePNG/lays_4.png";
 import { NotificationContentType } from "../../../pages/Notification/Notification"; // Import enum
+import useNotification from "../../Notification/useNotification";
+import "./NotificationDashboard.css";
 
 interface DecodedToken {
   idUser: number;
@@ -45,6 +46,8 @@ function NotificationDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
   const notificationListRef = useRef<HTMLDivElement>(null);
+
+  const { handleRedirectNotification } = useNotification();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -178,14 +181,13 @@ function NotificationDashboard() {
   const getNotificationDisplayProps = (type: NotificationContentType) => {
     // Trả về class CSS dựa trên loại thông báo
     switch (type) {
-      case NotificationContentType.NEW_ORDER_FOR_SHOP:
+      case NotificationContentType.TO_ORDER:
         return { styleClass: "new-order" };
-      case NotificationContentType.ORDER_CANCELLED_BY_USER:
+      case NotificationContentType.CANCEL_BYUSER:
+      case NotificationContentType.CANCEL_BYSHOP:
         return { styleClass: "canceled" };
       case NotificationContentType.PRODUCT_RATED:
         return { styleClass: "rated" };
-      case NotificationContentType.NEW_MESSAGE:
-        return { styleClass: "message" };
       default:
         return { styleClass: "default" };
     }
@@ -205,52 +207,6 @@ function NotificationDashboard() {
     } finally {
       setIsMarkingAsRead(false);
     }
-  };
-
-  const handleNotificationItemClick = async (
-    notification: NotificationData
-  ) => {
-    if (!notification.isRead) {
-      await handleMarkAsRead(notification.id);
-    }
-
-    let targetTab = "";
-    // Ưu tiên relatedCartItemId, sau đó mới parse từ redirectUrl nếu cần
-    const orderIdToFocus =
-      notification.relatedCartItemId ||
-      (notification.redirectUrl
-        ? parseInt(notification.redirectUrl.split("/").pop() || "0", 10)
-        : 0);
-
-    switch (notification.type) {
-      case NotificationContentType.NEW_ORDER_FOR_SHOP:
-        targetTab = "toOrder"; // Tab "Chờ xác nhận" hoặc tương tự trong trang quản lý đơn hàng của shop
-        navigate("/order_shop", { state: { targetTab, orderIdToFocus } }); // Điều hướng đến trang quản lý đơn hàng của shop
-        break;
-      case NotificationContentType.ORDER_CANCELLED_BY_USER:
-        targetTab = "cancelled"; // Tab "Đã hủy" trong trang quản lý đơn hàng của shop
-        navigate("/order_shop", { state: { targetTab, orderIdToFocus } });
-        break;
-      case NotificationContentType.PRODUCT_RATED:
-        // Điều hướng đến trang chi tiết sản phẩm hoặc trang quản lý đánh giá
-        if (notification.relatedProductId) {
-          navigate(`/product/${notification.relatedProductId}`);
-        } else {
-          navigate("/dashboard"); // Hoặc một trang mặc định khác
-        }
-        break;
-      case NotificationContentType.NEW_MESSAGE:
-        navigate(notification.redirectUrl || "/messager_shop"); // Điều hướng đến trang tin nhắn của shop
-        break;
-      default:
-        if (notification.redirectUrl) {
-          navigate(notification.redirectUrl);
-        } else {
-          navigate("/dashboard"); // Trang mặc định
-        }
-        break;
-    }
-    setIsOpen(false); // Đóng dropdown sau khi click
   };
 
   const formatNotificationTime = (dateString: string) => {
@@ -322,74 +278,6 @@ function NotificationDashboard() {
                     notification.type
                   );
 
-                  // Xác định tên người thực hiện và hình ảnh
-                  let actorName: string | undefined = "Một người dùng"; // Mặc định
-                  let actorImage: string | undefined = ImgSP; // Ảnh mặc định
-                  let actionText: string =
-                    notification.message || "Thông báo mới"; // Nội dung hành động
-
-                  // Xử lý dựa trên loại thông báo
-                  if (
-                    notification.type ===
-                      NotificationContentType.NEW_ORDER_FOR_SHOP ||
-                    notification.type ===
-                      NotificationContentType.ORDER_CANCELLED_BY_USER ||
-                    notification.type === NotificationContentType.PRODUCT_RATED
-                  ) {
-                    // Các thông báo này liên quan đến khách hàng (relatedUser)
-                    actorName = notification.relatedUser?.name || actorName;
-                    actorImage =
-                      notification.relatedUser?.avarta || // Ảnh đại diện của khách hàng
-                      notification.imageUrl || // Ảnh từ thông báo (có thể là ảnh sản phẩm)
-                      notification.relatedProduct?.img || // Ảnh sản phẩm liên quan
-                      ImgSP;
-
-                    // Tạo actionText cụ thể hơn
-                    if (
-                      notification.type ===
-                      NotificationContentType.NEW_ORDER_FOR_SHOP
-                    ) {
-                      // Backend message nên là: "đã đặt một đơn hàng mới với X sản phẩm."
-                      // Nếu backend message đã có tên user, thì actionText chỉ cần phần còn lại.
-                      // Ví dụ: nếu message là "Dương Văn Tuyến đã đặt một đơn hàng mới."
-                      // thì actorName là "Dương Văn Tuyến", actionText là "đã đặt một đơn hàng mới."
-                      actionText =
-                        notification.message || "đã đặt một đơn hàng mới.";
-                    } else if (
-                      notification.type ===
-                      NotificationContentType.ORDER_CANCELLED_BY_USER
-                    ) {
-                      actionText = `đã hủy đơn hàng #${
-                        notification.relatedCartItemId || "N/A"
-                      }. ${notification.message || ""}`; // Thêm lý do hủy nếu có
-                    } else if (
-                      notification.type ===
-                      NotificationContentType.PRODUCT_RATED
-                    ) {
-                      actionText = `đã đánh giá sản phẩm ${
-                        notification.relatedProduct?.name || "của bạn"
-                      }. ${notification.message || ""}`; // Thêm bình luận nếu có
-                    }
-                  } else if (
-                    notification.type === NotificationContentType.NEW_MESSAGE
-                  ) {
-                    // Thông báo tin nhắn mới từ người gửi (sender)
-                    actorName = notification.sender?.name || "Ai đó";
-                    actorImage = notification.sender?.avarta || ImgSP;
-                    actionText = notification.message; // Nội dung tin nhắn
-                  } else {
-                    // Các loại thông báo khác (ví dụ: từ hệ thống, hoặc liên quan đến shop/sản phẩm chung)
-                    actorName =
-                      notification.relatedShop?.name || // Tên shop nếu có
-                      notification.relatedProduct?.name || // Tên sản phẩm nếu có
-                      actorName; // Giữ mặc định nếu không có
-                    actorImage =
-                      notification.imageUrl ||
-                      notification.relatedProduct?.img ||
-                      ImgSP;
-                    actionText = formatNotificationMessage(notification); // Dùng hàm format chung
-                  }
-
                   return (
                     <div
                       key={notification.id}
@@ -400,14 +288,14 @@ function NotificationDashboard() {
                           ? "read-dashboard"
                           : "unread-dashboard"
                       }`}
-                      onClick={() => handleNotificationItemClick(notification)}
+                      onClick={() => handleRedirectNotification(notification)}
                     >
                       {!notification.isRead && (
                         <div className="unread-indicator-dashboard"></div>
                       )}
                       <div className="notification-icon-dashboard">
                         <img
-                          src={actorImage}
+                          src={notification.imageUrl || ImgSP}
                           alt="icon"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = ImgSP; // Fallback nếu ảnh lỗi
@@ -416,14 +304,8 @@ function NotificationDashboard() {
                       </div>
                       <div className="notification-content-dashboard">
                         <div className="notification-text-dashboard">
-                          {/* Hiển thị tên người thực hiện */}
-                          {actorName && (
-                            <span className="store-name-dashboard">
-                              {actorName}
-                            </span>
-                          )}{" "}
                           {/* Hiển thị nội dung hành động */}
-                          {actionText}
+                          {notification.message}
                         </div>
                         <span className="notification-time-dashboard">
                           {formatNotificationTime(notification.createdAt)}

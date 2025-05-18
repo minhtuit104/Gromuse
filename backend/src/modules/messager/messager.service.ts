@@ -4,6 +4,7 @@ import { User } from 'src/typeorm/entities/User';
 import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Messager } from '../../typeorm/entities/Messager';
 import { PaginatedResponse } from '../pagination/pagination.interface';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class MessagerService {
@@ -12,6 +13,7 @@ export class MessagerService {
     private readonly messagerRepository: Repository<Messager>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   // Lấy tất cả các tin nhắn giữa hai người dùng

@@ -66,25 +66,6 @@ const OrderHistory = () => {
     loadStatusCounts(); // Load counts on mount
   }, [loadHistoryOrders, loadStatusCounts]);
 
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log(
-        "[OrderHistory] Window focused, reloading completed orders..."
-      );
-      loadStatusCounts(); // Reload counts on focus
-      loadHistoryOrders(); // Gọi lại hàm fetch
-    };
-    window.addEventListener("focus", handleFocus);
-    console.log("[OrderHistory] Added focus event listener.");
-
-    // Cleanup function
-    return () => {
-      console.log("[OrderHistory] Component unmounting.");
-      window.removeEventListener("focus", handleFocus); // Remove focus listener
-      console.log("[OrderHistory] Removed focus event listener.");
-    };
-  }, [loadHistoryOrders, loadStatusCounts]);
-
   // Tính toán số trang và đơn hàng hiện tại
   const totalPages = Math.ceil(historyOrders.length / ordersPerPage);
   const indexOfLastOrder = currentPage * ordersPerPage;

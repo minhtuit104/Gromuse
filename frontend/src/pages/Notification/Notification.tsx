@@ -1,26 +1,26 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import "./Notification.css";
-import Header from "../../layouts/Header/Header";
 import ImgSP from "../../assets/images/imagePNG/lays_4.png";
+import Header from "../../layouts/Header/Header";
+import "./Notification.css";
 
 import fetchNotificationsByIdUser, {
   markNotificationAsRead,
 } from "../../Service/NotificationService";
+import { OrderStatus } from "../../Service/OrderService";
+import useNotification from "./useNotification";
 
 // Enum for notification content types (synced with backend)
 export enum NotificationContentType {
-  ORDER_ACCEPTED = "ORDER_ACCEPTED",
-  ORDER_SHIPPED = "ORDER_SHIPPED",
-  ORDER_COMPLETED = "ORDER_COMPLETED",
-  ORDER_CANCELLED_BY_USER = "ORDER_CANCELLED_BY_USER",
-  ORDER_CANCELLED_BY_SHOP = "ORDER_CANCELLED_BY_SHOP",
-  NEW_ORDER_FOR_SHOP = "NEW_ORDER_FOR_SHOP",
   PRODUCT_RATED = "PRODUCT_RATED",
-  NEW_MESSAGE = "NEW_MESSAGE",
-  PROMOTION = "PROMOTION",
+  // Kế thừa từ OrderStatus
+  TO_ORDER = OrderStatus.TO_ORDER,
+  TO_RECEIVE = OrderStatus.TO_RECEIVE,
+  COMPLETE = OrderStatus.COMPLETE,
+  CANCEL_BYSHOP = OrderStatus.CANCEL_BYSHOP,
+  CANCEL_BYUSER = OrderStatus.CANCEL_BYUSER,
 }
 
 type TabType = "toOrder" | "toReceive" | "completed" | "cancelled";
@@ -30,7 +30,7 @@ interface DecodedToken {
   // Other fields if any
 }
 
-interface NotificationData {
+export interface NotificationData {
   id: number;
   type: NotificationContentType;
   message: string;
@@ -38,7 +38,6 @@ interface NotificationData {
   imageUrl?: string | null;
   isRead: boolean;
   createdAt: string;
-  redirectUrl?: string | null;
   relatedProductId?: number | null;
   relatedShopId?: number | null;
   relatedCartItemId?: number | null;
@@ -56,6 +55,8 @@ const NotificationPage = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
   const [notificationsPerPage] = useState<number>(5);
+
+  const { handleRedirectNotification } = useNotification();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -107,52 +108,32 @@ const NotificationPage = () => {
   }, [userId, loadNotifications]);
 
   const getNotificationDisplayProps = (type: NotificationContentType) => {
+    console.log("type: ", type);
     switch (type) {
-      case NotificationContentType.ORDER_ACCEPTED:
+      case NotificationContentType.COMPLETE:
         return {
           styleClass: "success",
-          defaultTitle: "Đơn hàng được chấp nhận",
         };
-      case NotificationContentType.ORDER_SHIPPED:
+      case NotificationContentType.TO_ORDER:
         return {
           styleClass: "info",
-          defaultTitle: "Đơn hàng đang giao",
         };
-      case NotificationContentType.ORDER_COMPLETED:
-        return {
-          styleClass: "success",
-          defaultTitle: "Đơn hàng hoàn thành",
-        };
-      case NotificationContentType.ORDER_CANCELLED_BY_USER:
-      case NotificationContentType.ORDER_CANCELLED_BY_SHOP:
+      case NotificationContentType.CANCEL_BYSHOP:
+      case NotificationContentType.CANCEL_BYUSER:
         return {
           styleClass: "error",
-          defaultTitle: "Đơn hàng đã hủy",
-        };
-      case NotificationContentType.NEW_ORDER_FOR_SHOP:
-        return {
-          styleClass: "new-order",
-          defaultTitle: "Đơn hàng mới",
         };
       case NotificationContentType.PRODUCT_RATED:
         return {
           styleClass: "info",
-          defaultTitle: "Đánh giá sản phẩm",
         };
-      case NotificationContentType.NEW_MESSAGE:
+      case NotificationContentType.TO_RECEIVE:
         return {
-          styleClass: "message",
-          defaultTitle: "Tin nhắn mới",
-        };
-      case NotificationContentType.PROMOTION:
-        return {
-          styleClass: "promotion",
-          defaultTitle: "Khuyến mãi",
+          styleClass: "info",
         };
       default:
         return {
-          styleClass: "default",
-          defaultTitle: "Thông báo",
+          styleClass: "info",
         };
     }
   };
@@ -172,100 +153,6 @@ const NotificationPage = () => {
     }
   };
 
-  const handleNotificationClick = async (notification: NotificationData) => {
-    let targetTab: TabType = "toOrder"; // Default value
-    const userRole = localStorage.getItem("userRole");
-    let orderIdToFocus = notification.relatedCartItemId || 0;
-
-    if (notification.redirectUrl && notification.redirectUrl.includes("/")) {
-      const potentialId = parseInt(
-        notification.redirectUrl.split("/").pop() || "0"
-      );
-      if (potentialId > 0) {
-        orderIdToFocus = potentialId;
-      }
-    }
-
-    if (!notification.isRead) {
-      await handleMarkAsReadAndUpdateState(notification.id);
-    }
-
-    switch (notification.type) {
-      case NotificationContentType.ORDER_ACCEPTED:
-      case NotificationContentType.ORDER_SHIPPED:
-        targetTab = "toReceive";
-        break;
-      case NotificationContentType.ORDER_COMPLETED:
-        targetTab = "completed";
-        break;
-      case NotificationContentType.ORDER_CANCELLED_BY_USER:
-      case NotificationContentType.ORDER_CANCELLED_BY_SHOP:
-        targetTab = "cancelled";
-        break;
-      case NotificationContentType.NEW_ORDER_FOR_SHOP:
-        targetTab = "toOrder"; // For shop page
-        break;
-      case NotificationContentType.PRODUCT_RATED:
-        if (notification.relatedProductId) {
-          navigate(`/product/${notification.relatedProductId}`);
-          return;
-        }
-        break;
-      case NotificationContentType.NEW_MESSAGE:
-        if (userRole === "user") {
-          navigate(notification.redirectUrl || "/messager_user");
-          return;
-        }
-        break;
-      case NotificationContentType.PROMOTION:
-        if (notification.redirectUrl) {
-          navigate(notification.redirectUrl);
-          return;
-        }
-        break;
-      default:
-        console.warn("Notification has unhandled type:", notification);
-        return;
-    }
-
-    // Handle order-related notifications by navigating to OrderStatus page
-    if (
-      notification.type.startsWith("ORDER_") ||
-      notification.type === NotificationContentType.NEW_ORDER_FOR_SHOP
-    ) {
-      console.log(
-        `[Notification] Navigating to ${targetTab} tab for order ${orderIdToFocus}`
-      );
-
-      if (userRole === "user") {
-        // Use the navigate function with state to pass data to OrderStatus component
-        navigate("/order_status", {
-          state: {
-            targetTab: targetTab,
-            orderIdToFocus: orderIdToFocus,
-          },
-        });
-      }
-    } else {
-      console.warn(
-        "Notification has unhandled type or missing redirectUrl:",
-        notification
-      );
-    }
-  };
-
-  const formatNotificationMessage = (notification: NotificationData) => {
-    const message = notification.message || "";
-    // Remove "Đơn hàng #XX " pattern, also handling cases where there might be no space after #XX
-    // Example: "Đơn hàng #123 được chấp nhận" -> "được chấp nhận"
-    // Example: "Đơn hàng #123được chấp nhận" -> "được chấp nhận"
-    let formatted = message.replace(/Đơn hàng\s*#\d+\s*/gi, "");
-    // Capitalize the first letter of the remaining message
-    if (formatted.length > 0) {
-      formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
-    }
-    return formatted;
-  };
   const indexOfLastNotification = currentPage * notificationsPerPage;
   const indexOfFirstNotification =
     indexOfLastNotification - notificationsPerPage;
@@ -303,10 +190,10 @@ const NotificationPage = () => {
               notification.imageUrl || // Ưu tiên imageUrl từ notification
               notification.relatedProduct?.img ||
               ImgSP;
+
             let itemTitle =
               notification.relatedProduct?.name ||
-              notification.relatedShop?.name ||
-              displayProps.defaultTitle;
+              notification.relatedShop?.name;
 
             return (
               <div
@@ -314,7 +201,7 @@ const NotificationPage = () => {
                 className={`notification-item ${displayProps.styleClass} ${
                   notification.isRead ? "read" : "unread"
                 }`}
-                onClick={() => handleNotificationClick(notification)}
+                onClick={() => handleRedirectNotification(notification)}
               >
                 {!notification.isRead && (
                   <div className="unread-indicator"></div>
@@ -330,12 +217,7 @@ const NotificationPage = () => {
                   />
                 </div>
                 <div className="notification-text">
-                  {itemTitle && (
-                    <span className="store-name-product">{itemTitle}</span>
-                  )}
-                  <span className="product-status">
-                    {formatNotificationMessage(notification)}
-                  </span>
+                  <span className="product-status">{notification.message}</span>
                   <span className="notification-time">
                     {new Date(notification.createdAt).toLocaleString()}
                   </span>

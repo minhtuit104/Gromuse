@@ -26,14 +26,14 @@ export const StatCard: React.FC<StatCardProps> = ({
       <div className="card_container_left">
         <h3 className="card_container_left_value">{value}</h3>
         <p className="card_container_left_title">{title}</p>
-        <p
+        <div
           className={`${
             isPositive
               ? "card_left_paramete_reduce"
               : "card_left_paramete_increase"
           }`}
         >
-          <div
+          <span
             className={`background_percent ${
               isPositive ? "increase" : "decrease"
             }`}
@@ -43,9 +43,9 @@ export const StatCard: React.FC<StatCardProps> = ({
               alt="iconchange"
               className="ic_20"
             />
-          </div>
+          </span>
           {Math.abs(trend.value)}% {trend.label}
-        </p>
+        </div>
       </div>
       <div className="card_container_right">
         <img src={icon} alt="icon" />

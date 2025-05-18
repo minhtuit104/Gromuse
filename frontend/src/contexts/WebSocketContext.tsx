@@ -2,6 +2,9 @@ import { jwtDecode } from "jwt-decode";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { io, Socket } from "socket.io-client";
+import { NotificationContentType } from "../pages/Notification/Notification";
+import useNotification from "../pages/Notification/useNotification";
+import { useNavigate } from "react-router-dom";
 
 interface DecodedToken {
   idAccount: number;
@@ -35,6 +38,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+
+  const { handleRedirectNotification } = useNotification();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -97,80 +103,58 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         // Lắng nghe sự kiện thông báo từ server
         socketInstance.on("orderNotification", (data) => {
           if (!mounted) {
-            console.log(
-              "[WebSocket] Component không còn mounted, bỏ qua thông báo"
-            );
+            console.log("[WebSocket] Component không còn mounted, bỏ qua thông báo");
             return;
           }
 
-          console.log(
-            "[WebSocket] Nhận thông báo mới:",
-            JSON.stringify(data, null, 2)
-          );
-          const { type, message, orderId } = data;
+          console.log("[WebSocket] Nhận thông báo mới:", JSON.stringify(data, null, 2));
+          const { notification } = data;
 
-          if (!type || !message) {
-            console.error(
-              "[WebSocket] Thông báo không hợp lệ:",
-              JSON.stringify(data, null, 2)
-            );
-            return;
-          }
-
-          console.log(
-            `[WebSocket] Xử lý thông báo - Loại: ${type}, OrderId: ${
-              orderId || "N/A"
-            }`
-          );
-          // Đảm bảo component vẫn mounted trước khi hiển thị toast
-          setTimeout(() => {
-            if (!mounted) {
-              console.log(
-                "[WebSocket] Component unmounted trong quá trình xử lý, bỏ qua toast"
-              );
-              return;
-            }
-
-            const toastConfig = {
-              position: "top-right" as const,
-              autoClose: 5000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              onOpen: () =>
-                console.log(
-                  `[Toast] Hiển thị thông báo ${type} - OrderId: ${
-                    orderId || "N/A"
-                  }`
-                ),
-              onClose: () =>
-                console.log(
-                  `[Toast] Đóng thông báo ${type} - OrderId: ${
-                    orderId || "N/A"
-                  }`
-                ),
-            };
-
-            try {
-              switch (type) {
-                case "order_status":
-                  toast.info(message, toastConfig);
-                  break;
-                case "new_order":
-                  toast.success(message, toastConfig);
-                  break;
-                case "order_cancel":
-                  toast.warning(message, toastConfig);
-                  break;
-                default:
-                  toast.info(message, toastConfig);
+          // Cấu hình toast
+          const toastConfig = {
+            position: "top-right" as const,
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            onClick: () => {
+              try {
+                handleRedirectNotification(notification);
+              } catch (error) {
+                console.error("[WebSocket] Lỗi khi xử lý redirect:", error);
               }
-              console.log(`[WebSocket] Đã xử lý thành công thông báo ${type}`);
-            } catch (error) {
-              console.error(`[WebSocket] Lỗi khi hiển thị toast:`, error);
             }
-          }, 100);
+          };
+
+          try {
+            // Hiển thị toast ngay lập tức không cần setTimeout
+            switch (notification.type) {
+              case NotificationContentType.TO_ORDER:
+              case NotificationContentType.TO_RECEIVE:
+                toast.info(notification.message, toastConfig);
+                break;
+
+              case NotificationContentType.COMPLETE:
+                toast.success(notification.message, toastConfig);
+                break;
+
+              case NotificationContentType.CANCEL_BYSHOP:
+              case NotificationContentType.CANCEL_BYUSER:
+                toast.warning(notification.message, toastConfig);
+                break;
+
+              case NotificationContentType.PRODUCT_RATED:
+                toast.info(notification.message, toastConfig);
+                break;
+
+              default:
+                console.warn(`[WebSocket] Không xử lý được notification type: ${notification.type}`);
+                toast.info(notification.message, toastConfig); // Fallback to info toast
+            }
+          } catch (error) {
+            console.error(`[WebSocket] Lỗi khi hiển thị toast:`, error);
+          }
         });
 
         if (mounted) {
@@ -187,9 +171,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     // Cleanup khi component unmount
     return () => {
       mounted = false;
-      if (socketInstance) {
-        socketInstance.close();
-      }
+      // if (socketInstance) {
+      //   socketInstance.close();
+      // }
     };
   }, []); // Chỉ chạy một lần khi component mount
 

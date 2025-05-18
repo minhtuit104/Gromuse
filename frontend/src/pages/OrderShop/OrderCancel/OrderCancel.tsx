@@ -36,6 +36,7 @@ const OrderCancel = () => {
       // Fetch các đơn hàng có trạng thái CANCEL_BYSHOP
       const cancelled = await fetchShopOrdersByStatus([
         OrderStatus.CANCEL_BYSHOP,
+        OrderStatus.CANCEL_BYUSER,
       ]);
       setCancelledOrders(cancelled); // Cập nhật state
       console.log(
@@ -67,29 +68,9 @@ const OrderCancel = () => {
 
   // Load dữ liệu khi component mount
   useEffect(() => {
-    console.log("[OrderCancel] Component mounted. Initial load...");
+    // console.log("[OrderCancel] Component mounted. Initial load...");
     loadCancelledByShopOrders();
     loadStatusCounts(); // Load counts on mount
-  }, [loadCancelledByShopOrders, loadStatusCounts]); // Phụ thuộc loadCancelledByShopOrders và loadStatusCounts
-
-  // Thêm listener để fetch lại khi focus
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log(
-        "[OrderCancel] Window focused, reloading cancelled by shop orders..."
-      );
-      loadStatusCounts(); // Reload counts on focus
-      loadCancelledByShopOrders(); // Gọi lại hàm fetch
-    };
-    window.addEventListener("focus", handleFocus);
-    console.log("[OrderCancel] Added focus event listener.");
-
-    // Cleanup function
-    return () => {
-      console.log("[OrderCancel] Component unmounting.");
-      window.removeEventListener("focus", handleFocus); // Remove focus listener
-      console.log("[OrderCancel] Removed focus event listener.");
-    };
   }, [loadCancelledByShopOrders, loadStatusCounts]); // Phụ thuộc loadCancelledByShopOrders và loadStatusCounts
 
   // Tính toán số trang và đơn hàng hiện tại (giữ nguyên)
@@ -218,7 +199,7 @@ const OrderCancel = () => {
                     </div>
                   </div>
                   <div className="cancel-reason">
-                    <span className="reason-label">Cancellation:</span>
+                    <span className="reason-label">{order.orderStatus === OrderStatus.CANCEL_BYSHOP ? "Cancelled by shop:" : "Cancelled by customer:"}</span>
                     <span className="reason-text">
                       {order.cancelReason || "Không có lý do"}
                     </span>
