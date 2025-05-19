@@ -39,4 +39,57 @@ export const getAllMessages = async () => {
   }
 };
 
+export const fetchUserConversationsCount = async (): Promise<number> => {
+  try {
+    // apiResponse sẽ có dạng: { statusCode: number, message: string, data: number (count) }
+    // do interceptor của axios đã trả về response.data
+    const responseData = (await axios.get(
+      `/api/v1/messagers/conversations/count`
+    )) as { statusCode: number; message: string; data: any };
+    console.log(
+      "[MessageService] Response from /conversations/count:",
+      responseData
+    );
+
+    if (
+      responseData &&
+      responseData.statusCode === 200 &&
+      typeof responseData.data === "number"
+    ) {
+      console.log(
+        "[MessageService] Successfully fetched conversation count:",
+        responseData.data
+      );
+      return responseData.data; // Trả về số lượng cuộc trò chuyện
+    }
+    // Log chi tiết hơn nếu phản hồi không như mong đợi
+    console.warn(
+      "[MessageService] Unexpected response format or status for conversation count. Status:",
+      responseData?.statusCode,
+      "Data type:",
+      typeof responseData?.data,
+      "Response:",
+      responseData
+    );
+    return 0; // Trả về 0 nếu định dạng không đúng hoặc status không phải 200
+  } catch (error: any) {
+    // Log lỗi chi tiết hơn, bao gồm cả status và data từ error.response nếu có
+    console.error(
+      "[MessageService] Error fetching user conversations count. Full error object:",
+      error
+    );
+    if (error.response) {
+      console.error(
+        "[MessageService] Error response data:",
+        error.response.data
+      );
+      console.error(
+        "[MessageService] Error response status:",
+        error.response.status
+      );
+    }
+    return 0; // Trả về 0 khi có lỗi để tránh NaN
+  }
+};
+
 export { getMessageWithUser };

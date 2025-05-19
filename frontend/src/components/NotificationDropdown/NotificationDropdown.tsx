@@ -138,7 +138,7 @@ function NotificationDropdown() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = (await fetchNotificationsByIdUser(userId, 1, 5)) as any;
+      const response = (await fetchNotificationsByIdUser(userId, 1, 10)) as any;
       if (response && response.data && response.data.data) {
         setNotifications(response.data.data);
         const unread = response.data.data.filter(
@@ -207,7 +207,6 @@ function NotificationDropdown() {
       setIsMarkingAsRead(false);
     }
   };
-
 
   // Format notification time display
   const formatNotificationTime = (dateString: string) => {

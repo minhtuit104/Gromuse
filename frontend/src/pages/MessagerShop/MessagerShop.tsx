@@ -251,6 +251,16 @@ const Messager = () => {
     }
   }, [page, currentUserId, selectedUserId]);
 
+  // Gửi sự kiện cập nhật số lượng cuộc trò chuyện cho HeaderDashboard
+  useEffect(() => {
+    if (conversations) {
+      const event = new CustomEvent("messagerShopConversationCountUpdate", {
+        detail: conversations.length,
+      });
+      window.dispatchEvent(event);
+    }
+  }, [conversations]);
+
   return (
     <div className="messager_shop">
       <HeaderDashboard />

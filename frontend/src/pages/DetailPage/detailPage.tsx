@@ -96,6 +96,33 @@ const DetailPage = () => {
 
   const userRole = localStorage.getItem("userRole");
 
+  // Hàm lấy thông tin người dùng từ token (bao gồm role và idUser)
+  const getCurrentUserInfo = (): { idUser: number; role: number } | null => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      return null;
+    }
+    try {
+      const decoded = jwtDecode<DecodedToken>(token); // Sử dụng DecodedToken đã định nghĩa
+      const currentTime = Date.now() / 1000;
+      if (decoded.exp < currentTime) {
+        localStorage.removeItem("token"); // Xóa token hết hạn
+        return null;
+      }
+      // Đảm bảo role và idUser tồn tại và là số
+      if (
+        typeof decoded.idUser !== "number" ||
+        typeof decoded.role !== "number"
+      )
+        return null;
+      return { idUser: decoded.idUser, role: decoded.role };
+    } catch (error) {
+      console.error("Lỗi giải mã token:", error);
+      localStorage.removeItem("token"); // Xóa token lỗi
+      return null;
+    }
+  };
+
   // useEffect để cập nhật thời gian mỗi giây
   useEffect(() => {
     const updateClock = () => {
@@ -587,22 +614,38 @@ const DetailPage = () => {
             <img src={shopIcon} alt="shop" className="ic_32" />
             <span>{shop?.name || "Shop Name"}</span>{" "}
           </div>
-          <div className="btn-messager">
-            <button
-              onClick={() => {
-                if (product?.shop?.id) {
-                  navigate("/messager_user", {
-                    state: { shopToChatId: product.shop.id },
-                  });
-                } else {
-                  toast.error("Không tìm thấy thông tin shop để nhắn tin.");
-                }
-              }}
-            >
-              <img src={IconMessager} alt="shop" className="ic_24" />
-              <span>Chat</span>
-            </button>
-          </div>
+
+          {/* Chỉ hiển thị nút Chat nếu người dùng hiện tại có role là 1 (User) */}
+          {getCurrentUserInfo()?.role === 1 && (
+            <div className="btn-messager">
+              <button
+                onClick={() => {
+                  const currentUserInfo = getCurrentUserInfo();
+                  if (!currentUserInfo) {
+                    toast.error(
+                      "Vui lòng đăng nhập để sử dụng chức năng chat."
+                    );
+                    navigate("/login");
+                    return;
+                  }
+                  if (product?.shop?.id) {
+                    if (product.shop.id === currentUserInfo.idUser) {
+                      toast.info("Bạn không thể tự nhắn tin cho chính mình.");
+                      return;
+                    }
+                    navigate("/messager_user", {
+                      state: { shopToChatId: product.shop.id },
+                    });
+                  } else {
+                    toast.error("Không tìm thấy thông tin shop để nhắn tin.");
+                  }
+                }}
+              >
+                <img src={IconMessager} alt="shop" className="ic_24" />
+                <span>Chat</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* --- Phần Mô tả Sản phẩm --- */}

@@ -13,18 +13,24 @@ import { useNavigate } from "react-router-dom";
 import NotificationDropdown from "../../components/NotificationDropdown/NotificationDropdown";
 import { useEffect, useState, useRef } from "react";
 import { getCartCount } from "../../Service/CartService";
+import { fetchUserConversationsCount } from "../../Service/MessageService";
+import { jwtDecode } from "jwt-decode";
+
+interface DecodedToken {
+  idUser: number;
+  role?: number;
+}
 
 function Header() {
   const navigate = useNavigate();
   const [cartQuantity, setCartQuantity] = useState(0);
-  const [messageCount, setMessageCount] = useState(53);
+  const [userMessageCount, setUserMessageCount] = useState(0); // Đổi tên state
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchCartQuantity = async () => {
     try {
       const response = (await getCartCount()) as any;
-      console.log("res cart count: ", response);
       if (response.message !== "success") {
         console.error(`Error fetching cart: ${response.status}`);
         return;
@@ -48,6 +54,70 @@ function Header() {
 
     return () => {
       window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
+  }, []);
+
+  // Fetch số lượng tin nhắn (cuộc trò chuyện) ban đầu cho user
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    let currentUserId: number | null = null;
+    let isUserRole = false; // Biến để kiểm tra có phải user thường không
+
+    if (token) {
+      try {
+        const decoded = jwtDecode<DecodedToken>(token);
+        if (decoded.role === 1 || typeof decoded.role === "undefined") {
+          currentUserId = decoded.idUser;
+          isUserRole = true;
+        }
+      } catch (e) {
+        console.error("[Header] Failed to decode token for user ID", e);
+      }
+    }
+
+    if (currentUserId && isUserRole) {
+      const fetchInitialMessageCount = async () => {
+        try {
+          const count = await fetchUserConversationsCount(); // API này lấy theo token
+          if (typeof count === "number") {
+            setUserMessageCount(count);
+          } else {
+            console.warn(
+              "[Header] fetchUserConversationsCount did not return a number. Received:",
+              count
+            );
+            setUserMessageCount(0);
+          }
+        } catch (error) {
+          console.error(
+            "[Header] Failed to fetch initial user message count:",
+            error
+          );
+          setUserMessageCount(0);
+        }
+      };
+      fetchInitialMessageCount();
+    } else {
+      setUserMessageCount(0); // Nếu không phải user hoặc không có token, đặt là 0
+    }
+  }, []); // Chạy một lần khi mount
+
+  useEffect(() => {
+    const handleUserConversationCountUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<number>;
+      if (typeof customEvent.detail === "number") {
+        setUserMessageCount(customEvent.detail);
+      }
+    };
+    window.addEventListener(
+      "messagerUserConversationCountUpdate",
+      handleUserConversationCountUpdate
+    );
+    return () => {
+      window.removeEventListener(
+        "messagerUserConversationCountUpdate",
+        handleUserConversationCountUpdate
+      );
     };
   }, []);
 
@@ -106,7 +176,9 @@ function Header() {
           title="Messages"
         >
           <img src={IconMessage} alt="icon-message" className="ic_16" />
-          <span className="quantity">{messageCount}</span>
+          <span className="quantity">
+            {userMessageCount > 9 ? "9+" : userMessageCount}
+          </span>
         </div>
         <div className="header-right-cart" onClick={goToPaymentPage}>
           <img src={IconCart} alt="icon-cart" className="ic_24" />

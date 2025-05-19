@@ -1,19 +1,17 @@
 import { jwtDecode } from "jwt-decode";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import fetchNotificationsByIdUser, {
-  markNotificationAsRead,
-} from "../../../Service/NotificationService"; // Import service
+import fetchNotificationsByIdUser from "../../../Service/NotificationService";
 import IconNotifi from "../../../assets/images/icons/ic_notification.svg";
 import Iconpolygon from "../../../assets/images/icons/ic_polygon.svg";
 import ImgSP from "../../../assets/images/imagePNG/lays_4.png";
-import { NotificationContentType } from "../../../pages/Notification/Notification"; // Import enum
+import { NotificationContentType } from "../../../pages/Notification/Notification";
 import useNotification from "../../Notification/useNotification";
 import "./NotificationDashboard.css";
 
 interface DecodedToken {
   idUser: number;
-  role?: number; // Giả sử role có trong token để xác định ngữ cảnh shop
+  role?: number;
 }
 
 interface NotificationData {
@@ -44,7 +42,6 @@ function NotificationDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
   const notificationListRef = useRef<HTMLDivElement>(null);
 
   const { handleRedirectNotification } = useNotification();
@@ -193,33 +190,15 @@ function NotificationDashboard() {
     }
   };
 
-  const handleMarkAsRead = async (notificationId: number) => {
-    if (!userId || isMarkingAsRead) return;
-    setIsMarkingAsRead(true);
-    try {
-      await markNotificationAsRead(notificationId);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error("Failed to mark dashboard notification as read:", error);
-    } finally {
-      setIsMarkingAsRead(false);
-    }
-  };
-
   const formatNotificationTime = (dateString: string) => {
     const date = new Date(dateString);
     // Hiển thị HH:MM
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Hàm này có thể không cần thiết nếu backend message đã đủ rõ ràng
-  const formatNotificationMessage = (notification: NotificationData) => {
-    const message = notification.message || "";
-    // Loại bỏ "Đơn hàng #..." nếu có, vì thông tin này có thể đã được xử lý ở actionText
-    return message.replace(/Đơn hàng\s*#\d+\s*/gi, "").trim();
+  const handleSeeAllClick = () => {
+    navigate("/notification_Shop");
+    setIsOpen(false);
   };
 
   return (
@@ -298,7 +277,7 @@ function NotificationDashboard() {
                           src={notification.imageUrl || ImgSP}
                           alt="icon"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = ImgSP; // Fallback nếu ảnh lỗi
+                            (e.target as HTMLImageElement).src = ImgSP;
                           }}
                         />
                       </div>
@@ -314,6 +293,11 @@ function NotificationDashboard() {
                     </div>
                   );
                 })}
+            </div>
+            <div className="notification-header-cpn">
+              <span className="see-all" onClick={handleSeeAllClick}>
+                See all
+              </span>
             </div>
           </div>
         </>

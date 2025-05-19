@@ -30,6 +30,7 @@ function HeaderDashboard() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [shopName, setShopName] = useState<string>("Shop");
+  const [shopMessageCount, setShopMessageCount] = useState(0); // State mới cho số lượng tin nhắn
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,6 +57,30 @@ function HeaderDashboard() {
     const storedName = localStorage.getItem("shopName");
     if (storedName) setShopName(storedName);
   }, []);
+
+  // Lắng nghe sự kiện cập nhật số lượng tin nhắn từ MessagerShop
+  useEffect(() => {
+    const handleConversationCountUpdate = (event: Event) => {
+      // Ép kiểu event thành CustomEvent để truy cập detail
+      const customEvent = event as CustomEvent<number>;
+      if (typeof customEvent.detail === "number") {
+        setShopMessageCount(customEvent.detail);
+      }
+    };
+
+    window.addEventListener(
+      "messagerShopConversationCountUpdate",
+      handleConversationCountUpdate
+    );
+
+    // Cleanup listener khi component unmount
+    return () => {
+      window.removeEventListener(
+        "messagerShopConversationCountUpdate",
+        handleConversationCountUpdate
+      );
+    };
+  }, []); // Mảng dependency rỗng để chỉ chạy một lần khi mount và cleanup khi unmount
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
@@ -105,7 +130,9 @@ function HeaderDashboard() {
             title="Messages"
           >
             <img src={IconMess} alt="icon_mess" className="ic_24 icon_mess" />
-            <span className="quantity_mess">20</span>
+            <span className="quantity_mess">
+              {shopMessageCount > 9 ? "9+" : shopMessageCount}
+            </span>
           </div>
         </div>
         <div className="separator"></div>

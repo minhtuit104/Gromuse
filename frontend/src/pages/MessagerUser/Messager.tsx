@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import IconSearch from "../../assets/images/icons/ic_ search.svg";
 import IconSend from "../../assets/images/icons/ic_ send.svg";
 import Conversation from "../../components/Conversation/Conversation";
 import Message from "../../components/Message/Message";
@@ -49,7 +48,6 @@ const Messager = () => {
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const [loadingConversations, setLoadingConversations] = useState(true);
 
   const userInfo = getUserFromToken();
@@ -292,20 +290,22 @@ const Messager = () => {
     loadingConversations,
   ]);
 
+  useEffect(() => {
+    if (conversations) {
+      const count = Array.isArray(conversations) ? conversations.length : 0;
+      const event = new CustomEvent("messagerUserConversationCountUpdate", {
+        detail: count,
+      });
+      window.dispatchEvent(event);
+    }
+  }, [conversations]);
+
   return (
     <div className="messager_user">
       <Header />
       <div className="messager-container">
         <div className="chatMenu">
           <div className="chatMenuWrapper">
-            <img src={IconSearch} alt="" className="ic_28 ic-search" />
-            <input
-              type="text"
-              placeholder="Search for friends"
-              className="chatMenuInput"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
             {conversations.map((data: any) => (
               <Conversation
                 key={data.idUser}

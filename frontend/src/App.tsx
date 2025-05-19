@@ -21,6 +21,7 @@ import OrderStatuss from "./pages/OrderStatus/OrderStatus";
 import RatingProduct from "./pages/OrderStatus/RatingProduct/RatingProduct";
 import { PaymentPage } from "./pages/PaymentPages/index";
 import { AuthRoute, PrivateRoute, ShopRoute } from "./router/protectRouter";
+import NotificationShopPage from "./pages/NotificationShop/NotificationShop";
 
 function App() {
   return (
@@ -201,6 +202,15 @@ function App() {
                 <PrivateRoute>
                   <NotificationPage />
                 </PrivateRoute>
+              }
+            />
+            {/* Thêm tuyến đường cho trang NotificationShop */}
+            <Route
+              path="/notification_Shop"
+              element={
+                <ShopRoute>
+                  <NotificationShopPage />
+                </ShopRoute>
               }
             />
           </Routes>

@@ -3,11 +3,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import ImgSP from "../../assets/images/imagePNG/lays_4.png";
-import Header from "../../layouts/Header/Header";
-import "./Notification.css";
+import "./NotificationShop.css";
 import fetchNotificationsByIdUser from "../../Service/NotificationService";
 import { OrderStatus } from "../../Service/OrderService";
-import useNotification from "./useNotification";
+import useShopNotificationHandler from "./shopNotification";
+import HeaderDashboard from "../DashboardPage/Header/HeaderDashboard";
 
 export enum NotificationContentType {
   PRODUCT_RATED = "PRODUCT_RATED",
@@ -39,7 +39,7 @@ export interface NotificationData {
   relatedShop?: { name?: string };
 }
 
-const NotificationPage = () => {
+const NotificationShopPage = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +48,7 @@ const NotificationPage = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [notificationsPerPage] = useState<number>(5);
 
-  const { handleRedirectNotification } = useNotification();
+  const { handleRedirectNotification } = useShopNotificationHandler();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -148,10 +148,10 @@ const NotificationPage = () => {
   };
 
   return (
-    <div className="notification-container">
-      <Header />
-      <div className="notifications">
-        <div className="notifications-header">Notifications</div>
+    <div className="notification-container-shop">
+      <HeaderDashboard />
+      <div className="notifications-shop">
+        <div className="notifications-header-shop">Notifications</div>
         {isLoading && (
           <div className="loading-indicator">Đang tải thông báo...</div>
         )}
@@ -175,15 +175,15 @@ const NotificationPage = () => {
             return (
               <div
                 key={notification.id}
-                className={`notification-item ${displayProps.styleClass} ${
+                className={`notification-item-shop ${displayProps.styleClass} ${
                   notification.isRead ? "read" : "unread"
                 }`}
                 onClick={() => handleRedirectNotification(notification)}
               >
                 {!notification.isRead && (
-                  <div className="unread-indicator"></div>
+                  <div className="unread-indicator-shop"></div>
                 )}
-                <div className="notification-logo">
+                <div className="notification-logo-shop">
                   <img
                     src={itemImage}
                     alt="Notification Icon"
@@ -193,9 +193,11 @@ const NotificationPage = () => {
                     }}
                   />
                 </div>
-                <div className="notification-text">
-                  <span className="product-status">{notification.message}</span>
-                  <span className="notification-time">
+                <div className="notification-text-shop">
+                  <span className="product-status-shop">
+                    {notification.message}
+                  </span>
+                  <span className="notification-time-shop">
                     {new Date(notification.createdAt).toLocaleString()}
                   </span>
                 </div>
@@ -264,4 +266,4 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
     </div>
   );
 };
-export default NotificationPage;
+export default NotificationShopPage;
