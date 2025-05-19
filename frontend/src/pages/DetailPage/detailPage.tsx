@@ -1,12 +1,13 @@
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import IconClock from "../../assets/images/icons/ic_ clock.svg";
 import IconSold from "../../assets/images/icons/ic_ flame.svg";
 import shopIcon from "../../assets/images/icons/ic_ shop.svg";
 import IconCart from "../../assets/images/icons/ic_cart.svg";
+import IconMessager from "../../assets/images/icons/ic_message1.svg";
 import iconStarFill from "../../assets/images/icons/ic_star_fill.svg";
 import iconStarEmpty from "../../assets/images/icons/ic_star_orange.svg";
 import DefaultAvatar from "../../assets/images/imagePNG/Avatar.png";
@@ -563,7 +564,7 @@ const DetailPage = () => {
                 <p>{product.sold || 0} sold</p>
               </div>
               {product.category && (
-                <p className="categories">
+                <p className="categories-detail">
                   Category: <span> {product.category.name}</span>
                 </p>
               )}
@@ -585,6 +586,22 @@ const DetailPage = () => {
           <div className="detail-name">
             <img src={shopIcon} alt="shop" className="ic_32" />
             <span>{shop?.name || "Shop Name"}</span>{" "}
+          </div>
+          <div className="btn-messager">
+            <button
+              onClick={() => {
+                if (product?.shop?.id) {
+                  navigate("/messager_user", {
+                    state: { shopToChatId: product.shop.id },
+                  });
+                } else {
+                  toast.error("Không tìm thấy thông tin shop để nhắn tin.");
+                }
+              }}
+            >
+              <img src={IconMessager} alt="shop" className="ic_24" />
+              <span>Chat</span>
+            </button>
           </div>
         </div>
 

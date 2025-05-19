@@ -12,6 +12,7 @@ import {
 } from "../../Service/MessageService";
 import { fectchUserName } from "../../Service/UserService";
 import "./Messager.css";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 // Decode user from token
@@ -36,17 +37,20 @@ const getUserFromToken = () => {
 
 const Messager = () => {
   const { socket, isConnected } = useWebSocket();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState<any>([]);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null); // ID of receiver
-  const [selectedUserInfo, setSelectedUserInfo] = useState<any>(null); // Info of receiver
-  const [message, setMessage] = useState<any[]>([]); // Messages
-  const [newMessage, setNewMessage] = useState<string>(""); // New message content
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserInfo, setSelectedUserInfo] = useState<any>(null);
+  const [message, setMessage] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState<string>("");
   const [avarta, setAvarta] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [loadingConversations, setLoadingConversations] = useState(true);
 
   const userInfo = getUserFromToken();
   const currentUserId = userInfo?.idUser;
@@ -130,6 +134,7 @@ const Messager = () => {
 
   const getAllConversations = async () => {
     try {
+      setLoadingConversations(true);
       const res = await getAllMessages();
       if (res) {
         setConversations(res);
@@ -139,6 +144,7 @@ const Messager = () => {
     } catch (error) {
       console.error("Failed to fetch user name:", error);
     }
+    setLoadingConversations(false);
   };
 
   // Fetch messages with pagination
@@ -226,6 +232,65 @@ const Messager = () => {
       fetchMessages(currentUserId, selectedUserId, page);
     }
   }, [page, currentUserId, selectedUserId]);
+
+  useEffect(() => {
+    const shopIdFromState = location.state?.shopToChatId as number | undefined;
+
+    if (shopIdFromState && shopIdFromState !== selectedUserId) {
+      if (!loadingConversations) {
+        const shopExistsInConversations = conversations.some(
+          (convo: any) => convo.idUser === shopIdFromState
+        );
+
+        if (shopExistsInConversations) {
+          handleSelectUserId(shopIdFromState);
+        } else {
+          setSelectedUserId(shopIdFromState);
+          setPage(1);
+          setHasMore(true);
+          setMessage([]);
+
+          fectchUserName(shopIdFromState)
+            .then((shopInfo) => {
+              if (shopInfo) {
+                setSelectedUserInfo({
+                  idUser: shopInfo.idUser,
+                  name: shopInfo.name,
+                  avarta: shopInfo.avarta,
+                });
+              } else {
+                setSelectedUserInfo({
+                  idUser: shopIdFromState,
+                  name: "Shop " + shopIdFromState,
+                  avarta: null,
+                });
+              }
+            })
+            .catch((err) => {
+              console.error("Failed to fetch shop info for new chat:", err);
+              setSelectedUserInfo({
+                idUser: shopIdFromState,
+                name: "Shop " + shopIdFromState,
+                avarta: null,
+              });
+            });
+
+          if (currentUserId) fetchMessages(currentUserId, shopIdFromState, 1);
+        }
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [
+    location.state,
+    selectedUserId,
+    conversations,
+    currentUserId,
+    handleSelectUserId,
+    navigate,
+    location.pathname,
+    fetchMessages,
+    loadingConversations,
+  ]);
 
   return (
     <div className="messager_user">
