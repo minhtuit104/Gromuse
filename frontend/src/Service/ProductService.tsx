@@ -24,6 +24,30 @@ export const getAllProducts = async () => {
   }
 };
 
+export const getAllProductsShop = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/products/shop`);
+    console.log("All products data:", response);
+    return response;
+  } catch (error) {
+    console.error("Error fetching all products:", error);
+    throw error;
+  }
+};
+
+export const searchProductsUser = async (name: string) => {
+  try {
+    const response = await axios.get(`${API_URL}/products/search`, {
+      params: { name }, 
+    });
+    console.log("All products data:", response);
+    return response;
+  } catch (error) {
+    console.error("Error fetching all products:", error);
+    throw error;
+  }
+};
+
 export const getAllCategories = async () => {
   try {
     const response = await axios.get(`${API_URL}/products/categories`);

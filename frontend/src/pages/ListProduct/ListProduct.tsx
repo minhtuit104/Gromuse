@@ -19,7 +19,7 @@ import ImgProducts14 from "../../assets/images/imagePNG/Ready-to-Eat Meals.png";
 import ImgProducts8 from "../../assets/images/imagePNG/Spices & Condiments.png";
 import ImgProductsAll from "../../assets/images/imagePNG/vegetable_bag.png";
 import ImgProducts1 from "../../assets/images/imagePNG/vegetables_icon 1.png";
-import { getAllCategories, getAllProducts } from "../../Service/ProductService";
+import { getAllCategories, getAllProductsShop } from "../../Service/ProductService";
 import HeaderDashboard from "../DashboardPage/Header/HeaderDashboard";
 import "./ListProduct.css";
 
@@ -135,7 +135,7 @@ const ListProduct: React.FC = () => {
         setCategories(categoriesData);
 
         // Fetch products
-        const productsResponse = await getAllProducts();
+        const productsResponse = await getAllProductsShop();
         console.log("Products API response:", productsResponse);
 
         // Handle different response structures

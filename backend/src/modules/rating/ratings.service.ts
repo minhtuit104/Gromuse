@@ -157,7 +157,7 @@ export class RatingsService {
       const notificationType = NotificationContentType.PRODUCT_RATED;
       const notificationMessage = ``;
       const notificationMessageForShop = `${user.name} đã đánh giá sản phẩm của bạn.`;
-      console.log("chạy vào đây r")
+      // console.log("chạy vào đây r")
       await this.notificationService.createOrderNotification(
         cartItem,
         notificationType,

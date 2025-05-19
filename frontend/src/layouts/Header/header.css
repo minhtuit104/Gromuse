@@ -30,8 +30,95 @@
   cursor: pointer;
 }
 
+/* Search Dropdown Styles */
 .header-middle {
   position: relative;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--white50);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.search-loading {
+  padding: 16px;
+  text-align: center;
+  color: var(--white400);
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.search-item:hover {
+  background-color: var(--mint100);
+}
+
+.search-item-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-left: 12px;
+}
+
+.search-item-info {
+  flex: 1;
+}
+
+.search-item-name {
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: 4px;
+}
+
+.search-item-price {
+  color: var(--orange500);
+  font-weight: 700;
+}
+
+/* Custom Scrollbar for Search Dropdown */
+.search-dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.search-dropdown::-webkit-scrollbar-track {
+  background: var(--white100);
+  border-radius: 4px;
+}
+
+.search-dropdown::-webkit-scrollbar-thumb {
+  background: var(--mint400);
+  border-radius: 4px;
+}
+
+.search-dropdown::-webkit-scrollbar-thumb:hover {
+  background: var(--mint600);
 }
 
 .header-middle input {
@@ -52,7 +139,7 @@
   font-weight: 700;
 }
 
-.header-middle img {
+.header-middle > img {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -242,4 +329,11 @@
 
 .avatar-dropdown-item.logout:hover img {
   filter: brightness(0) invert(1);
+}
+
+.search-no-results {
+  padding: 16px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
 }

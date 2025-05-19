@@ -1,31 +1,40 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
   HttpException,
   HttpStatus,
-  Put,
   Param,
+  Post,
+  Put,
   Query,
-  UseGuards,
   Req,
+  UseGuards,
 } from '@nestjs/common';
-import { formatCategoryName, ProductsService } from './products.service';
-import { Product } from '../../typeorm/entities/Product';
-import { CartService } from '../cart/cart.service';
 import {
-  tagMap,
-  categoryDisplayNames,
-  displayNameToKey,
-  categoryImageUrls,
-} from './products.service';
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from '../../typeorm/entities/Category';
-import { InjectRepository } from '@nestjs/typeorm';
-import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
+import { Product } from '../../typeorm/entities/Product';
 import { Shop } from '../../typeorm/entities/Shop';
+import { JwtAuthGuard } from '../auth/jwtAuthGuard/jwtAuthGuard';
+import { CartService } from '../cart/cart.service';
+import {
+  categoryDisplayNames,
+  categoryImageUrls,
+  displayNameToKey,
+  formatCategoryName,
+  ProductsService,
+  tagMap,
+} from './products.service';
 
+@ApiTags('Products')
 @Controller('api/products')
 export class ProductsController {
   constructor(
@@ -37,7 +46,26 @@ export class ProductsController {
     private readonly shopRepository: Repository<Shop>,
   ) {}
 
+  @Get('shop')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth() // Thêm decorator này để Swagger biết cần gửi Bearer token
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    type: String,
+    description: 'Lọc sản phẩm theo danh mục (không bắt buộc)',
+  })
+  async findAllShop(
+    @Req() req,
+    @Query('category') category?: string,
+  ): Promise<Product[]> {
+    const user = req.user;
+    return this.productsService.findByCategoryForShop(user.idUser, category);
+  }
+
   @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth() // Thêm decorator này để Swagger biết cần gửi Bearer token
   async findAll(@Query('category') category?: string): Promise<Product[]> {
     if (category) {
       return this.productsService.findByCategory(category);
@@ -61,6 +89,42 @@ export class ProductsController {
         imageUrl: category.imageUrl || categoryImageUrls[category.name] || null,
       };
     });
+  }
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Tìm kiếm sản phẩm theo tên' })
+  @ApiBearerAuth() // Thêm decorator này để Swagger biết cần gửi Bearer token
+  @ApiQuery({ name: 'name', required: true, type: String })
+  @ApiResponse({ status: 200, description: 'Tìm kiếm thành công' })
+  @ApiResponse({ status: 400, description: 'Từ khóa tìm kiếm không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Không có quyền truy cập' })
+  async searchProducts(@Query('name') searchTerm: string): Promise<any> {
+    console.log('searchTerm:', searchTerm);
+    try {
+      if (!searchTerm || searchTerm.trim() === '') {
+        throw new HttpException(
+          'Vui lòng nhập từ khóa tìm kiếm',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      const products = await this.productsService.searchProductsByName(
+        searchTerm.trim(),
+      );
+
+      return {
+        message: 'success',
+        data: products,
+      };
+    } catch (error) {
+      // Log chi tiết lỗi để debug
+      console.error('Error details:', error);
+
+      throw new HttpException(
+        error.message || 'Không thể tìm kiếm sản phẩm',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get(':id')

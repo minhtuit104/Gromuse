@@ -620,25 +620,9 @@ const DetailPage = () => {
             <div className="btn-messager">
               <button
                 onClick={() => {
-                  const currentUserInfo = getCurrentUserInfo();
-                  if (!currentUserInfo) {
-                    toast.error(
-                      "Vui lòng đăng nhập để sử dụng chức năng chat."
-                    );
-                    navigate("/login");
-                    return;
-                  }
-                  if (product?.shop?.id) {
-                    if (product.shop.id === currentUserInfo.idUser) {
-                      toast.info("Bạn không thể tự nhắn tin cho chính mình.");
-                      return;
-                    }
-                    navigate("/messager_user", {
-                      state: { shopToChatId: product.shop.id },
-                    });
-                  } else {
-                    toast.error("Không tìm thấy thông tin shop để nhắn tin.");
-                  }
+                  navigate("/messager_user", {
+                    state: { shopToChatId: product?.shop?.id },
+                  });
                 }}
               >
                 <img src={IconMessager} alt="shop" className="ic_24" />

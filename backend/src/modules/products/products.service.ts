@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Product } from '../../typeorm/entities/Product';
+import { Like, Repository } from 'typeorm';
 import { Category } from '../../typeorm/entities/Category';
+import { Product } from '../../typeorm/entities/Product';
 
 // Hàm để chuyển đổi từ camelCase sang dạng có khoảng trắng và dấu &
 export function formatCategoryName(name: string): string {
@@ -139,6 +139,9 @@ export class ProductsService {
 
   async findAll(): Promise<Product[]> {
     const products = await this.productsRepository.find({
+      where: {
+        active: true,
+      },
       relations: ['category'],
     });
 
@@ -237,6 +240,39 @@ export class ProductsService {
         formatCategoryName(product.category.name);
     }
     return product;
+  }
+
+  async searchProductsByName(searchTerm: string): Promise<Product[]> {
+    // Validate và sanitize searchTerm
+    if (!searchTerm || typeof searchTerm !== 'string') {
+      console.log('Invalid searchTerm:', searchTerm);
+      return [];
+    }
+
+    const sanitizedTerm = searchTerm.trim();
+
+    try {
+      const products = await this.productsRepository.find({
+        where: {
+          name: Like(`%${sanitizedTerm}%`),
+          active: true,
+        },
+        relations: ['category', 'shop'],
+        take: 5,
+      });
+
+      return products.map((product) => {
+        if (product.category) {
+          (product as any).displayCategoryName =
+            categoryDisplayNames[product.category.name] ||
+            formatCategoryName(product.category.name);
+        }
+        return product;
+      });
+    } catch (error) {
+      console.error('Error in searchProductsByName:', error);
+      throw error;
+    }
   }
 
   async updateAllCategoryImages(): Promise<{ updated: number; total: number }> {
@@ -343,7 +379,46 @@ export class ProductsService {
         category: {
           name: categoryKey,
         },
+        active: true,
       },
+    });
+
+    return products.map((product) => {
+      if (product.category) {
+        (product as any).displayCategoryName =
+          categoryDisplayNames[product.category.name] ||
+          formatCategoryName(product.category.name);
+      }
+      return product;
+    });
+  }
+
+  async findByCategoryForShop(
+    shopId: number,
+    categoryName?: string,
+  ): Promise<Product[]> {
+    // Tạo điều kiện where cơ bản
+    const whereCondition: any = {
+      shop: {
+        id: shopId,
+      },
+      active: true,
+    };
+
+    // Chỉ thêm điều kiện category nếu có truyền categoryName
+    if (categoryName) {
+      let categoryKey = categoryName;
+      if (displayNameToKey[categoryName]) {
+        categoryKey = displayNameToKey[categoryName];
+      }
+      whereCondition.category = {
+        name: categoryKey,
+      };
+    }
+
+    const products = await this.productsRepository.find({
+      relations: ['category'],
+      where: whereCondition,
     });
 
     return products.map((product) => {

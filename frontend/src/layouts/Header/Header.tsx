@@ -1,17 +1,17 @@
-import "./header.css";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDebounce } from "use-debounce";
+import ImgAvatar from "../../assets/images/avt.jpg";
 import IconList from "../../assets/images/icons/ic_ list.svg";
 import IconSearch from "../../assets/images/icons/ic_ search.svg";
 import IconCart from "../../assets/images/icons/ic_cart.svg";
-import IconMessage from "../../assets/images/icons/ic_message.svg";
-import IconLogOut from "../../assets/images/icons/ic_logout.svg";
 import IconProduct from "../../assets/images/icons/ic_food.svg";
+import IconLogOut from "../../assets/images/icons/ic_logout.svg";
+import IconMessage from "../../assets/images/icons/ic_message.svg";
 import IconOrder from "../../assets/images/icons/ic_order.svg";
 import IconProfile from "../../assets/images/icons/ic_profile.svg";
 import IconSetting from "../../assets/images/icons/ic_setting.svg";
-import ImgAvatar from "../../assets/images/avt.jpg";
-import { useNavigate } from "react-router-dom";
 import NotificationDropdown from "../../components/NotificationDropdown/NotificationDropdown";
-import { useEffect, useState, useRef } from "react";
 import { getCartCount } from "../../Service/CartService";
 import { fetchUserConversationsCount } from "../../Service/MessageService";
 import { jwtDecode } from "jwt-decode";
@@ -20,6 +20,8 @@ interface DecodedToken {
   idUser: number;
   role?: number;
 }
+import { searchProductsUser } from "../../Service/ProductService";
+import "./header.css";
 
 function Header() {
   const navigate = useNavigate();
@@ -151,6 +153,58 @@ function Header() {
     navigate("/order_status");
   };
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Sử dụng useDebounce hook
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+
+  // Theo dõi thay đổi của debouncedSearchTerm
+  useEffect(() => {
+    const searchProducts = async () => {
+      if (!debouncedSearchTerm.trim()) {
+        setSearchResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const response = (await searchProductsUser(
+          encodeURIComponent(debouncedSearchTerm)
+        )) as any;
+        await Promise.resolve(setSearchResults(response.data || []));
+        // Sau đó mới set isSearching về false
+        setIsSearching(false);
+      } catch (error) {
+        console.error("Search error:", error);
+        setIsSearching(false);
+      }
+    };
+
+    searchProducts();
+  }, [debouncedSearchTerm]);
+
+  const handleSearchChange = (e: any) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setSearchResults([]);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <div className="header">
       <div className="header-left">
@@ -159,12 +213,48 @@ function Header() {
           Gromuse
         </span>
       </div>
-      <div className="header-middle">
+      <div className="header-middle" ref={searchRef}>
         <input
           type="text"
           placeholder="Search for Grocery, Stores, Vegetables or Meat"
+          value={searchTerm}
+          onChange={handleSearchChange}
         />
         <img src={IconSearch} alt="icon-search" className="ic_32" />
+        {(searchResults.length > 0 ||
+          isSearching ||
+          searchTerm.trim() !== "") && (
+          <div className="search-dropdown">
+            {isSearching ? (
+              <div className="search-loading">Đang tìm kiếm...</div>
+            ) : searchResults.length > 0 ? (
+              searchResults.map((product: any) => (
+                <div
+                  key={product.id}
+                  className="search-item"
+                  onClick={() => navigate(`/product/${product.id}`)}
+                >
+                  <div className="search-item-info">
+                    <div className="search-item-name">{product.name}</div>
+                    <div className="search-item-price">
+                      {product.price.toLocaleString("vi-VN")}đ
+                    </div>
+                  </div>
+                  <img
+                    src={product.img}
+                    alt={product.name}
+                    className="search-item-image"
+                    onError={(e: any) => {
+                      e.target.src = "/placeholder-image.png"; // Hình ảnh mặc định khi lỗi
+                    }}
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="search-no-results">Không tìm thấy sản phẩm</div>
+            )}
+          </div>
+        )}
       </div>
       <div className="header-right">
         <NotificationDropdown />
