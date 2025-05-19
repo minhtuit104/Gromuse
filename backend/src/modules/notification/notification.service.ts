@@ -86,30 +86,32 @@ export class NotificationService {
     messageForShop?: string,
   ): Promise<Notification[]> {
     const notifications: Notification[] = [];
-    console.log('cartItem', cartItem);
+    // console.log('cartItem', cartItem);
     // Tạo thông báo cho user
-    const userNotification = this.notificationRepository.create({
-      recipientId: cartItem.cart.idUser,
-      recipientType: NotificationRecipientType.USER,
-      type: type,
-      message: message,
-      title: 'Cập nhật đơn hàng',
-      imageUrl: cartItem.product?.img || null,
-      relatedCartItemId: cartItem.id,
-      relatedShopId: cartItem.shop?.id,
-      relatedProductId: cartItem.product?.id,
-    });
-
-    const savedUserNotification =
-      await this.notificationRepository.save(userNotification);
-    notifications.push(savedUserNotification);
-
-    // Gửi thông báo qua WebSocket cho user
-    const userSocket = this.gateway.getSocketByUserId(cartItem.cart.idUser);
-    if (userSocket) {
-      this.gateway.server.to(userSocket.id).emit('orderNotification', {
-        notification: savedUserNotification,
+    if (message && message.trim() !== '') {
+      const userNotification = this.notificationRepository.create({
+        recipientId: cartItem.cart.idUser,
+        recipientType: NotificationRecipientType.USER,
+        type: type,
+        message: message,
+        title: 'Cập nhật đơn hàng',
+        imageUrl: cartItem.product?.img || null,
+        relatedCartItemId: cartItem.id,
+        relatedShopId: cartItem.shop?.id,
+        relatedProductId: cartItem.product?.id,
       });
+
+      const savedUserNotification =
+        await this.notificationRepository.save(userNotification);
+      notifications.push(savedUserNotification);
+
+      // Gửi thông báo qua WebSocket cho user
+      const userSocket = this.gateway.getSocketByUserId(cartItem.cart.idUser);
+      if (userSocket) {
+        this.gateway.server.to(userSocket.id).emit('orderNotification', {
+          notification: savedUserNotification,
+        });
+      }
     }
 
     // Tạo và gửi thông báo cho shop nếu có shop ID

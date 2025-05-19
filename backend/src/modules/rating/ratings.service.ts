@@ -1,18 +1,21 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
   ConflictException,
+  Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { NotificationContentType } from 'src/typeorm/entities/Notification';
 import { Repository } from 'typeorm';
-import { Rating } from '../../typeorm/entities/Rating';
 import { CartItem, OrderStatus } from '../../typeorm/entities/CartItem';
-import { CreateRatingDto } from './dtos/create-rating.dto';
-import { User } from '../../typeorm/entities/User';
 import { Product } from '../../typeorm/entities/Product';
+import { Rating } from '../../typeorm/entities/Rating';
+import { User } from '../../typeorm/entities/User';
+import { NotificationService } from '../notification/notification.service';
+import { UserService } from '../users/user.service';
+import { CreateRatingDto } from './dtos/create-rating.dto';
 
 @Injectable()
 export class RatingsService {
@@ -27,6 +30,8 @@ export class RatingsService {
     private userRepository: Repository<User>,
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
+    private readonly notificationService: NotificationService,
+    private readonly userService: UserService,
   ) {}
 
   private async updateProductRatingStats(productId: number): Promise<void> {
@@ -67,7 +72,7 @@ export class RatingsService {
     // 1. Kiểm tra CartItem tồn tại, trạng thái và quyền sở hữu
     const cartItem = await this.cartItemRepository.findOne({
       where: { id: cartItemId },
-      relations: ['cart', 'product'], // Load cart và product để kiểm tra
+      relations: ['product', 'cart', 'cart.user', 'shop'],
     });
 
     if (!cartItem) {
@@ -148,7 +153,17 @@ export class RatingsService {
           updateError.stack,
         );
       }
-
+      const user = await this.userService.findUserById(userId);
+      const notificationType = NotificationContentType.PRODUCT_RATED;
+      const notificationMessage = ``;
+      const notificationMessageForShop = `${user.name} đã đánh giá sản phẩm của bạn.`;
+      console.log("chạy vào đây r")
+      await this.notificationService.createOrderNotification(
+        cartItem,
+        notificationType,
+        notificationMessage,
+        notificationMessageForShop,
+      );
       return savedRating;
     } catch (error) {
       this.logger.error(
